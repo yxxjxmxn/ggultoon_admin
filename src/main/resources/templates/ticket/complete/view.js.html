@@ -1,0 +1,52 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        ticket.view();
+    });
+
+    let ticket = {
+        // 이용권 상세
+        view: function () {
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/tickets/complete/[[${idx}]]',
+                method: 'GET',
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        if (res.data != null &&  res.data != undefined) {
+
+                            // 이용권 상세 정보 폼
+                            $("td[name=idx]").text(res.data.idx||"-");
+                            $("td[name=name]").text(res.data.name||"-");
+                            $("td[name=code]").text(res.data.code||"-");
+                            $("td[name=category]").text(res.data.category||"-");
+                            $("td[name=genre]").text(res.data.genre||"-");
+                            $("td[name=contentsIdx]").text(res.data.contentsIdx||"-");
+                            $("td[name=title]").text(res.data.title||"-");
+                            $("td[name=adult]").html(`<span class="badge ${res.data.adultBg}">${res.data.adultText || "-"}</span>`);
+                            $("td[name=giveCnt]").text(res.data.giveCnt + "개");
+                            $("td[name=useCnt]").text(res.data.useCnt + "개");
+                            $("td[name=usePercent]").text(res.data.usePercent + "%");
+                            $("td[name=startDate]").text(res.data.startDate||"-");
+                            $("td[name=endDate]").text(res.data.endDate||"-");
+                            $("td[name=regdate]").text(res.data.regdate||"-");
+
+                        } else {
+                            // 결과 없음
+                            toast.alert(res.message);
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        }
+    }
+</script>

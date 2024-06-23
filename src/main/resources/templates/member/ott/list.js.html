@@ -1,0 +1,97 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        let page = "[[${page}]]";
+        member.list(page);
+    });
+
+    let member = {
+        // 조회
+        list: function (page = 1) {
+            if (page != undefined) {
+                $("input[name=page]").val(page);
+            }
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/members/ott',
+                cache : true,
+                method: 'GET',
+                data: $("#frm").serialize(),
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        //페이지 url 갱신 ( 검색 후 새로고침 시 검색값 유지 )
+                        if( window.location.search !== "?"+ $("#frm").serialize() ){
+                            history.pushState(null, null, "?" + $("#frm").serialize());
+                        }
+
+                        if (res.data.list.length > 0) {
+                            // total count
+                            $(".totalCount").next().text(res.data.params.pagination.totalRecordCount + "건");
+                            // list
+                            let listTbody = "";
+                            $.each(res.data.list, function (index, el) {
+                                listTbody +=`
+                                <tr>
+                                    <td class="text-center">${el.idx}</td>
+                                    <td class="text-left"><a href="javascript:void(0);" onclick="member.view(${el.memberIdx});">${el.id}</a></td>
+                                    <td class="text-center">${el.site||'-'}</td>
+                                    <td class="text-left">${el.ottId||'-'}</td>
+                                    <td class="text-left">${el.bannerCode||'-'}</td>
+                                    <td class="text-right">${member.comma(Math.floor(el.point))||'-'}</td>
+                                    <td class="text-left">${el.sendMsg||'-'}</td>
+                                    <td class="text-left">${el.returnMsg||'-'}</td>
+                                    <td class="text-center">${el.regdate||'-'}</td>
+                                </tr>
+                            `;
+                            });
+                            $("#lists tbody").html(listTbody);
+
+                            // paging - common.js
+                            pagination("member", res.data.params.page, res.data.params.pagination);
+                            $.cookie("backUrl", $("#frm").serialize());
+                        } else {
+                            // total count
+                            $(".totalCount").next().text("0건");
+                            // 결과 없음
+                            let listTbody = `<tr><td colspan="10" class="text-center">${res.message}</td></tr>`;
+                            $("#lists tbody").html(listTbody);
+                            $(".pagination").html("");
+                        }
+
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        },
+        // 상세
+        view: function (idx) {
+            location.href = '[[${SERVER.currentDomain}]]/members/' + idx ;
+        },
+        // 새로고침 버튼
+        reset: function () {
+            location.href = '[[${SERVER.currentDomain}]]/members/ott';
+        },
+        // 숫자 콤마 표시
+        comma: function (num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        },
+        // 엑셀
+        excel: function () {
+            location.href = '[[${SERVER.currentDomain}]]/v1/members/ott/member/excel?'+$("#frm").serialize();
+        },
+
+    }
+
+    //뒤로가기 이벤트 시 실행
+    $(window).on('popstate', function(event) {
+        window.location = document.location.href;
+    });
+</script>

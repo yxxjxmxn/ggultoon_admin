@@ -1,0 +1,137 @@
+<th:block layout:decorate="~{common/layout}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="col-lg-12 mt-3">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" th:text="#{lang.coupon.title.list}"></h5>
+            </div>
+            <div class="card-body row">
+
+                <div class="col-12">
+                    <!-- 검색 폼 -->
+                    <form id="frm" class="d-flex bd-highlight gx-3" onsubmit="coupon.list(1); return false;" accept-charset="utf-8">
+                        <table class="table m-0">
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <div class="row p-0">
+                                            <div class="input-group input-group-sm m-1 p-0 col-6">
+
+                                                <!-- Date Picker -->
+                                                <input type="text" th:placeholder="#{lang.coupon.search.start.date}" class="form-control form-control-sm text-center col-2 ml-1" disabled/>
+                                                <input type="text" th:placeholder="YYYY-MM-DD" id="searchStartDate" name="searchStartDate" maxlength="10" class="datePicker form-control text-center col-2 mr-2" oninput="date.forMatter(this);" autocomplete="off"/>
+                                                <span class="h5 fw-bold" style="color: gray">~</span>
+                                                <input type="text" th:placeholder="#{lang.coupon.search.end.date}" class="form-control form-control-sm text-center col-2 ml-1" disabled/>
+                                                <input type="text" th:placeholder="YYYY-MM-DD" id="searchEndDate" name="searchEndDate" maxlength="10" class="datePicker form-control text-center col-2 mr-2" oninput="date.forMatter(this);" autocomplete="off"/>
+                                            </div>
+                                        </div>
+                                        <div class="row p-0">
+                                            <div class="col-auto input-group input-group-sm m-1 p-0 col-7">
+
+                                                <!-- 쿠폰 상태 -->
+                                                <select name="state" class="form-select form-select-sm col-2">
+                                                    <option value=""  th:text="#{lang.coupon.state}"></option>
+                                                    <option value="1" th:text="#{lang.coupon.state.use}" th:selected="${search.state} == '1'"></option>
+                                                    <option value="2" th:text="#{lang.coupon.state.unuse}" th:selected="${search.state} == '2'"></option>
+                                                </select>
+
+                                                <!-- 쿠폰 중복 여부 -->
+                                                <select name="type" class="form-select form-select-sm col-4 ml-1">
+                                                    <option value=""  th:text="#{lang.coupon.duplication}"></option>
+                                                    <option value="1" th:text="#{lang.coupon.duplication.true}" th:selected="${search.state} == '1'"></option>
+                                                    <option value="0" th:text="#{lang.coupon.duplication.false}" th:selected="${search.state} == '0'"></option>
+                                                </select>
+
+                                                <!-- 쿠폰 종류 -->
+                                                <select name="form" class="form-select form-select-sm col-2 ml-1">
+                                                    <option value=""  th:text="#{lang.coupon.type}"></option>
+                                                    <option value="1" th:text="#{lang.coupon.type.korean}" th:selected="${search.type} == '1'"></option>
+                                                    <option value="2" th:text="#{lang.coupon.type.english}" th:selected="${search.type} == '2'"></option>
+                                                    <option value="3" th:text="#{lang.coupon.type.random.number.korean}" th:selected="${search.type} == '3'"></option>
+                                                    <option value="4" th:text="#{lang.coupon.type.random.number.english}" th:selected="${search.type} == '4'"></option>
+                                                </select>
+
+                                                <!-- 검색 조건 -->
+                                                <select name="searchType" class="form-select form-select-sm col-2 ml-1">
+                                                    <option value="" th:text="#{lang.coupon.search}" ></option>
+                                                    <option th:value="idx" th:text="#{lang.coupon.idx}" th:selected="${search.searchType} == 'idx'"></option>
+                                                    <option th:value="title" th:text="#{lang.coupon.title}" th:selected="${search.searchType} == 'title'"></option>
+                                                    <option th:value="name" th:text="#{lang.coupon.store.name}" th:selected="${search.searchType} == 'name'"></option>
+                                                </select>
+
+                                                <!-- 검색어 -->
+                                                <input type="text" name="searchWord" class="form-control form-control-sm text-center" th:value="${search.searchWord}" th:placeholder="#{lang.coupon.placeholder.search.word}" style="width:30%;">
+
+                                                <!-- 현재 페이지 -->
+                                                <input type="hidden" id="page" name="page">
+
+                                            </div>
+
+                                            <!-- 검색 버튼 -->
+                                            <div class="col-auto btn-group btn-group-sm m-1 p-0">
+                                                <button type="button" id="searchBtn" th:text="#{lang.coupon.button.search}" onclick="coupon.list(1);" class="btn btn-success pr-3 pl-3"></button>
+                                                <button type="button" class="btn btn-outline-success" onclick="coupon.reset();"><i class="fa-solid fa-rotate-left"></i></button>
+                                            </div>
+
+                                            <!-- 등록 & 엑셀 다운로드 버튼 -->
+                                            <div class="text-right col">
+                                                <button type="button" id="registerBtn" onclick="coupon.register();" class="btn btn-sm btn-primary" th:text="#{lang.coupon.button.register}"></button>
+                                                <button type="button" id="excelBtn" onclick="coupon.excel();" class="btn btn-sm btn-info" th:text="#{lang.coupon.button.excel}"></button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="d-inline p-0">
+
+                                            <!-- 검색 결과 총 개수 -->
+                                            <div class="float-left form-control-sm">
+                                                <strong class="totalCount" th:text="#{lang.coupon.search.result} + ' : ' "></strong><span></span>
+                                            </div>
+
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </form>
+                    <!-- //검색 폼 -->
+
+                    <!-- list -->
+                    <table class="table table-hover" id="lists">
+                        <thead class="table-dark">
+                            <tr class="text-center">
+                                <th scope="col" rowspan="2" th:text="#{lang.coupon.idx}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.coupon.progress}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.coupon.state}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.coupon.title}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.coupon.duplication}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.coupon.type}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.coupon.count}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.coupon.give.mileage}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.coupon.mileage.period}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.coupon.count.total}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.coupon.mileage.total}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.coupon.store.name}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.coupon.store.type}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.coupon.start.date}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.coupon.end.date}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.coupon.regdate}" class="text-center"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                    <th:block layout:fragment="paging">
+                        <div class="col-md-12 d-flex flex-row-reverse my-3">
+                            <ul class="pagination" style="font-size: 12px;">
+                            </ul>
+                        </div>
+                    </th:block>
+                </div>
+            </div>
+        </div>
+        <!-- 컨텐츠 영역 -->
+    </div>
+</th:block>

@@ -1,0 +1,116 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        let page = "[[${page}]]";
+        coupon.list(page);
+    });
+
+    let coupon = {
+        // 쿠폰 업체 리스트
+        list: function (page = 1) {
+            if (page != undefined) {
+                $("input[name=page]").val(page);
+            }
+
+            // 검색 조건을 선택하지 않고 검색어를 입력한 경우
+            if ($("select[name=searchType]").val() == "" && $("input[name=searchWord]").val() != "") {
+                let searchFailMessage = `[[#{lang.coupon.exception.search.type.empty}]]`; // 검색 조건을 설정해주세요.
+                toast.alert(searchFailMessage);
+            }
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/coupons/stores',
+                cache : true,
+                method: 'GET',
+                data: $("#frm").serialize(),
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+
+                        // 페이지 url 갱신 (검색 후 새로고침 시 검색값 유지 )
+                        if (window.location.search !== "?" + $("#frm").serialize()) {
+                            history.pushState(null, null, "?" + $("#frm").serialize());
+                        }
+
+                        if (res.data.list.length > 0) {
+
+                            // total count
+                            $(".totalCount").next().text(res.data.list.length + "건");
+
+                            // list
+                            let listTbody = "";
+                            $.each(res.data.list, function (index, el) {
+
+                                // 담당자 전화번호 하이픈 세팅
+                                let phone = el.phone.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/,"$1-$2-$3");
+
+                                listTbody += `
+                                    <tr onclick="coupon.view(${el.idx});" style="cursor:pointer;">
+                                        <td class="text-center">${el.idx || "-"}</td>
+                                        <td class="text-center"><span class="badge ${el.stateBg}">${el.stateText || "-"}</span></td>
+                                        <td class="text-center">${el.name || "-"}</td>
+                                        <td class="text-center">${el.manager || "-"}</td>
+                                        <td class="text-center">${phone || "-"}</td>
+                                        <td class="text-center"><span class="badge ${el.typeBg}">${el.typeText || "-"}</span></td>
+                                        <td class="text-center">${el.regdate || "-"}</td>
+                                    </tr>
+                                `;
+                            });
+                            $("#lists tbody").html(listTbody);
+
+                            // paging - common.js
+                            pagination("coupon", res.data.params.page, res.data.params.pagination);
+                            $.cookie("backUrl", $("#frm").serialize());
+
+                        } else {
+                            // total count
+                            $(".totalCount").next().text("0건");
+                            // 결과 없음
+                            let listTbody = `<tr><td colspan="7" class="text-center">${res.message}</td></tr>`;
+                            $("#lists tbody").html(listTbody);
+                            $(".pagination").html("");
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        },
+        // 새로고침 버튼
+        reset: function () {
+            location.href = '[[${SERVER.currentDomain}]]/coupons/stores';
+        },
+        // 쿠폰 업체 상세 팝업
+        view: function (idx) {
+            js_popup('[[${SERVER.currentDomain}]]/coupons/stores/' + idx, 'coupon_store_details', '550', '600');
+        },
+        // 쿠폰 업체 등록 팝업
+        register: function () {
+            js_popup('[[${SERVER.currentDomain}]]/coupons/stores/register', 'coupon_store_register', '550', '550');
+        },
+        // 쿠폰 업체 리스트 엑셀 다운로드
+        excel: function () {
+
+            // 엑셀로 다운로드할 데이터가 없습니다.
+            let excelDownloadFailMessage = `[[#{lang.coupon.exception.excel.data.empty}]]`;
+
+            if ($(".totalCount").next().text() == '0건') {
+                toast.alert(excelDownloadFailMessage);
+            } else {
+                location.href = '[[${SERVER.currentDomain}]]/v1/coupons/stores/excel?'+$("#frm").serialize();
+            }
+        }
+    }
+
+    //뒤로가기 이벤트 시 실행
+    $(window).on('popstate', function(event) {
+        window.location = document.location.href;
+    });
+</script>

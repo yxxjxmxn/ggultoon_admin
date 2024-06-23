@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.dao.comment.CommentDao">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        작품 댓글 & 대댓글
+    =============================================================== -->
+
+    <!-- 작품 댓글 숨김 -->
+    <update id="hideContentComments" parameterType="ContentCommentDto">
+        UPDATE <include refid="database"/> contents_comment
+        SET
+            `view` = #{view}
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+    <!-- 작품 대댓글 숨김 -->
+    <update id="hideContentReplies" parameterType="ContentCommentDto">
+        UPDATE <include refid="database"/> contents_comment
+        SET
+            `view` = #{view}
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+    <!-- 작품 댓글 삭제 -->
+    <update id="deleteContentComments" parameterType="ContentCommentDto">
+        UPDATE <include refid="database"/> contents_comment
+        SET
+            `state` = #{state}
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+    <!-- 작품 대댓글 삭제 -->
+    <update id="deleteContentReplies" parameterType="ContentCommentDto">
+        UPDATE <include refid="database"/> contents_comment
+        SET
+            `state` = #{state}
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+    <!-- ==============================================================
+        회차 댓글
+    =============================================================== -->
+
+    <!-- 회차 댓글 숨김 -->
+    <update id="hideEpisodeComments" parameterType="EpisodeCommentDto">
+        UPDATE <include refid="database"/> episode_comment
+        SET
+            `view` = #{view}
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+    <!-- 회차 댓글 삭제 -->
+    <update id="deleteEpisodeComments" parameterType="EpisodeCommentDto">
+        UPDATE <include refid="database"/> episode_comment
+        SET
+            `state` = #{state}
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+</mapper>

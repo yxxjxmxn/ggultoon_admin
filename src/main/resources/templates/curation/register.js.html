@@ -1,0 +1,173 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        select.list();
+        date.datePicker();
+    });
+
+    let select = {
+        // 노출 영역 체크박스 세팅
+        list : function () {
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/curations/areas',
+                method: 'GET',
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        if (res.data.list.length > 0) {
+
+                            // 노출 위치 옵션 세팅
+                            $.each(res.data.list, function (idx, el) {
+
+                                if (el.idx % 2 == 0) {
+                                    $("#rightArea").append("<input type='checkbox' name='area' value='" + el.idx + "'>" + " " + el.code + "(" + el.name + ") ");
+                                    $("#rightArea").append("<br>");
+                                } else {
+                                    $("#leftArea").append("<input type='checkbox' name='area' value='" + el.idx + "'>" + " " + el.code + "(" + el.name + ") ");
+                                    $("#leftArea").append("<br>");
+                                }
+                            });
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+        }
+    }
+
+    // 큐레이션 등록
+    let curation = {
+        register: function () {
+
+            let form = $("#registerForm")[0];
+            let formData = new FormData(form);
+
+            // 사용 상태 선택값 세팅
+            let state = $("input:checkbox[name='state']:checked").val();
+            if (state == null || state == undefined) {
+                formData.set("state", 2);
+            }
+
+            // 예약 여부 선택값 세팅
+            let reservation = $("input:checkbox[name='reservation']:checked").val();
+            if (reservation == null || reservation == undefined) {
+                formData.set("reservation", 0);
+
+            } else {
+                // 예약 기간 선택값 세팅
+                formData.set("startDate", $("#searchStartDate").val()); // 시작일
+                formData.set("endDate", $("#searchEndDate").val());     // 종료일
+            }
+
+            // 노출 영역 선택값 세팅
+            let chkArray = new Array();
+            $("input:checkbox[name='area']:checked").each(function () {
+                let value = $(this).val();
+                chkArray.push(value);
+            })
+            const jsonData = JSON.stringify(chkArray);
+            formData.set("area", jsonData);
+
+            // 큐레이션 순서 세팅
+            let sort = $(opener.document).find(".totalCount").next().val();
+            formData.set("sort", parseInt(sort) + 1);
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/curations',
+                method: 'POST',
+                data: formData,
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        toast.alert(res.message);
+                        opener.location.reload();
+                        self.close();
+                    } else {
+                        // 등록 실패
+                        toast.alert(res.message);
+                    }
+                },
+                error: function(request, status, error) {
+                    // filter error
+                    toast.alert("code: "+request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        }
+    }
+
+    /** 날짜 관련 객체 **/
+    let date = {
+        // input 날짜 하이픈(-) 자동 입력
+        forMatter : (date) => {
+            $(".datePicker").on("input", () => {
+                let dateValue = date.value.replace(/[^0-9]/g, '')
+                    .replace(/^(\d{0,4})(\d{0,2})(\d{0,2})$/g, "$1-$2-$3")
+                    .replace(/(\-{1,2})$/g, "");
+                date.value = dateValue;
+            })
+        },
+        datePicker : () => {
+            // 시작일 date picker 생성
+            $("#searchStartDate").datepicker({
+                onSelect: function() {
+                    let startDate = $.datepicker.formatDate("yy-mm-dd", $(this).datepicker('getDate'));
+                    $("#searchStartDate").val(startDate);
+                },
+                onClose: function(selectedDate) {
+                    // 시작일 datepicker가 닫힐 때
+                    // 종료일의 선택할 수 있는 최소 날짜(minDate)를 선택한 시작일로 지정
+                    $("#searchEndDate").datepicker( "option", "minDate", selectedDate);
+                },
+                beforeShow: function() {
+                    setTimeout(function(){
+                        $('.ui-datepicker').css('z-index', 99999999999999);
+                    }, 0);
+                }
+            }).on('changeDate', function(e){
+                $(this).datepicker('hide');
+            });
+
+            // 종료일 date picker 생성
+            $("#searchEndDate").datepicker({
+                onSelect: function() {
+                    let endDate = $.datepicker.formatDate("yy-mm-dd", $(this).datepicker('getDate'));
+                    $("#searchEndDate").val(endDate);
+                },
+                onClose: function(selectedDate) {
+                    // 종료일 datepicker가 닫힐 때
+                    // 시작일의 선택할 수 있는 최대 날짜(maxDate)를 선택한 종료일로 지정
+                    $("#searchStartDate").datepicker( "option", "maxDate", selectedDate);
+                },
+                beforeShow: function() {
+                    setTimeout(function(){
+                        $('.ui-datepicker').css('z-index', 99999999999999);
+                    }, 0);
+                }
+            }).on('changeDate', function(e){
+                $(this).datepicker('hide');
+            });
+
+            // date picker 설정
+            $.datepicker.setDefaults({
+                dateFormat: "yy-mm-dd",
+                yearSuffix: "년",
+                monthNames: ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"],
+                monthNamesShort: ["1월", "2월", "3월", "4월", "5월", "6월","7월", "8월", "9월", "10월", "11월", "12월"],
+                dayNames: ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"],
+                dayNamesShort: ["일", "월", "화", "수", "목", "금", "토"],
+                dayNamesMin: ["일", "월", "화", "수", "목", "금", "토"],
+                showMonthAfterYear: true
+            });
+        }
+    }
+</script>

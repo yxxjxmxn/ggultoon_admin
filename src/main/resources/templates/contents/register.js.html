@@ -1,0 +1,603 @@
+<script th:fragment="importJsFragment">
+    $(function () {
+        $(".ui-datepicker").datepicker({
+            changeMonth: true,
+            changeYear: true,
+            showMonthAfterYear: true,
+            yearRange: 'c:c+100',
+            dayNamesMin: ['일', '월', '화', '수', '목', '금', '토'], // 요일의 한글 형식.
+            monthNamesShort: ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
+            dateFormat: "yy-mm-dd",
+            altFormat: "yy-mm-dd",
+            showButtonPanel: true,
+            nextText: '다음 달',
+            prevText: '이전 달',
+            currentText: '오늘',
+            closeText: '닫기'
+        });
+        $("#ui-datepicker-div").css("background", "#fff").css("border", "1px solid #ced4da");
+
+        // ajax loading
+        $(document).ajaxStart(function () {
+            loading = new bootstrap.Modal($('#layer_dialog'), {
+                keyboard: false
+            });
+
+            $('#section_dialog').html("<div style='display:flex; justify-content:center; hegith:800px; position:relative;'><img src='../../../images/loading_64x64.gif'></div>");
+
+            loading.show($('#section_dialog'));
+        });
+
+        $(document).ajaxStop(function () {
+            loading._hideModal();
+        });
+
+
+        // 카테고리 및 장르 정보
+        categorySelect();
+
+    });
+
+    // modal
+    let myModal;
+
+    // 등록할 이미지 임시 배열
+    let heightImageRow = [];
+    let widthImageRow = [];
+
+    let text = {
+        taxPlaceholder : {
+            ISBN : "[[#{lang.contents.placeholder.tax.ISBN}]]", // ISBN은 10자리 혹은 13자리의 숫자로 이루어져야 합니다.
+            UCI : "[[#{lang.contents.placeholder.tax.UCI}]]",   // UCI(KEPA)는 ECN-0000-0000-000-000000000 혹은 ECN-0-0000-00-000000-0 의 형식으로 이루어져야 합니다.
+            ISSN : "[[#{lang.contents.placeholder.tax.ISSN}]]"  // ISSN은 0000-0000 혹은 0000-000X의 형식으로 이루어져야 합니다.
+        },
+        select : "[[#{lang.contents.category.sub}]]", // 선택
+        confirm : {
+            delete : "[[#{lang.contents.confirm.delete}]]" // 삭제 하시겠습니까?
+        }
+    }
+
+    // 카테고리, 장르 목록
+    let data = '[[${data}]]';
+    let categoryList = JSON.parse(data.replace(/&quot;/g,'"')).categoryList;
+
+    let contents = {
+        // 컨텐츠 목록
+        list : function () {
+            location.href = "[[${SERVER.currentDomain}]]/contents/list" + "?" + $("#frm").serialize();
+
+            return false;
+        },
+        // 컨텐츠 등록
+        register : function () {
+            let validate = contents.validate();
+
+            // 저장
+            if (validate) {
+                let form = $("#frm")[0];
+                let formData = new FormData(form);
+
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/cp-admin/contents',
+                    method: 'POST',
+                    enctype: 'multipart/form-data',
+                    data: formData,
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            toast.alert(res.message);
+                            location.href = "[[${SERVER.currentDomain}]]/contents/view/" + res.data.contentsIdx + location.search;
+                        } else {
+                            // ajax exception error
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+            }
+
+        },
+        // validation 체크
+        validate : function () {
+            // 제목 체크
+            // 카테고리 체크
+            // 작가
+            // 태그
+            // 이미지
+            return true;
+        },
+        // 컨텐츠 면세/과세
+        tax : {
+            selectedChange : function (_this) {
+                let placeholder = "";
+                switch(_this.value) {
+                    case "1":
+                        placeholder = text.taxPlaceholder.ISBN;
+                        break;
+                    case "2":
+                        placeholder = text.taxPlaceholder.UCI;
+                        break;
+                    case "3":
+                        placeholder = text.taxPlaceholder.ISSN;
+                        break;
+                    default:
+                        placeholder = "";
+                }
+                $("#taxCode").next("div").html(placeholder);
+
+                return false;
+            }
+        },
+        tag : function (_this) {
+            // label 클릭한 시점에 체크박스는 체크안된상태
+            let _tagCheckbox = $(_this).prev();
+            if (_tagCheckbox.is(":checked")) {
+                _tagCheckbox.prop("checked", true);
+            } else {
+                _tagCheckbox.prop("checked", false);
+                _tagCheckbox.blur();
+            }
+
+        }
+    }
+
+    let cp = {
+        layer : function () {
+            if ($("#layer_dialog_lg").is(":visible") == false ) {
+
+                myModal = new bootstrap.Modal($('#layer_dialog_lg'), {
+                    keyboard: false
+                });
+
+                // 태그 modal
+                $('#section_dialog_lg').load("[[${SERVER.currentDomain}]]/contents/layer/cp", function () {
+                    cp.view();
+                });
+
+                return false;
+            }
+        },
+        view : function () {
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/admin/cp/company',
+                method: 'GET',
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+
+                        let div = $("<div>");
+                        let rowDiv = $("<div>").addClass("p-2 row");
+                        let cpMemberIdx = $("input[name=cpMemberIdx]").val();
+
+                        res.data.list.forEach((el, idx) => {
+                            let checked = '';
+                            if (cpMemberIdx == el.idx) {
+                                checked = ' checked="checked"';
+                            }
+
+                            let inputDiv = $("<div>").addClass("d-inline-block col-4").css("line-height", "22px");
+                            let input = '<input class="form-check-input" type="radio" name="cpList" id="' + el.idx + '" value="' + el.idx + '"' + checked + '>';
+                            let label = '<label class="form-check-label" for="' + el.idx + '">' + el.name + '</label>';
+                            inputDiv.append(input).append(label);
+                            rowDiv.append(inputDiv);
+
+                            if ((idx+1) % 3 == 0 || (idx+1) == res.data.list.length) {
+                                div.append(rowDiv);
+                                $("#cpList").append(div.html());
+
+                                rowDiv.html("");
+                            }
+                        });
+
+                        myModal.show($('#section_dialog_lg'));
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+        },
+        change :function () {
+            let checkedCp = $("#cpList input[name='cpList']:checked");
+            $("input[name=cpMemberIdx]").val(checkedCp.val());
+            $("input[name=companyName]").val(checkedCp.next("label").text());
+
+            myModal._hideModal();
+        },
+    }
+
+
+    let tag = {
+        // 태그 레이어
+        layer : function () {
+            if ($("#layer_dialog_lg").is(":visible") == false ) {
+
+                myModal = new bootstrap.Modal($('#layer_dialog_lg'), {
+                    keyboard: false
+                });
+
+                // 태그 modal
+                $('#section_dialog_lg').load("[[${SERVER.currentDomain}]]/contents/layer/tag", function () {
+                    tag.view();
+                });
+
+                return false;
+            }
+        },
+        // 태그 목록
+        view : function () {
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/tags/list',
+                method: 'GET',
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+
+                        let div = $("<div>");
+                        let rowDiv = $("<div>").addClass("p-2 row");
+
+                        // 선택된 태그
+                        let checkedTag = $("#tagArr").val().split(",").map(Number);
+                        res.data.list.forEach((el, idx) => {
+
+                            let checked = '';
+                            if (checkedTag.indexOf(el.idx) > -1) {
+                                checked = ' checked="checked"';
+                            }
+
+                            let inputDiv = $("<div>").addClass("d-inline-block col-3");
+                            let input = '<input type="checkbox" class="" name="tag[]" id="' + el.idx + '" onchange="tag.check(this);" autocomplete="off" value="' + el.idx + '"' + checked + '>';
+                            let label = '<label class="col-auto pl-1" for="' + el.idx + '">' + el.name + '</label>';
+                            inputDiv.append(input).append(label);
+                            rowDiv.append(inputDiv);
+
+                            if ((idx+1) % 4 == 0 || (idx+1) == res.data.list.length) {
+                                div.append(rowDiv);
+                                $("#tagList").append(div.html());
+
+                                rowDiv.html("");
+                            }
+                        });
+
+                        myModal.show($('#section_dialog_lg'));
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+        },
+        // 태그 변경
+        change :function () {
+            // tag index
+            let tagIdxArray = new Array();
+            // tag text
+            let tagTextArray = new Array();
+
+            $.each($("#layerFrm input[name='tag[]']:checked"), function (idx, el) {
+                // tagArr
+                tagIdxArray.push($(el).val());
+                // tagText
+                tagTextArray.push($(el).next().text());
+            });
+
+            $("#tagArr").val(tagIdxArray);
+            $("input[name=tagText]").val(tagTextArray);
+
+            myModal._hideModal();
+        },
+        check : function (_this) {
+            let checkedCnt = $("#layerFrm input[name='tag[]']:checked").length;
+            if (checkedCnt > 5) {
+                alert("태그는 최대 5개 까지 입력 할수 있습니다.");
+                $(_this).prop("checked", false);
+            }
+        }
+    }
+
+
+    // 이미지
+    let image = {
+        // 이미지 변경
+        add : function (_this, _type) {
+            let _imageRowAdd = [];
+            let _imageSelector = "";
+            if (_type == "height") {
+                _imageRowAdd = heightImageRow;
+                _imageSelector = $("#heightImage");
+            } else if (_type == "width") {
+                _imageRowAdd = widthImageRow;
+                _imageSelector = $("#widthImage");
+            }
+
+            // 이미지 배열에 파일 추가
+            $.each(_this.files, function (idx, el) {
+                // 등록할 이미지 배열에 넣기
+                _imageRowAdd.push(_this.files[idx]);
+
+                // 이미지 미리보기
+                let imageSrc = "";
+                let name = "";
+                if (el.size != undefined) {
+                    imageSrc = URL.createObjectURL(el);
+                    name = el.name;
+                } else {
+                    imageSrc = el.url;
+                    name = el.filename;
+                }
+                let html = previewHtml(imageSrc, name, _type, null);
+                _imageSelector.append(html);
+            });
+        },
+        // 미리 보기 삭제
+        previewDelete : function (_this) {
+            let imageWrap = $(_this).closest(".image-preview-wrap");
+
+            // 미리보기 삭제
+            imageWrap.remove();
+
+            // 선택 파일 없을때 표시
+            if ($(".image-preview-wrap").length <= 0) {
+                let noFile = "<span th:text=\"#{lang.product.placeholder.file.no}\"></span>";
+
+                $("#preview").html(noFile);
+            }
+        },
+        // 이미지 삭제
+        delete : function (_this, _type, idx) {
+            if (confirm(text.confirm.delete)) {
+                let _imageRowDelete = [];
+                let row = "";
+                let _fileSelector = "";
+                if (_type == "height") {
+                    _imageRowDelete = heightImageRow;
+                    row = $(_this).closest("#heightImage .image-preview-wrap");
+                    _fileSelector = $("input[name=fileDataHeight]");
+                } else if (_type == "width") {
+                    _imageRowDelete = widthImageRow;
+                    row = $(_this).closest("#widthImage .image-preview-wrap");
+                    _fileSelector = $("input[name=fileDataWidth]");
+                }
+
+                // 추가 이미지
+                if (_imageRowDelete[row.prevAll().length].idx == undefined) {
+                    const dataTransfer = new DataTransfer();
+
+                    let fileList = _fileSelector.get(0).files;
+                    // fileList -> Array 변환
+                    let fileListArr = Array.from(fileList);
+                    // Array 에서 선택 이미지 삭제
+                    fileListArr.splice(row.prevAll().length, 1);
+                    // 남은 배열을 dataTransfer로 처리(Array -> FileList)
+                    fileListArr.forEach(file => {
+                        dataTransfer.items.add(file);
+                    });
+                    // dataTransfer 로 변환한 data를 fileList에 대입함
+                    _fileSelector[0].files = dataTransfer.files;
+
+                    // 배열에서 삭제
+                    _imageRowDelete.splice(row.prevAll().length, 1);
+
+                    // 미리 보기 삭제
+                    image.previewDelete(_this);
+                }
+            }
+        }
+    }
+
+
+    let codes = {
+        layer : function () {
+            if ($("#layer_dialog_lg").is(":visible") == false ) {
+
+                myModal = new bootstrap.Modal($('#layer_dialog_lg'), {
+                    keyboard: false
+                });
+
+                // code modal
+                $('#section_dialog_lg').load("[[${SERVER.currentDomain}]]/contents/layer/code", function () {
+                    codes.view();
+                });
+
+                return false;
+            }
+        },
+        view : function () {
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/cp-admin/code',
+                method: 'GET',
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        $("#codeList").html("");
+                        let div = $("<div>");
+                        let rowDiv = $("<div>").addClass("p-2 row");
+
+                        // 선택된 코드
+                        let codeValue = $("input[name=code]").val();
+
+                        res.data.list.forEach((el, idx) => {
+
+                            let checked = '';
+                            if (codeValue.indexOf(el.idx) > -1) {
+                                checked = ' checked="checked"';
+                            }
+
+                            let inputDiv = $("<div>").addClass("d-inline-block col-4").css("line-height", "22px");
+                            let input = '<input class="form-check-input" type="radio" name="codeList" id="' + el.code + '" value="' + el.idx + '" ' + checked + '>';
+                            let label = '<label class="form-check-label" for="' + el.code + '">' + el.code + '</label>';
+                            inputDiv.append(input).append(label);
+                            rowDiv.append(inputDiv);
+
+                            if ((idx+1) % 3 == 0 || (idx+1) == res.data.list.length) {
+                                div.append(rowDiv);
+                                $("#codeList").append(div.html());
+
+                                rowDiv.html("");
+                            }
+                        });
+
+                        myModal.show($('#section_dialog_lg'));
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+        },
+        change :function () {
+            let checkedCode = $("#codeList input[name='codeList']:checked");
+            $("input[name=code]").val(checkedCode.val());
+            $("input[name=codeText]").val(checkedCode.next("label").text());
+
+            myModal._hideModal();
+        },
+        register : function () {
+            let form = $("#layerFrm")[0];
+            let formData = new FormData(form);
+            formData.set("code", $("input[name=addCode]").val());
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/cp-admin/code',
+                method: 'POST',
+                data: formData,
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        codes.view();
+
+                        toast.alert(res.message);
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+
+            // 입력폼 hide
+            let myCollapse = document.getElementById('codeFrm');
+            let bsCollapse = new bootstrap.Collapse(myCollapse, {
+                toggle: false
+            })
+            bsCollapse.hide();
+
+            return false;
+        },
+        cancel : function () {
+            $("input[name=code]").val("");
+            $("input[name=codeText]").val("");
+
+            return false;
+        },
+        delete : function () {
+            // TODO 코드 삭제
+        }
+    }
+
+    // 카테고리 목록
+    function categorySelect() {
+        let selectOption = "<option value=''>" + text.select + "</option>";
+        categoryList.forEach((category, idx) => {
+            selectOption += `<option value="${category.idx}">${category.name}</option>`;
+        });
+        $("#category").html(selectOption);
+    }
+
+    // 카테고리 변경시 장르 목록 변경
+    function categoryChange(_value) {
+        // 초기화
+        let selectOption = "";
+        $("#genre").html(selectOption);
+
+        let genreList = categoryList[_value-1].genreList;
+        genreList.forEach((genre, idx) => {
+            selectOption += `<option value="${genre.idx}">${genre.name}</option>`;
+        });
+        $("#genre").html(selectOption);
+    }
+
+    // 요일 초기화
+    function checkedReset(_name) {
+        $("input[name='"+_name+"']").prop("checked", false);
+    }
+
+
+    // 면세 타입 선택
+    $("input[name=tax]").on("change", function 세() {
+        if (this.value == 1) {
+            // 면세
+            $(this).closest("tr").next().children("td").show();
+        } else {
+            // 과세
+            $(this).closest("tr").next().children("td").hide();
+        }
+    })
+
+
+    // 소개 글자수 체크
+    $("textarea[name=description]").keyup(function () {
+        if ($(this).val().length >= 5000) {
+            $(this).val($(this).val().substring(0, 5000));
+            $(this).next().children('.current_cnt').text($(this).val().length);
+            // toast.alert(text.exception.manyCharacters);
+            return false;
+        }
+        $(this).next().find('.current_cnt').text($(this).val().length);
+    })
+
+    function previewHtml(imageSrc, name, type, idx) {
+        let imgHtml = `
+            <div class="image-preview-wrap">
+                <div>
+                    <input class="preview-data" type="hidden" name="image_path" value="">
+                    <a href="javascript:void(0);" onclick="image.delete(this, '${type}', ${idx});" class="preview-del"></a>
+                    <div>
+                        <a href="${imageSrc}" target="_blank">
+                            <img src="${imageSrc}" style="width:100%; max-width: 300px;">
+                        </a>
+                    </div>
+                </div>
+                <div class="file-name">${name}</div>
+            </div>
+        `;
+        return imgHtml;
+    }
+
+    // number 최대 글자 수
+    function maxLengthCheck(object){
+        if (object.value.length > object.maxLength){
+            object.value = object.value.slice(0, object.maxLength);
+        }
+    }
+
+
+</script>

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.dao.member.MemberDao">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- 공통으로 사용할 field -->
+    <sql id="MemberColumns">
+        `me`.`idx`,
+        `me`.`id`,
+        `me`.`nick`,
+        `me`.`auth`,
+        `me`.`adult`,
+        `me`.`site`,
+        `me`.`state`,
+        `me`.`is_simple`,
+        `me`.`join_ip`,
+        `me`.`logindate`,
+        `me`.`regdate`,
+        `mein`.`birth`,
+        `mein`.`gender`,
+        `mein`.`email`,
+        `mein`.`phone`,
+        `mein`.`ci`,
+        `mein`.`di`,
+        `mein`.`lang`,
+        `mein`.`currency`,
+        `mein`.`phone`
+
+    </sql>
+
+    <!-- ==============================================================
+        UPDATE
+    =============================================================== -->
+
+    <!-- 회원 닉네임 수정 -->
+    <update id="modifyMemberNick" parameterType="MemberDto">
+        UPDATE <include refid="database"/>`member`
+        SET
+            `nick` = #{changeNick}
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+    <!-- 회원 정보 수정 -->
+    <update id="modifyMemberInfo" parameterType="MemberDto">
+        UPDATE <include refid="database"/>`member_info`
+        SET
+            `lang`  = #{lang},
+            `phone` = #{phone},
+            `birth` = #{birth}
+        WHERE
+            `member_idx` = #{idx}
+    </update>
+
+    <!-- 회원 탈퇴 member 테이블 -->
+    <update id="deleteMemberByAdmin" parameterType="_long">
+        UPDATE <include refid="database"/>`member`
+        SET
+            `state` = 0
+        WHERE
+                `idx` = #{memberIdx}
+            AND `state` = 1
+    </update>
+
+    <!-- 회원 탈퇴 info 테이블 -->
+    <update id="deleteMemberInfoByAdmin" parameterType="_long">
+        UPDATE <include refid="database"/>`member_info`
+        SET
+            `state` = 0
+        WHERE
+                `member_idx` = #{memberIdx}
+            AND `state` = 1
+    </update>
+
+    <!-- 회원 복구 member 테이블  -->
+    <update id="restoreMemberByAdmin" parameterType="_long">
+        UPDATE <include refid="database"/>`member`
+        SET
+            `state` = 1
+        WHERE
+            `idx` = #{memberIdx}
+    </update>
+
+    <!-- 회원 복구 info 테이블 -->
+    <update id="restoreMemberInfoByAdmin" parameterType="_long">
+        UPDATE <include refid="database"/>`member_info`
+        SET
+            `state` = 1
+        WHERE
+            `member_idx` = #{memberIdx}
+    </update>
+
+    <!-- ==============================================================
+        DELETE
+    =============================================================== -->
+
+    <!-- 회원 복구 member_out 테이블 row 삭제  -->
+    <delete id="deleteMemberOut" parameterType="_long">
+        DELETE FROM <include refid="database"/>`member_out`
+        WHERE
+            `member_idx` = #{memberIdx}
+    </delete>
+
+    <!-- 회원 복구 member_simple_out 테이블 row 삭제  -->
+    <delete id="deleteMemberSimpleOut" parameterType="_long">
+        DELETE FROM <include refid="database"/>`member_simple_out`
+        WHERE
+            `member_idx` = #{memberIdx}
+    </delete>
+
+    <!-- ==============================================================
+        INSERT
+    =============================================================== -->
+
+    <!-- 회원 탈퇴 member_out 테이블 -->
+    <insert id="insertMemberOutByAdmin" parameterType="MemberDto">
+        INSERT INTO <include refid="database"/>`member_out`
+        SET
+            `member_idx` = #{idx},
+            `id`         = #{id},
+            `nick`       = #{nick},
+            `state`      = 1,
+            `outdate`    = #{outDate},
+            `outdate_tz` = '${convertTZ}'
+    </insert>
+
+</mapper>

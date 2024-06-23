@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.contents.BulkDaoSub">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- 작품 타이틀 목록 -->
+    <select id="getListContentsTitle" resultType="ContentsDto">
+        SELECT
+            co.`idx`,
+            co.`title`
+        FROM <include refid="database" />contents AS co
+        ORDER BY co.`idx` ASC
+    </select>
+
+    <!-- 작품 등록 체크 -->
+    <select id="getContent" parameterType="Integer" resultType="_int">
+        SELECT count(co.`idx`) AS cnt
+        FROM contents AS co
+        <where>
+            co.`idx` = #{idx}
+            AND co.`state` != 0
+        </where>
+    </select>
+
+    <!-- 작품 이미지 등록 체크 -->
+    <select id="getContentImg" parameterType="Integer" resultType="_int">
+        SELECT count(coim.`idx`) AS cnt
+        FROM contents_img AS coim
+        <where>
+            coim.`contents_idx` = #{idx}
+            AND coim.`state` != 0
+        </where>
+    </select>
+
+    <!-- 회차 등록 체크 -->
+    <select id="getEpisode" parameterType="Long" resultType="_int">
+        SELECT count(ep.`idx`) AS cnt
+        FROM episode AS ep
+        <where>
+            ep.`idx` = #{idx}
+            AND ep.`state` != 0
+        </where>
+    </select>
+
+    <!-- 회차 이미지 등록 체크 -->
+    <select id="getEpisodeImg" parameterType="Long" resultType="_int">
+        SELECT count(epim.`idx`) AS cnt
+        FROM episode_img AS epim
+        <where>
+            epim.`episode_idx` = #{idx}
+            AND epim.`state` != 0
+        </where>
+    </select>
+
+    <!-- 뷰어 이미지 등록 체크 -->
+    <select id="getCheckViewer" parameterType="EpisodeDto" resultType="_int">
+        <if test="categoryIdx == 1">
+            SELECT count(viwe.`idx`) AS cnt
+            FROM viewer_webtoon AS viwe
+            <where>
+                viwe.episode_idx = #{idx}
+                AND viwe.state != 0
+            </where>
+        </if>
+
+        <if test="categoryIdx == 2">
+            SELECT count(vico.`idx`) AS cnt
+            FROM viewer_comic AS vico
+            <where>
+                vico.episode_idx = #{idx}
+                AND vico.state != 0
+            </where>
+        </if>
+
+        <if test="categoryIdx == 3">
+            SELECT count(vino.`idx`) AS cnt
+            FROM viewer_novel AS vino
+            <where>
+                vino.episode_idx = #{idx}
+                AND vino.state != 0
+            </where>
+        </if>
+    </select>
+
+
+
+    <!-- /////////////////////////////////////////////////////// -->
+    <select id="getListEpisodeAll" resultMap="getListEpisodeAll_rm">
+        SELECT
+            ep.`idx`,
+            ep.`contents_idx`,
+            ep.`coin`,
+            ep.`coin_rent`,
+            ep.`episode_number`,
+            ep.`sort`,
+            ep.`episode_type_idx`,
+            ep.`title`,
+            ep.`check_login`,
+            ep.`check_arrow`,
+            ep.`state`,
+            CONVERT_TZ(ep.`pubdate`, 'UTC', '${convertTZ}') AS pubdate,
+            CONVERT_TZ(ep.`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database" />episode AS ep
+        ORDER BY ep.`idx` DESC
+    </select>
+
+
+    <!-- 회차 목록 resultMap -->
+    <resultMap id="getListEpisodeAll_rm" type="EpisodeDto">
+        <id property="idx" column="idx" />
+
+        <result property="contentsIdx" column="contents_idx" />
+        <result property="coin" column="coin" />
+        <result property="coinRent" column="coin_rent" />
+        <result property="episodeNumber" column="episode_number" />
+        <result property="sort" column="sort" />
+        <result property="episodeTypeIdx" column="episode_type_idx" />
+        <result property="title" column="title" />
+        <result property="checkLogin" column="check_login" />
+        <result property="checkArrow" column="check_arrow" />
+        <result property="state" column="state" />
+        <result property="pubdate" column="pubdate" />
+        <result property="regdate" column="regdate" />
+
+        <!-- contents image query 호출 -->
+        <collection property="imageList" column="idx" javaType="java.util.ArrayList" ofType="" select="getEpisodeImage" />
+    </resultMap>
+
+    <!-- 회차 이미지 -->
+    <select id="getEpisodeImage" parameterType="hashmap" resultType="ImageDto">
+        SELECT
+            epim.`idx`,
+            epim.`episode_idx`,
+            epim.`parent`,
+            epim.`filename`,
+            epim.`url`,
+            epim.`type`,
+            epim.`sort`,
+            epim.`state`,
+            CONVERT_TZ(epim.`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database" />episode_img AS epim
+        <where>
+                epim.`episode_idx` = #{idx}
+            AND epim.`device` = 'mobile'
+            AND epim.`state` = 1
+        </where>
+        ORDER BY epim.`type` ASC, epim.`sort` ASC
+    </select>
+
+
+    <select id="getListContentsAll" resultMap="getListContentsAll_rm">
+        SELECT
+            co.`idx`,
+            co.`category_idx`,
+            co.`genre_idx`,
+            co.`title`,
+            co.`description`,
+            co.`last_episode_idx`,
+            co.`last_episode_title`,
+            co.`adult`,
+            co.`complete_type_idx`,
+            co.`progress`,
+            co.`exclusive`,
+            co.`publication`,
+            co.`revision`,
+            co.`state`,
+            co.`label`,
+            co.`code`,
+            CONVERT_TZ(co.`pubdate`, 'UTC', '${convertTZ}') AS pubdate,
+            CONVERT_TZ(co.`regdate`, 'UTC', '${convertTZ}') AS regdate,
+            ca.`name` AS category_name,
+            ge.`name` AS genre_name
+        FROM <include refid="database" />contents AS co
+        JOIN <include refid="database" />category AS ca
+            ON co.`category_idx` = ca.`idx`
+        JOIN <include refid="database" />genre AS ge
+            ON co.`genre_idx` = ge.`idx`
+        <where>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'category'">
+                        AND co.`category_idx` = #{val}
+                    </when>
+                    <when test="searchType == 'genre'">
+                        AND co.`genre_idx` = #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="searchStartDate != '' and searchStartDate != null">
+                <bind name="start_date" value="searchStartDate" />
+                <bind name="end_date" value="searchEndDate" />
+                AND date(co.`regdate`) BETWEEN #{start_date} AND #{end_date}
+            </if>
+        </where>
+        ORDER BY co.`idx` DESC
+    </select>
+
+
+    <!-- 컨텐츠 목록 resultMap -->
+    <resultMap id="getListContentsAll_rm" type="ContentsDto">
+        <id property="idx" column="idx" />
+
+        <result property="categoryIdx" column="category_idx" />
+        <result property="genreIdx" column="genre_idx" />
+        <result property="title" column="title" />
+        <result property="description" column="description" />
+        <result property="lastEpisodeIdx" column="last_episode_idx" />
+        <result property="lastEpisodeTitle" column="last_episode_title" />
+        <result property="adult" column="adult" />
+        <result property="completeTypeIdx" column="complete_type_idx" />
+        <result property="progress" column="progress" />
+        <result property="exclusive" column="exclusive" />
+        <result property="publication" column="publication" />
+        <result property="revision" column="revision" />
+        <result property="state" column="state" />
+        <result property="label" column="label" />
+        <result property="code" column="code" />
+        <result property="pubdate" column="pubdate" />
+        <result property="regdate" column="regdate" />
+        <result property="categoryName" column="category_name" />
+        <result property="genreName" column="genre_name" />
+
+        <!-- contents image query 호출 -->
+        <collection property="imageList" column="idx" javaType="java.util.ArrayList" ofType="" select="getContentImageAll" />
+
+    </resultMap>
+
+    <!-- 컨텐츠 이미지 -->
+    <select id="getContentImageAll" parameterType="Integer" resultType="ImageDto">
+        SELECT
+            coim.`idx`,
+            coim.`contents_idx`,
+            coim.`parent`,
+            coim.`filename`,
+            coim.`url`,
+            coim.`type`,
+            coim.`sort`,
+            coim.`device`,
+            coim.`state`,
+            CONVERT_TZ(coim.`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database" />contents_img AS coim
+        <where>
+                coim.`contents_idx` = #{idx}
+            AND coim.`device` = 'mobile'
+            AND coim.`state` = 1
+        </where>
+        ORDER BY coim.`type` ASC, coim.`sort` ASC
+    </select>
+
+</mapper>

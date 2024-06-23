@@ -1,0 +1,526 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        member.view();
+
+        // 관리자 코인 지급 & 차감 form 전송 막기
+        $("#cancelBtn").on("click", (e) => {
+            e.preventDefault();
+        })
+        $(".submit-no-btn").on("click", (e) => {
+            e.preventDefault();
+        })
+    });
+
+
+    let form = $("#frm")[0];
+    let formData = new FormData(form);
+
+    let text = {
+        deleteBtn: "[[#{lang.member.button.delete}]]",                    // 삭제 버튼
+        viewMoreBtn: "[[#{lang.member.button.viewMore}]]",                // 더보기 버튼
+        deleteConfirm: "[[#{lang.member.confirm.delete}]]",               // 삭제 confirm
+        restoreConfirm: "[[#{lang.member.confirm.restore}]]",             // 복구 confirm
+        modifyConfirm: "[[#{lang.member.confirm.modify}]]",               // 수정 confirm
+        noSearchResult: "[[#{lang.common.exception.searchFail}]]",        // 검색 결과가 없습니다.
+        purchaseTitle : "[[#{lang.member.title.purchase.list}]]",         // 코인 사용 및 시청내역
+        paymentTitle : "[[#{lang.payment.list}]]",                        // 결제 내역
+        coinSaveListTitle : "[[#{lang.coin.payment.admin.list}]]",          // 지급 내역 리스트
+        coinSubtractListTitle : "[[#{lang.coin.subtraction.admin.list}]]"   // 차감 내역 리스트
+    }
+
+    let member = {
+        list: () => {
+            let qStr = $.cookie("backUrl");
+            location.href = "[[${SERVER.currentDomain}]]/members/?" + qStr;
+        },
+        view: () => {
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/members/[[${idx}]]',
+                method: 'GET',
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        /** 1. 회원 기본 정보 **/
+                        let member = res.data.member; // 회원
+
+                        // 회원 상세 정보 폼
+                        $("td[name=idx]").text(member.idx);
+                        $("td[name=id]").text(member.id);
+                        $("input[name=nick]").val(member.nick);            // 기존 닉네임 hidden
+                        $("input[name=changeNick]").val(member.nick||"-"); // 변경할 닉네임 input 창
+                        $("td[name=name]").text(member.name||"-");
+                        $("td[name=site]").text(member.site||"-");
+                        $("input[name=phone]").val(member.phone);
+                        $("td[name=email]").text(member.email||"-");
+                        $("td[name=auth]").text(member.authText||"-");
+                        $("td[name=txseq]").text(member.txseq||"-");
+                        $("td[name=adult]").text(member.adultText||"-");
+                        $("td[name=loginDate]").text(member.logindate||"-");
+                        $("td[name=joinIp]").text(member.joinIp||"-");
+                        $("td[name=currency]").text(member.currency||"-");
+                        $("input[name=birth]").val(member.birth);
+                        $("select[name=lang]").val(member.lang).prop("selected", true);
+                        $("td[name=gender]").text(member.genderText||"-");
+                        $("td[name=ci]").text(member.ci||"-");
+                        $("td[name=di]").text(member.di||"-");
+                        $("td[name=joinType]").text(member.joinType);
+                        $("td[name=joinDevice]").text(member.joinDevice);
+                        $("td[name=loginDevice]").text(member.loginDevice);
+                        $("td[name=marketing]").text(member.marketing + " (최종 수정일 : " + member.modifyDate + ")" );
+                        $("td[name=regdate]").text(member.regdate);
+                        $("td[name=modifyDate]").text(member.modifyDate);
+
+                        let state = `<span class="btn btn-sm ${member.stateBg}" style="cursor: default; color:white">${member.stateText}</span>`;
+                        $("td[name=state]").html(state);
+
+                        // 삭제 버튼(state 정상일 때만 표출)
+                        if (member.state == 1) {
+                            let deleteBtn = `<button type="button" class="btn btn-sm btn-danger" id="stateBtn" onclick="member.delete()">${text.deleteBtn}</button>`;
+                            $("#stateBtn").replaceWith(deleteBtn);
+                        }
+                        // 복구 버튼
+                        if (member.state == 0 || member.state == 2) {
+                            let restoreBtn = `<button type="button" class="btn btn-sm btn-success" id="stateBtn" onclick="member.restore()">복구</button>`;
+                            $("#stateBtn").replaceWith(restoreBtn);
+                        }
+
+                        /** 2. 회원 코인 정보 **/
+                        if(res.data.coin != undefined) {
+                            $('#purchaseList tbody').html(''); // 초기화
+
+                            let coin = res.data.coin; // 코인
+
+                            $("#coin").text(payment.comma(Math.floor(coin.coin)) + '개');
+                            $("#coinFree").text(payment.comma(Math.floor(coin.coinFree)) + '개');
+                            $("#mileage").text(payment.comma(Math.floor(coin.mileage)) + '개');
+                            $("#usedCoin").text(payment.comma(Math.floor(coin.usedCoin)) + '개');
+                            $("#usedCoinFree").text(payment.comma(Math.floor(coin.usedCoinFree)) + '개');
+                            $("#usedMileage").text(payment.comma(Math.floor(coin.usedMileage)) + '개');
+                            $("#restCoin").text(payment.comma(Math.floor(coin.restCoin)) + '개');
+                            $("#restCoinFree").text(payment.comma(Math.floor(coin.restCoinFree)) + '개');
+                            $("#restMileage").text(payment.comma(Math.floor(coin.restMileage)) + '개');
+                        }
+                        /** 코인 사용 및 시청내역 건수 **/
+                        let purchaseCount = res.data.purchaseCount;
+                        $("#viewListTitle").text(text.purchaseTitle + ` (${purchaseCount}건)`);
+
+                        /** 3. 회원 코인 사용 및 시청내역 **/
+                        if(res.data.purchaseList != undefined){
+                            let purchaseList = res.data.purchaseList;
+                            let listTbody = '';
+                            $.each(purchaseList, (index, el)=>{
+                                listTbody += `
+                                 <tr>
+                                    <td class="text-center"><a href="[[${SERVER.currentDomain}]]/contents/view/${el.contentsIdx}">${el.title}</a></td>
+                                    <td class="text-center">${el.genre}</td>
+                                    <td class="text-center"><a href="[[${SERVER.currentDomain}]]/episode/view/${el.episodeIdx}?contentsIdx=${el.contentsIdx}">${el.episodeTitle}</a></td>
+                                    <td class="text-center"><span class="badge ${el.typeBg}">${el.typeText}</span></td>
+                                    <td class="text-center">${payment.comma(Math.floor(el.coin))}</td>
+                                    <td class="text-center">${payment.comma(Math.floor(el.mileage))}</td>
+                                    <td class="text-center">${payment.comma(Math.floor(el.ticket))}</td>
+                                    <td class="text-center">${el.regdate||"-"}</td>
+                                    <td class="text-center">${el.expiredate||"-"}</td>
+                                </tr>
+                                `
+                            });
+                            $('#purchaseList tbody').append(listTbody);
+
+                        }else{// 코인 사용 및 시청내역 없는 경우
+                            // 결과 없음
+                            let listTbody = `<tr><td colspan="10" class="text-center">${text.noSearchResult}</td></tr>`;
+                            $('#purchaseList tbody').html(listTbody)
+                        }
+
+                        /** 회원 결제 내역 건수 **/
+                        let paymentCnt = res.data.paymentCount;
+                        $("#paymentListTitle").text(text.paymentTitle + ` (${paymentCnt}건)`);
+
+                        /** 4. 회원 결제 내역 **/
+                        if (res.data.paymentList != undefined) {
+                            // list
+                            let listTbody = "";
+
+                            $.each(res.data.paymentList, (index, el) => {
+
+                                // 결제 취소 버튼 노출 여부 판단
+                                let buttonState = el.buttonState;
+
+                                listTbody +=`
+                                    <tr>
+                                        <td class="text-center">${el.idx}</td>
+                                        <td class="text-center"><span class="badge ${el.stateBg}">${el.stateText}</span></td>
+                                        <td class="text-center">${el.payer||"-"}</td>
+                                        <td class="text-center"><span class="badge ${el.firstBg}">${el.firstText}</span></td>
+                                        <td class="text-center">${payment.comma(Math.floor(el.pay))}</td>
+                                        <td class="text-center">${el.payTypeText||"-"}</td>
+                                        <td class="text-center">${payment.comma(Math.floor(el.coin))}</td>
+                                        <td class="text-center">${payment.comma(Math.floor(el.usedCoin))}</td>
+                                        <td class="text-center">${payment.comma(Math.floor(el.restCoin))}</td>
+                                        <td class="text-center">${payment.comma(Math.floor(el.bonus))}</td>
+                                        <td class="text-center">${payment.comma(Math.floor(el.usedBonus))}</td>
+                                        <td class="text-center">${payment.comma(Math.floor(el.restBonus))}</td>
+                                        <td class="text-center">${payment.comma(Math.floor(el.mileage))}</td>
+                                        <td class="text-center">${payment.comma(Math.floor(el.usedMileage))}</td>
+                                        <td class="text-center">${payment.comma(Math.floor(el.restMileage))}</td>
+                                        <td class="text-center">${el.regdate}</td>
+                                        <td class="text-center">${el.moddate||"-"}</td>
+                                        <td class="text-center"><input type=${buttonState} id="deleteBtn" value="[[#{lang.payment.button.delete}]]" class="btn btn-sm btn-warning" onclick="payment.delete(${el.idx})"></td>
+                                    </tr>
+                                `;
+                                $("#paymentList tbody").html(listTbody);
+                            });
+                        } else{
+                            // 결과 없음
+                            let listTbody = `<tr><td colspan="18" class="text-center">${text.noSearchResult}</td></tr>`;
+                            $('#paymentList tbody').html(listTbody)
+                        }
+
+                        /** 5. 관리자 지급 내역 리스트 **/
+                        // 관리자 지급 건수
+                        let coinSaveCnt = res.data.coinSaveCount;
+                        $("#coinSaveListTitle").text(text.coinSaveListTitle + ` (${coinSaveCnt}건)`);
+
+                        if (res.data.coinSaveList != undefined) {
+                            // list
+                            let listTbody = "";
+
+                            $.each(res.data.coinSaveList, function (index, el) {
+                                listTbody +=`
+                                            <tr>
+                                                <td class="text-center">${el.idx}</td>
+                                                <td class="text-center"><span class="badge ${el.stateBg}">${el.stateText}</span></td>
+                                                <td class="text-center">${el.name||'-'}</td>
+                                                <td class="text-center">${el.title}</td>
+                                                <td class="text-center">${payment.comma(el.coin)||0}</td>
+                                                <td class="text-center">${payment.comma(el.coinFree)||0}</td>
+                                                <td class="text-center">${payment.comma(el.mileage)||0}</td>
+                                                <td class="text-center">${el.regdate}</td>
+                                            </tr>
+                                        `;
+                            });
+                            $("#coinSaveList tbody").html(listTbody);
+
+                        } else{
+                            // 결과 없음
+                            let listTbody = `<tr><td colspan="18" class="text-center">${text.noSearchResult}</td></tr>`;
+                            $("#coinSaveList tbody").html(listTbody);
+                        }
+
+                        /** 6. 코인 차감 내역 리스트 **/
+                        // 관리자 차감 건수
+                        let subtractCnt = res.data.coinSubtractCount;
+                        $("#coinSubtractListTitle").text(text.coinSubtractListTitle + ` (${subtractCnt}건)`);
+
+                        if (res.data.coinSubtractList != undefined) {
+                            // list
+                            let listTbody = "";
+
+                            $.each(res.data.coinSubtractList, function (index, el) {
+                                listTbody +=`
+                                            <tr>
+                                                <td class="text-center">${el.idx}</td>
+                                                <td class="text-center"><span class="badge ${el.stateBg}">${el.stateText}</span></td>
+                                                <td class="text-center">${el.name||'-'}</td>
+                                                <td class="text-center">${el.title}</td>
+                                                <td class="text-center">${payment.comma(el.coin)||0}</td>
+                                                <td class="text-center">${payment.comma(el.coinFree)||0}</td>
+                                                <td class="text-center">${payment.comma(el.mileage)||0}</td>
+                                                <td class="text-center">${el.regdate}</td>
+                                            </tr>
+                                        `;
+                            });
+                            $("#coinSubtractList tbody").html(listTbody);
+
+                        } else{
+                            // 결과 없음
+                            let listTbody = `<tr><td colspan="18" class="text-center">${text.noSearchResult}</td></tr>`;
+                            $("#coinSubtractList tbody").html(listTbody);
+                        }
+
+                        // 결과 없음
+                        } else {
+                            toast.alert(res.message);
+                        }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+
+            return false;
+        },
+        // 코인 사용 및 시청내역 더보기
+        purchaseList : () => {
+            // 회원 idx 쿼리파라미터로 넘김
+            // 사용내역 리스트 팝업창 열기
+            js_popup('[[${SERVER.currentDomain}]]/members/purchases', 'purchase_list', '1200', '800');
+
+        },
+        paymentList : () => {
+            // 회원 idx 쿼리파라미터로 넘김
+            // 결제내역 리스트 팝업창 열기
+            js_popup('[[${SERVER.currentDomain}]]/payments', 'payment_list', '1200', '800');
+        },
+        adminCoinList : (type) => {
+            $("#isAdd").val(type);
+            js_popup('[[${SERVER.currentDomain}]]/coins/coin/admin', 'adminCoin_list', '1200', '800');
+        },
+        // 회원 탈퇴
+        delete: () => {
+            if (confirm(text.deleteConfirm)) {
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/members/[[${idx}]]',
+                    method: 'DELETE',
+                    data: formData,
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            toast.alert(res.message);
+                            member.view();
+                        } else {
+                            // 탈퇴 실패
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+
+                return false;
+            }
+        },
+        // 계정 복구
+        restore: () => {
+            if (confirm(text.restoreConfirm)) {
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/members/[[${idx}]]',
+                    method: 'PATCH',
+                    data: formData,
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            toast.alert(res.message);
+                            member.view();
+                        } else {
+                            // 탈퇴 실패
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+                return false;
+            }
+        },
+        // 회원 정보 수정
+        modify: () => {
+            if (confirm(text.modifyConfirm)) {
+                let form = $('#frm')[0];
+                let formData = new FormData(form);
+
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/members/[[${idx}]]',
+                    method: 'PUT',
+                    data: formData,
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            member.view();
+                            toast.alert(res.message);
+                        } else {
+                            // ajax exception error
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+            }
+        },
+        // 수정 취소
+        cancel : (btn) =>{
+            $("input[name=nick]").attr("readonly", true);
+            $("input[name=phone]").attr("readonly", true);
+            // 취소 버튼 삭제
+            $(btn).css('display', 'none');
+
+        }
+    }
+
+    /** 코인 관련 객체 **/
+    let pay = {
+        /* 코인 지급 & 차감 */
+        payOrSubtract : () =>{
+            let form = $('#coinFrm')[0];
+            let formData = new FormData(form);
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/members/[[${idx}]]/coin',
+                method: 'PUT',
+                data: formData,
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if(res.result) {
+                        member.view();
+                        toast.alert(res.message);
+                    }
+                    else{
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+        },
+    }
+    /** 결제 관련 **/
+    let payment = {
+
+        // 결제취소 버튼
+        delete: function (idx) {
+
+            let deleteConfirmMessage = `[[#{lang.payment.confirm.delete}]]`;
+
+            if (confirm(deleteConfirmMessage)) {
+
+                let formData = new FormData();
+                formData.set("json", idx);
+
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/payments/' + idx,
+                    method: "DELETE",
+                    data: formData,
+                    dataType: 'json',
+                    processData: false,
+                    contentType: "application/json",
+                    success: function (res) {
+                        if (res.result) {
+                            toast.alert(res.message);
+                            member.view();
+                        } else {
+                            // 결제 취소 실패
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+
+                return false;
+            }
+        },
+        // 숫자 콤마 표시
+        comma: function (num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+    }
+
+    // 버튼 관련 객체
+    let button = {
+        // 지급 버튼
+        payAndSubtractBtn: (btn) => {
+            // 관리자 입력란 보여지도록
+            $('#payActionBody').css('display', '');
+            $('input[name=coin]').val(0);
+            $('input[name=coinFree]').val(0);
+            $('input[name=mileage]').val(0);
+            $('input[name=reason]').attr("placeholder", `[[#{lang.common.please.reason.write}]]`)
+
+            // 관리자 코인 지급
+            if (btn.id == "coinPlusBtn") {
+                $('#coinTitle').text(`[[#{lang.coin.title.pay.payCoin}]]`);
+                button.pay();
+                return;
+            }
+
+            // 관리자 코인 차감
+            if (btn.id == "coinMinusBtn") {
+                $('#coinTitle').text(`[[#{lang.coin.title.subtraction.payCoin}]]`);
+                button.subtract();
+                return;
+            }
+        },
+        // 지급 버튼 공통
+        pay : () => {
+            let listTbody = `
+                    <select name="paymentType" id="paymentType" class="form-select form-select-sm">
+                        <option value="">[[#{lang.coin.payment.type}]]</option>
+                        <option value="MP" >[[#{lang.coin.payment.type.phone}]]</option>
+                        <option value="CA" >[[#{lang.coin.payment.type.card}]]</option>
+                        <option value="normal">[[#{lang.coin.payment.type.normal}]]</option>
+                    </select>`;
+
+            $('#payType').html(listTbody);
+            $('#paymentPrice').html('<input type="text" name="paymentPrice" value="0" class="form-control form-control-sm"/>');
+            $('#payOrSubtractBtn').text(`[[#{lang.coin.button.payment}]]`);
+            $('input[name=actionType]').val('payment');
+            $('#coinPriceTitle').text(`[[#{lang.coin.payment.price}]]`);
+
+            // select box 이벤트 리스너
+            $('#paymentType').change(()=>{
+                let payOption = $("select[name=paymentType]").val();
+
+                // 결제수단 일반일 경우
+                if (payOption == 'normal') {
+                    $('input[name=paymentPrice]').remove();
+                    $('#paymentPrice').html('-');
+                } else{
+                    $('#paymentPrice').html('');
+                    $('#paymentPrice').html('<input type="text" name="paymentPrice" value="0" class="form-control form-control-sm"/>');
+                }
+            })
+
+        },
+        // 차감 버튼 공통
+        subtract : () =>{
+            // 초기화
+            $('#payType').html('');
+            $('#payType').text(`[[#{lang.coin.subtraction.admin}]]`);
+            $('#paymentPrice').html('');
+            $('#paymentPrice').text('-');
+            $('#payOrSubtractBtn').text(`[[#{lang.coin.button.subtraction}]]`);
+            $('input[name=actionType]').val('subtract');
+            $('#coinPriceTitle').text(`[[#{lang.coin.subtraction.price}]]`);
+        },
+        // 취소 버튼
+        cancelBtn: () =>{
+            // 관리자 입력란 보여지도록
+            $('#payActionBody').css('display', 'none');
+        },
+    }
+
+    // 라디오 버튼 checked
+    $.fn.radioSelect = function (val) {
+        this.each(function () {
+            let _this = $(this);
+
+            if (_this.val() == val) {
+                _this.attr('checked', true);
+            }
+        });
+        return this;
+    }
+
+</script>

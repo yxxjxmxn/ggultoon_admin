@@ -1,0 +1,10 @@
+<th:block layout:decorate="~{common/layout}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="container">
+        <p class="p-4"></p>
+        <p class="h1 text-muted font-weight-bold" th:text="#{lang.common.title(${SERVER.sSever})}"></p>
+        <p class="text-muted" th:text="|Session : ${dataSet.sSession}|"></p>
+        <p class="text-muted" th:text="|Time : ${dataSet.datetime}|"></p>
+        <p class="text-muted" th:text="|UTC : ${dataSet.utctime}|"></p>
+
+    </div>
+</th:block>

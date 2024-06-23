@@ -1,0 +1,110 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        let page = "[[${page}]]";
+        episodeComment.list(page);
+    });
+
+    let text = {
+        btn : {
+            episode : "[[#{lang.contents.button.episode.comment}]]"
+        }
+    }
+
+    let episodeComment = {
+
+        // 작품 회차 목록 조회
+        list : function (page = 1) {
+            if (page != undefined) {
+                $("input[name=page]").val(page);
+            }
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/comments/contents/[[${idx}]]/episodes',
+                method: 'GET',
+                data : $("#frm").serialize(),
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        //페이지 url 갱신 ( 검색 후 새로고침 시 검색값 유지 )
+                        if( window.location.search !== "?"+ $("#frm").serialize() ){
+                            history.pushState(null, null, "?" + $("#frm").serialize());
+                        }
+
+                        if (res.data.list.length > 0) {
+
+                            // total count
+                            $(".totalCount").next().text(res.data.list.length + "건");
+
+                            // list
+                            let listTbody = "";
+                            $.each(res.data.list, function (idx, el) {
+
+                                let imgUrl = "";
+                                if (el.imageList.length > 0) {
+                                    imgUrl = el.imageList[0].url;
+                                }
+
+                                listTbody += `
+                                    <tr>
+                                        <td class="text-center">${el.episodeIdx}</td>
+                                        <td class="text-center"><span class="badge ${el.stateBg}">${el.stateText}</span></td>
+                                        <td class="text-center"><img src="${imgUrl}" style="max-height:100px; max-width:200px"></td>
+                                        <td class="text-center">${el.episodeNumber}</td>
+                                        <td class="text-center">${el.sort}</td>
+                                        <td class="text-center"><a href="[[${SERVER.currentDomain}]]/episode/view/${el.episodeIdx}?contentsIdx=${el.contentsIdx}">${el.title}</a></td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-success p-1 rounded" onclick="episodeComment.view(${el.contentsIdx}, ${el.episodeIdx}, ${el.commentCnt});">${text.btn.episode}(${el.commentCnt + "개"})</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+                            $("#lists tbody").html(listTbody);
+
+                            // paging - common.js
+                            pagination("episodeComment", res.data.params.page, res.data.params.pagination);
+                            $.cookie("backUrl", $("#frm").serialize());
+
+                        } else {
+                            // total count
+                            $(".totalCount").next().text("0건");
+                            // 결과 없음
+                            let listTbody = `<tr><td colspan="11" class="text-center">${res.message}</td></tr>`;
+                            $("#lists tbody").html(listTbody);
+                            $(".pagination").html("");
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        },
+        // 회차 댓글 목록
+        view : function (contentsIdx, episodeIdx, commentCnt) {
+
+            if (commentCnt > 0) { // 댓글이 있는 경우
+                location.href = '[[${SERVER.currentDomain}]]/comments/contents/' + contentsIdx + '/episodes/' + episodeIdx;
+
+            } else {
+                let searchFailMessage = `[[#{lang.comment.exception.search.comment.empty}]]`; // 조회할 댓글이 없습니다.
+                toast.alert(searchFailMessage);
+            }
+        },
+        // 새로고침 버튼
+        reset: function () {
+            location.href = '[[${SERVER.currentDomain}]]/comments/contents/[[${idx}]]/episodes';
+        }
+    }
+    // 뒤로가기 이벤트 시 실행
+    $(window).on('popstate', function(event) {
+        window.location = document.location.href;
+    });
+
+</script>

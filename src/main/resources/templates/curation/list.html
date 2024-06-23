@@ -1,0 +1,108 @@
+<th:block layout:decorate="~{common/layout}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="col-lg-12 mt-3">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" th:text="#{lang.curation.title.list}"></h5>
+            </div>
+            <div class="card-body row">
+
+                <div class="col-12">
+                    <!-- 검색 폼 -->
+                    <form id="frm" class="d-flex bd-highlight gx-3" onsubmit="curation.list(1); return false;" accept-charset="utf-8">
+                        <table class="table m-0">
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <div class="row p-0">
+                                            <input type="hidden" name="idx" id="idx" value=""/>
+                                            <div id="selectLayer" class="col-auto input-group input-group-sm m-1 p-0 col-7">
+
+                                                <!-- 큐레이션 사용 상태 -->
+                                                <select name="state" class="form-select form-select-sm col-2">
+                                                    <option value=""  th:text="#{lang.curation.state}"></option>
+                                                    <option value="1" th:text="#{lang.curation.state.use}" th:selected="${search.state} == '1'"></option>
+                                                    <option value="2" th:text="#{lang.curation.state.unuse}" th:selected="${search.state} == '2'"></option>
+                                                </select>
+
+                                                <!-- 큐레이션 예약 상태 -->
+                                                <select name="type" class="form-select form-select-sm col-2">
+                                                    <option value=""  th:text="#{lang.curation.reservation}"></option>
+                                                    <option value="1" th:text="#{lang.curation.reserved}" th:selected="${search.type} == '1'"></option>
+                                                    <option value="0" th:text="#{lang.curation.not.reserved}" th:selected="${search.type} == '0'"></option>
+                                                </select>
+
+                                                <!-- 큐레이션 노출 영역 -->
+                                                <select name="area" class="form-select form-select-sm col-3">
+                                                </select>
+
+                                                <!-- 검색어 -->
+                                                <input type="text" name="searchWord" class="form-control form-control-sm text-center" th:value="${search.searchWord}" th:placeholder="#{lang.curation.placeholder.title}" style="width:30%;">
+
+                                                <!-- 현재 페이지 -->
+                                                <input type="hidden" id="page" name="page">
+                                            </div>
+                                            <!-- 검색 버튼 -->
+                                            <div class="col-auto btn-group btn-group-sm m-1 p-0">
+                                                <button type="button" id="searchBtn" th:text="#{lang.curation.button.search}" onclick="curation.list(1);" class="btn btn-success pr-3 pl-3"></button>
+                                                <button type="button" class="btn btn-outline-success" onclick="curation.reset();"><i class="fa-solid fa-rotate-left"></i></button>
+                                            </div>
+                                            <!-- 등록 & 엑셀 다운로드 & 삭제 버튼 -->
+                                            <div class="text-right col">
+                                                <button type="button" id="excelBtn" onclick="curation.excel();" class="btn btn-sm btn-info" th:text="#{lang.curation.button.excel}"></button>
+                                                <button type="button" id="registerBtn" onclick="curation.registerPopUp();" class="btn btn-sm btn-primary" th:text="#{lang.curation.button.register}"></button>
+                                                <button type="button" id="deleteBtn" onclick="curation.delete();" class="btn btn-sm btn-danger" th:text="#{lang.curation.button.delete}"></button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <!-- 검색 결과 총 개수 -->
+                                        <div class="d-inline p-0">
+                                            <div class="float-left form-control-sm">
+                                                <strong class="totalCount" th:text="#{lang.curation.search.result} + ' : ' "></strong><span></span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </form>
+                    <!-- //검색 폼 -->
+
+                    <!-- list -->
+                    <span id="container">
+                        <table class="table table-hover" id="lists">
+                            <thead class="table-dark">
+                            <tr class="text-center">
+                                <th scope="col"><input type="checkbox" name="checkAllRow" id="checkAllRow" onchange="checkAllRow(this.id);"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.curation.sort}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.curation.state}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.curation.title}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.curation.name}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.curation.reservation}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.curation.startDate}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.curation.endDate}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.curation.content.count}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.curation.regdate}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.curation.content.manage}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.curation.move}" class="text-center"></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                        <th:block layout:fragment="paging">
+                        <div class="col-md-12 d-flex flex-row-reverse my-3">
+                            <ul class="pagination" style="font-size: 12px;">
+                            </ul>
+                        </div>
+                    </th:block>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <!-- 컨텐츠 영역 -->
+    </div>
+</th:block>

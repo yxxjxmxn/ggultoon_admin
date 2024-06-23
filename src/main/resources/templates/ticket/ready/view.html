@@ -1,0 +1,96 @@
+<th:block layout:decorate="~{common/layout_popup_nomenu}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="container-fluid">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" name="title" th:text="#{lang.ticket.title.view}"></h5>
+            </div>
+            <div class="card-body row">
+                <form id="frm" accept-charset="utf-8">
+                    <table class="table">
+                        <thead></thead>
+                        <tbody>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.idx}"></th>
+                            <td class="text-left" name="idx" id="idx"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.give.state}"></th>
+                            <td class="text-left" name="state" id="state"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.group.code}"></th>
+                            <td class="text-left" name="code" id="code"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.contents.contentsIdx}"></th>
+                            <td class="text-left" name="contentsIdx">
+                                <div class="input-group input-group-sm m-1 p-0">
+                                    <input type="number" id="contentsIdx" class="form-control form-control-sm col-4">
+                                    <button type="button" name="search" class="btn btn-sm btn-primary" th:text="#{lang.ticket.button.search}"></button>
+                                    <button type="button" name="reset" class="btn btn-outline-primary"><i class="fa-solid fa-rotate-left"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.contents.category}"></th>
+                            <td class="text-left" name="category" id="category"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.contents.genre}"></th>
+                            <td class="text-left" name="genre" id="genre"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.contents.title}"></th>
+                            <td class="text-left" name="title" id="title"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.group.age}"></th>
+                            <td class="text-left" name="adult" id="adult">
+                                <input type="radio" name="age" value="0"><label class="col-auto pl-1">전체</label>
+                                <input type="radio" name="age" value="1"><label class="col-auto pl-1">성인</label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.count}"></th>
+                            <td class="text-left" name="count" id="count"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.except.episode.count}"></th>
+                            <td class="text-left" name="except" id="except"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.period}"></th>
+                            <td class="text-left" name="period" id="period"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.startDate}"></th>
+                            <td class="text-left" name="startDate" id="startDate">
+                                <input type="text" th:placeholder="YYYY-MM-DD" id="searchStartDate" name="searchStartDate" maxlength="10" class="dateTimePicker form-control form-control-sm" autocomplete="off" readonly/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.endDate}"></th>
+                            <td class="text-left" name="endDate" id="endDate">
+                                <input type="text" th:placeholder="YYYY-MM-DD" id="searchEndDate" name="searchEndDate" maxlength="10" class="dateTimePicker form-control form-control-sm" autocomplete="off" readonly/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.regdate}"></th>
+                            <td class="text-left" name="regdate" id="regdate"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div class="form-group row">
+                        <div class="col text-center">
+                            <button type="button" name="delete" class="btn btn-sm btn-danger" onclick="ticket.delete();" th:text="#{lang.ticket.button.delete}"></button>
+                            <button type="button" name="modify" class="btn btn-sm btn-warning" onclick="ticket.modify();" th:text="#{lang.ticket.button.modify}"></button>
+                            <button type="button" name="close" class="btn btn-sm btn-secondary" th:onclick="|self.close()|" th:text="#{lang.ticket.button.close}"></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- //컨텐츠 영역 -->
+    </div>
+</th:block>

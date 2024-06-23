@@ -1,0 +1,466 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.ticket.TicketDaoSub">
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+
+    <!-- 이용권 지급 대상 그룹 전체 개수 카운트 -->
+    <select id="getTicketGroupTotalCnt" parameterType="SearchDto" resultType="int">
+        SELECT
+            COUNT(DISTINCT(`idx`)) AS totalCnt
+        FROM <include refid="database"/>`contents_ticket_group`
+        <where>
+            <choose>
+                <when test="state != null">
+                    AND `state` = #{state}
+                </when>
+                <otherwise>
+                    AND `state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'name'">
+                        AND `name` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'code'">
+                        AND `code` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 이용권 지급 대상 그룹 리스트 조회 -->
+    <select id="getTicketGroupList" parameterType="SearchDto" resultType="GroupDto">
+        SELECT
+            `idx`,
+            `name`,
+            `code`,
+            `description`,
+            `state`,
+            CONVERT_TZ(`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database"/>`contents_ticket_group`
+        <where>
+            <choose>
+                <when test="state != null">
+                    AND `state` = #{state}
+                </when>
+                <otherwise>
+                    AND `state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'name'">
+                        AND `name` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'code'">
+                        AND `code` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+        ORDER BY `idx` ASC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 이용권 지급 대상 그룹 상세 조회 -->
+    <select id="getViewTicketGroup" parameterType="Long" resultType="GroupDto">
+        SELECT
+            `idx`,
+            `name`,
+            `code`,
+            `description`,
+            `state`,
+            CONVERT_TZ(`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database"/>`contents_ticket_group`
+        WHERE
+            `idx` = #{idx}
+            AND `state` IN (1,2)
+        LIMIT 1
+    </select>
+
+    <!-- 지급 예정 및 진행 중인 이용권 개수 카운트 -->
+    <select id="getTicketReadyTotalCnt" parameterType="SearchDto" resultType="int">
+        SELECT
+            COUNT(DISTINCT(`coti`.`idx`)) AS totalCnt
+        FROM <include refid="database"/>`contents_ticket_group_mapping` AS `cotigrma`
+        LEFT JOIN <include refid="database"/>`contents_ticket` AS `coti`
+            ON `cotigrma`.`contents_ticket_idx` = `coti`.`idx` AND `cotigrma`.`state` = 1
+        JOIN <include refid="database"/>`contents_ticket_group` AS `cotigr`
+            ON `cotigrma`.`contents_ticket_group_idx` = `cotigr`.`idx` AND `cotigr`.`state` = 1
+        JOIN <include refid="database"/>`contents` AS `co`
+            ON `coti`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1
+        JOIN <include refid="database" />`category` AS `ca`
+            ON `co`.`category_idx` = `ca`.`idx` AND `ca`.`state` = 1
+        JOIN <include refid="database" />`genre` AS `ge`
+            ON `co`.`genre_idx` = `ge`.`idx` AND `ge`.`state` = 1
+        <where>
+            `coti`.`end_date` <![CDATA[ > ]]> #{nowDate}
+            AND `coti`.`state` = 1
+            AND `coti`.`idx` IN (
+                SELECT
+                    `coti`.`idx`
+                FROM <include refid="database"/>`contents_ticket_group_mapping` AS `cotigrma`
+                LEFT JOIN <include refid="database"/>`contents_ticket` AS `coti`
+                    ON `cotigrma`.`contents_ticket_idx` = `coti`.`idx` AND `cotigrma`.`state` = 1
+                JOIN <include refid="database"/>`contents_ticket_group` AS `cotigr`
+                    ON `cotigrma`.`contents_ticket_group_idx` = `cotigr`.`idx` AND `cotigr`.`state` = 1
+                JOIN <include refid="database"/>`contents` AS `co`
+                    ON `coti`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1
+                <where>
+                    <if test="state != null">
+                        <choose>
+                            <when test="state == 1">
+                                AND `coti`.`start_date` <![CDATA[ <= ]]> #{nowDate}
+                            </when>
+                            <when test="state == 2">
+                                AND #{nowDate} <![CDATA[ < ]]> `coti`.`start_date`
+                            </when>
+                        </choose>
+                    </if>
+                    <if test="categoryIdx != null">
+                        AND co.`category_idx` = #{categoryIdx}
+                    </if>
+                    <if test="genreIdx != null">
+                        AND co.`genre_idx` = #{genreIdx}
+                    </if>
+                    <if test="searchWord != null and searchWord != ''">
+                        <bind name="val" value="'%' + searchWord + '%'" />
+                        <choose>
+                            <when test="searchType == 'name'">
+                                AND `cotigr`.`name` LIKE #{val}
+                            </when>
+                            <when test="searchType == 'title'">
+                                AND `co`.`title` LIKE #{val}
+                            </when>
+                        </choose>
+                    </if>
+                    <if test="searchStartDate != null and searchStartDate != '' and searchEndDate != null and searchEndDate != ''">
+                        AND `coti`.`start_date` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `coti`.`end_date` <![CDATA[ <= ]]> #{searchEndDate}
+                    </if>
+                </where>
+                GROUP BY `coti`.`idx`
+            )
+        </where>
+    </select>
+
+    <!-- 지급 예정 및 진행 중인 이용권 리스트 조회 -->
+    <select id="getTicketReadyList" parameterType="SearchDto" resultType="TicketDto">
+        SELECT
+            `coti`.`idx`,
+            `coti`.`state`,
+            GROUP_CONCAT(DISTINCT(`cotigr`.`idx`) ORDER BY `cotigr`.`idx`) AS `codeIdx`,
+            GROUP_CONCAT(DISTINCT(`cotigr`.`name`) ORDER BY `cotigr`.`idx`) AS `name`,
+            GROUP_CONCAT(DISTINCT(`cotigr`.`code`) ORDER BY `cotigr`.`idx`) AS `code`,
+            `ca`.`name` AS `category`,
+            `ge`.`name` AS `genre`,
+            `co`.`idx` AS `contentsIdx`,
+            `co`.`title`,
+            `coti`.`adult`,
+            `coti`.`except_episode_count` AS `except`,
+            `coti`.`ticket_cnt` AS `count`,
+            `coti`.`available_period` AS `period`,
+            CONVERT_TZ(`coti`.`start_date`, 'UTC', '${convertTZ}') AS startDate,
+            CONVERT_TZ(`coti`.`end_date`, 'UTC', '${convertTZ}') AS endDate,
+            CONVERT_TZ(`coti`.`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database"/>`contents_ticket_group_mapping` AS `cotigrma`
+        LEFT JOIN <include refid="database"/>`contents_ticket` AS `coti`
+            ON `cotigrma`.`contents_ticket_idx` = `coti`.`idx` AND `cotigrma`.`state` = 1
+        JOIN <include refid="database"/>`contents_ticket_group` AS `cotigr`
+            ON `cotigrma`.`contents_ticket_group_idx` = `cotigr`.`idx` AND `cotigr`.`state` = 1
+        JOIN <include refid="database"/>`contents` AS `co`
+            ON `coti`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1
+        JOIN <include refid="database" />`category` AS `ca`
+            ON `co`.`category_idx` = `ca`.`idx` AND `ca`.`state` = 1
+        JOIN <include refid="database" />`genre` AS `ge`
+            ON `co`.`genre_idx` = `ge`.`idx` AND `ge`.`state` = 1
+        <where>
+            `coti`.`end_date` <![CDATA[ > ]]> #{nowDate}
+            AND `coti`.`state` = 1
+            AND `coti`.`idx` IN (
+                SELECT
+                    `coti`.`idx`
+                FROM <include refid="database"/>`contents_ticket_group_mapping` AS `cotigrma`
+                LEFT JOIN <include refid="database"/>`contents_ticket` AS `coti`
+                    ON `cotigrma`.`contents_ticket_idx` = `coti`.`idx` AND `cotigrma`.`state` = 1
+                JOIN <include refid="database"/>`contents_ticket_group` AS `cotigr`
+                    ON `cotigrma`.`contents_ticket_group_idx` = `cotigr`.`idx` AND `cotigr`.`state` = 1
+                JOIN <include refid="database"/>`contents` AS `co`
+                    ON `coti`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1
+                <where>
+                    <if test="state != null">
+                        <choose>
+                            <when test="state == 1">
+                                AND `coti`.`start_date` <![CDATA[ <= ]]> #{nowDate}
+                            </when>
+                            <when test="state == 2">
+                                AND #{nowDate} <![CDATA[ < ]]> `coti`.`start_date`
+                            </when>
+                        </choose>
+                    </if>
+                    <if test="categoryIdx != null">
+                        AND co.`category_idx` = #{categoryIdx}
+                    </if>
+                    <if test="genreIdx != null">
+                        AND co.`genre_idx` = #{genreIdx}
+                    </if>
+                    <if test="searchWord != null and searchWord != ''">
+                        <bind name="val" value="'%' + searchWord + '%'" />
+                        <choose>
+                            <when test="searchType == 'name'">
+                                AND `cotigr`.`name` LIKE #{val}
+                            </when>
+                            <when test="searchType == 'title'">
+                                AND `co`.`title` LIKE #{val}
+                            </when>
+                        </choose>
+                    </if>
+                    <if test="searchStartDate != null and searchStartDate != '' and searchEndDate != null and searchEndDate != ''">
+                        AND `coti`.`start_date` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `coti`.`end_date` <![CDATA[ <= ]]> #{searchEndDate}
+                    </if>
+                </where>
+                GROUP BY `coti`.`idx`
+            )
+        </where>
+        GROUP BY `coti`.`idx`
+        ORDER BY `coti`.`idx` ASC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 지급 예정 및 진행 이용권 상세 조회 -->
+    <select id="getViewTicketReady" parameterType="Long" resultType="TicketDto">
+        SELECT
+            `coti`.`idx`,
+            `coti`.`state`,
+            GROUP_CONCAT(DISTINCT(`cotigr`.`idx`) ORDER BY `cotigr`.`idx`) AS `codeIdx`,
+            GROUP_CONCAT(DISTINCT(`cotigr`.`name`) ORDER BY `cotigr`.`idx`) AS `name`,
+            GROUP_CONCAT(DISTINCT(`cotigr`.`code`) ORDER BY `cotigr`.`idx`) AS `code`,
+            `ca`.`name` AS `category`,
+            `ge`.`name` AS `genre`,
+            `co`.`idx` AS `contentsIdx`,
+            `co`.`title`,
+            `coti`.`adult`,
+            `coti`.`except_episode_count` AS `except`,
+            `coti`.`ticket_cnt` AS `count`,
+            `coti`.`available_period` AS `period`,
+            CONVERT_TZ(`coti`.`start_date`, 'UTC', '${convertTZ}') AS startDate,
+            CONVERT_TZ(`coti`.`end_date`, 'UTC', '${convertTZ}') AS endDate,
+            CONVERT_TZ(`coti`.`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database"/>`contents_ticket_group_mapping` AS `cotigrma`
+        LEFT JOIN <include refid="database"/>`contents_ticket` AS `coti`
+            ON `cotigrma`.`contents_ticket_idx` = `coti`.`idx` AND `cotigrma`.`state` = 1
+        JOIN <include refid="database"/>`contents_ticket_group` AS `cotigr`
+            ON `cotigrma`.`contents_ticket_group_idx` = `cotigr`.`idx` AND `cotigr`.`state` = 1
+        JOIN <include refid="database"/>`contents` AS `co`
+            ON `coti`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1
+        JOIN <include refid="database" />`category` AS `ca`
+            ON `co`.`category_idx` = `ca`.`idx` AND `ca`.`state` = 1
+        JOIN <include refid="database" />`genre` AS `ge`
+            ON `co`.`genre_idx` = `ge`.`idx` AND `ge`.`state` = 1
+        WHERE
+            `coti`.`idx` = #{idx}
+            AND `coti`.`state` = 1
+        LIMIT 1
+    </select>
+
+    <!-- 지급 완료 이용권 개수 카운트 -->
+    <select id="getTicketCompleteTotalCnt" parameterType="SearchDto" resultType="int">
+        SELECT
+            COUNT(DISTINCT(`coti`.`idx`)) AS totalCnt
+        FROM <include refid="database"/>`contents_ticket` AS `coti`
+        LEFT JOIN <include refid="database"/>`contents_ticket_group_mapping` AS `cotigrma`
+            ON `cotigrma`.`contents_ticket_idx` = `coti`.`idx` AND `cotigrma`.`state` = 1
+        JOIN <include refid="database"/>`contents_ticket_group` AS `cotigr`
+            ON `cotigrma`.`contents_ticket_group_idx` = `cotigr`.`idx` AND `cotigr`.`state` = 1
+        JOIN <include refid="database"/>`contents` AS `co`
+            ON `coti`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1
+        JOIN <include refid="database" />`category` AS `ca`
+            ON `co`.`category_idx` = `ca`.`idx` AND `ca`.`state` = 1
+        JOIN <include refid="database" />`genre` AS `ge`
+            ON `co`.`genre_idx` = `ge`.`idx` AND `ge`.`state` = 1
+        LEFT JOIN <include refid="database"/>`member_contents_ticket_save` AS `mecotisa`
+            ON `coti`.`idx` = `mecotisa`.`contents_ticket_idx` AND `mecotisa`.`state` = 1
+        LEFT JOIN <include refid="database"/>`member_contents_ticket_used` AS `mecotius`
+            ON `mecotisa`.`idx` = `mecotius`.`member_contents_ticket_save_idx` AND `mecotius`.`state` = 1
+        <where>
+            `coti`.`end_date` <![CDATA[ <= ]]> #{nowDate}
+            AND `coti`.`idx` IN (
+                SELECT
+                    `coti`.`idx`
+                FROM <include refid="database"/>`contents_ticket_group_mapping` AS `cotigrma`
+                LEFT JOIN <include refid="database"/>`contents_ticket` AS `coti`
+                    ON `cotigrma`.`contents_ticket_idx` = `coti`.`idx` AND `cotigrma`.`state` = 1
+                JOIN <include refid="database"/>`contents_ticket_group` AS `cotigr`
+                    ON `cotigrma`.`contents_ticket_group_idx` = `cotigr`.`idx` AND `cotigr`.`state` = 1
+                JOIN <include refid="database"/>`contents` AS `co`
+                    ON `coti`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1
+                <where>
+                    <if test="categoryIdx != null">
+                        AND co.`category_idx` = #{categoryIdx}
+                    </if>
+                    <if test="genreIdx != null">
+                        AND co.`genre_idx` = #{genreIdx}
+                    </if>
+                    <if test="searchWord != null and searchWord != ''">
+                        <bind name="val" value="'%' + searchWord + '%'" />
+                        <choose>
+                            <when test="searchType == 'name'">
+                                AND `cotigr`.`name` LIKE #{val}
+                            </when>
+                            <when test="searchType == 'title'">
+                                AND `co`.`title` LIKE #{val}
+                            </when>
+                        </choose>
+                    </if>
+                    <if test="searchStartDate != null and searchStartDate != '' and searchEndDate != null and searchEndDate != ''">
+                        AND `coti`.`start_date` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `coti`.`end_date` <![CDATA[ <= ]]> #{searchEndDate}
+                    </if>
+                </where>
+                GROUP BY `coti`.`idx`
+            )
+        </where>
+    </select>
+
+    <!-- 지급 완료 이용권 리스트 조회 -->
+    <select id="getTicketCompleteList" parameterType="SearchDto" resultType="TicketDto">
+        SELECT
+            `coti`.`idx`,
+            `coti`.`state`,
+            GROUP_CONCAT(DISTINCT(`cotigr`.`idx`) ORDER BY `cotigr`.`idx`) AS `codeIdx`,
+            GROUP_CONCAT(DISTINCT(`cotigr`.`name`) ORDER BY `cotigr`.`idx`) AS `name`,
+            GROUP_CONCAT(DISTINCT(`cotigr`.`code`) ORDER BY `cotigr`.`idx`) AS `code`,
+            `ca`.`name` AS `category`,
+            `ge`.`name` AS `genre`,
+            `co`.`idx` AS `contentsIdx`,
+            `co`.`title`,
+            `coti`.`adult`,
+            `coti`.`except_episode_count` AS `except`,
+            `coti`.`ticket_cnt` AS `count`,
+            `coti`.`available_period` AS `period`,
+            CONVERT_TZ(`coti`.`start_date`, 'UTC', '${convertTZ}') AS startDate,
+            CONVERT_TZ(`coti`.`end_date`, 'UTC', '${convertTZ}') AS endDate,
+            CONVERT_TZ(`coti`.`regdate`, 'UTC', '${convertTZ}') AS regdate,
+            IFNULL(SUM(`mecotisa`.`ticket_cnt`), 0) AS `giveCnt`,
+            IFNULL(SUM(`mecotius`.`ticket_cnt`) - SUM(`mecotius`.`rest_ticket_cnt`), 0) AS `useCnt`
+        FROM <include refid="database"/>`contents_ticket` AS `coti`
+        LEFT JOIN <include refid="database"/>`contents_ticket_group_mapping` AS `cotigrma`
+            ON `cotigrma`.`contents_ticket_idx` = `coti`.`idx` AND `cotigrma`.`state` = 1
+        JOIN <include refid="database"/>`contents_ticket_group` AS `cotigr`
+            ON `cotigrma`.`contents_ticket_group_idx` = `cotigr`.`idx` AND `cotigr`.`state` = 1
+        JOIN <include refid="database"/>`contents` AS `co`
+            ON `coti`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1
+        JOIN <include refid="database" />`category` AS `ca`
+            ON `co`.`category_idx` = `ca`.`idx` AND `ca`.`state` = 1
+        JOIN <include refid="database" />`genre` AS `ge`
+            ON `co`.`genre_idx` = `ge`.`idx` AND `ge`.`state` = 1
+        LEFT JOIN <include refid="database"/>`member_contents_ticket_save` AS `mecotisa`
+            ON `coti`.`idx` = `mecotisa`.`contents_ticket_idx` AND `mecotisa`.`state` = 1
+        LEFT JOIN <include refid="database"/>`member_contents_ticket_used` AS `mecotius`
+            ON `mecotisa`.`idx` = `mecotius`.`member_contents_ticket_save_idx` AND `mecotius`.`state` = 1
+        <where>
+            `coti`.`end_date` <![CDATA[ <= ]]> #{nowDate}
+            AND `coti`.`idx` IN (
+                SELECT
+                    `coti`.`idx`
+                FROM <include refid="database"/>`contents_ticket_group_mapping` AS `cotigrma`
+                LEFT JOIN <include refid="database"/>`contents_ticket` AS `coti`
+                    ON `cotigrma`.`contents_ticket_idx` = `coti`.`idx` AND `cotigrma`.`state` = 1
+                JOIN <include refid="database"/>`contents_ticket_group` AS `cotigr`
+                    ON `cotigrma`.`contents_ticket_group_idx` = `cotigr`.`idx` AND `cotigr`.`state` = 1
+                JOIN <include refid="database"/>`contents` AS `co`
+                    ON `coti`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1
+                <where>
+                    <if test="categoryIdx != null">
+                        AND co.`category_idx` = #{categoryIdx}
+                    </if>
+                    <if test="genreIdx != null">
+                        AND co.`genre_idx` = #{genreIdx}
+                    </if>
+                    <if test="searchWord != null and searchWord != ''">
+                        <bind name="val" value="'%' + searchWord + '%'" />
+                        <choose>
+                            <when test="searchType == 'name'">
+                                AND `cotigr`.`name` LIKE #{val}
+                            </when>
+                            <when test="searchType == 'title'">
+                                AND `co`.`title` LIKE #{val}
+                            </when>
+                        </choose>
+                    </if>
+                    <if test="searchStartDate != null and searchStartDate != '' and searchEndDate != null and searchEndDate != ''">
+                        AND `coti`.`start_date` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `coti`.`end_date` <![CDATA[ <= ]]> #{searchEndDate}
+                    </if>
+                </where>
+                GROUP BY `coti`.`idx`
+            )
+        </where>
+        GROUP BY `coti`.`idx`
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 지급 완료 이용권 상세 조회 -->
+    <select id="getViewTicketComplete" parameterType="Long" resultType="TicketDto">
+        SELECT
+            `coti`.`idx`,
+            `coti`.`state`,
+            GROUP_CONCAT(DISTINCT(`cotigr`.`idx`) ORDER BY `cotigr`.`idx`) AS `codeIdx`,
+            GROUP_CONCAT(DISTINCT(`cotigr`.`name`) ORDER BY `cotigr`.`idx`) AS `name`,
+            GROUP_CONCAT(DISTINCT(`cotigr`.`code`) ORDER BY `cotigr`.`idx`) AS `code`,
+            `ca`.`name` AS `category`,
+            `ge`.`name` AS `genre`,
+            `co`.`idx` AS `contentsIdx`,
+            `co`.`title`,
+            `coti`.`adult`,
+            `coti`.`except_episode_count` AS `except`,
+            `coti`.`ticket_cnt` AS `count`,
+            `coti`.`available_period` AS `period`,
+            CONVERT_TZ(`coti`.`start_date`, 'UTC', '${convertTZ}') AS startDate,
+            CONVERT_TZ(`coti`.`end_date`, 'UTC', '${convertTZ}') AS endDate,
+            CONVERT_TZ(`coti`.`regdate`, 'UTC', '${convertTZ}') AS regdate,
+            IFNULL(SUM(`mecotisa`.`ticket_cnt`), 0) AS `giveCnt`,
+            IFNULL(SUM(`mecotius`.`ticket_cnt`) - SUM(`mecotius`.`rest_ticket_cnt`), 0) AS `useCnt`
+        FROM <include refid="database"/>`contents_ticket_group_mapping` AS `cotigrma`
+        LEFT JOIN <include refid="database"/>`contents_ticket` AS `coti`
+            ON `cotigrma`.`contents_ticket_idx` = `coti`.`idx` AND `cotigrma`.`state` = 1
+        JOIN <include refid="database"/>`contents_ticket_group` AS `cotigr`
+            ON `cotigrma`.`contents_ticket_group_idx` = `cotigr`.`idx` AND `cotigr`.`state` = 1
+        JOIN <include refid="database"/>`contents` AS `co`
+            ON `coti`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1
+        JOIN <include refid="database" />`category` AS `ca`
+            ON `co`.`category_idx` = `ca`.`idx` AND `ca`.`state` = 1
+        JOIN <include refid="database" />`genre` AS `ge`
+            ON `co`.`genre_idx` = `ge`.`idx` AND `ge`.`state` = 1
+        LEFT JOIN <include refid="database"/>`member_contents_ticket_save` AS `mecotisa`
+            ON `coti`.`idx` = `mecotisa`.`contents_ticket_idx` AND `mecotisa`.`state` = 1
+        LEFT JOIN <include refid="database"/>`member_contents_ticket_used` AS `mecotius`
+            ON `mecotisa`.`idx` = `mecotius`.`member_contents_ticket_save_idx` AND `mecotius`.`state` = 1
+        WHERE
+            `coti`.`idx` = #{idx}
+            AND `coti`.`state` = 1
+        GROUP BY `coti`.`idx`
+        LIMIT 1
+    </select>
+</mapper>

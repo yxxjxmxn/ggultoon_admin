@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.dao.coupon.CouponDao">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        INSERT
+    =============================================================== -->
+
+    <!-- 쿠폰 업체 등록 -->
+    <insert id="insertCouponStore" parameterType="CouponStoreDto">
+        INSERT INTO <include refid="database" />`coupon_store`
+        SET
+            `name`              = #{name},
+            `manager`           = #{manager},
+            `manager_phone`     = #{phone},
+            `type`              = #{type},
+            `state`             = #{state},
+            `regdate`           = #{regdate},
+            `regdate_tz`        = '${convertTZ}'
+    </insert>
+
+    <!-- 쿠폰 등록 -->
+    <insert id="insertCoupon" parameterType="CouponDto">
+        INSERT INTO <include refid="database" />`coupon`
+        SET
+            `coupon_store_idx`  = #{storeIdx},
+            `code`              = #{code},
+            `title`             = #{title},
+            `duplication`       = #{duplication},
+            `type`              = #{type},
+            `coin`              = #{coin},
+            `mileage`           = #{mileage},
+            `mileage_period`    = #{period},
+            `coupon_cnt`        = #{couponCnt},
+            `start_date`        = #{startDate},
+            `start_date_tz`     = '${convertTZ}',
+            `end_date`          = #{endDate},
+            `end_date_tz`       = '${convertTZ}',
+            `state`             = #{state},
+            `regdate`           = #{regdate},
+            `regdate_tz`        = '${convertTZ}'
+    </insert>
+
+    <!-- ==============================================================
+        UPDATE
+    =============================================================== -->
+
+    <!-- 쿠폰 업체 삭제 -->
+    <update id="deleteCouponStore" parameterType="Long">
+        UPDATE <include refid="database" />`coupon_store`
+        SET
+            `state` = 0
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+    <!-- 쿠폰 업체 수정 -->
+    <update id="updateCouponStore" parameterType="CouponStoreDto">
+        UPDATE <include refid="database" />`coupon_store`
+        SET
+            `name`              = #{name},
+            `manager`           = #{manager},
+            `manager_phone`     = #{phone},
+            `type`              = #{type},
+            `state`             = #{state}
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+    <!-- 쿠폰 삭제 -->
+    <update id="deleteCoupon" parameterType="Long">
+        UPDATE <include refid="database" />`coupon`
+        SET
+            `state` = 0
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+    <!-- 쿠폰 수정 -->
+    <update id="updateCoupon" parameterType="CouponDto">
+        UPDATE <include refid="database" />`coupon`
+        SET
+            `coupon_store_idx`  = #{storeIdx},
+            `code`              = #{code},
+            `title`             = #{title},
+            `duplication`       = #{duplication},
+            `type`              = #{type},
+            `coin`              = #{coin},
+            `mileage`           = #{mileage},
+            `mileage_period`    = #{period},
+            `coupon_cnt`        = #{couponCnt},
+            `start_date`        = #{startDate},
+            `end_date`          = #{endDate},
+            `state`             = #{state}
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+</mapper>

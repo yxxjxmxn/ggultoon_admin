@@ -1,0 +1,282 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        ticket.select();
+        date.dateTimePicker();
+    });
+
+    /* 전역변수 */
+    let sellType = 0;
+
+    let ticket = {
+        // 그룹 코드 체크박스 세팅
+        select: function () {
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/tickets/groups',
+                cache : true,
+                method: 'GET',
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        if (res.data.list.length > 0) {
+
+                            let div = $("<div>");
+                            let rowDiv = $("<div>").addClass("p-0 row");
+
+                            // 그룹 옵션 세팅
+                            $.each(res.data.list, function (idx, el) {
+
+                                let inputDiv = $("<div>").addClass("text-left d-inline-block col-4");
+                                let input = '<input type="checkbox" id="' + el.name + '" name="code" value="' + el.idx + '">';
+                                let label = '<label class="col-auto pl-1" for="' + el.code + '">' + el.code + '(' + el.name + ')' + '</label>';
+                                inputDiv.append(input).append(label);
+                                rowDiv.append(inputDiv);
+
+                                // 1줄 3개씩 세팅
+                                if ((idx+1) % 3 == 0 || (idx+1) == res.data.list.length) {
+                                    div.append(rowDiv);
+                                    $("#code").append(div.html());
+                                    rowDiv.html("");
+                                }
+                            });
+                        }
+                        // 그룹 이름 및 작품 정보 세팅 이벤트
+                        ticket.setInfo();
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+        },
+        // 작품 정보 세팅
+        setInfo: function () {
+
+            $("button[name='search']").click(function() {
+                // 입력 받은 작품 idx
+                let contentsIdx = $("input[name='contentsIdx']").val();
+
+                // 작품 idx가 없는지 체크
+                if (contentsIdx == "" || contentsIdx == undefined) {
+                    let searchFailMessage = `[[#{lang.ticket.exception.search.contentsIdx.empty}]]`; // 검색할 작품 idx를 입력해주세요.
+                    toast.alert(searchFailMessage);
+
+                    // 카테고리
+                    $("td[name=category]").text("");
+                    // 장르
+                    $("td[name=genre]").text("");
+                    // 제목
+                    $("td[name=title]").text("");
+
+                    // 작품 정보 DB 조회
+                } else {
+                    // 전체 공백 제거
+                    contentsIdx.replace(/\s/gi, "");
+
+                    $.ajax({
+                        url: '[[${SERVER.currentDomain}]]/v1/cp-admin/contents/' + contentsIdx,
+                        method: 'GET',
+                        dataType: 'json',
+                        processData: false,
+                        contentType: false,
+                        success: function (res) {
+                            if (res.result) {
+                                if (res.data.view != null) {
+
+                                    // 전역변수 - 작품 판매 유형 세팅
+                                    sellType = res.data.view.sellType;
+
+                                    // 카테고리
+                                    $("td[name=category]").text(res.data.view.categoryName||"-");
+                                    // 장르
+                                    $("td[name=genre]").text(res.data.view.genreName||"-");
+                                    // 제목
+                                    $("td[name=title]").text(res.data.view.title||"-");
+                                }
+                            } else {
+                                // ajax exception error
+                                toast.alert(res.message);
+                            }
+                        },
+                        error: function (request, status, error) {
+                            // filter error
+                            toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                        }
+                    });
+                    return false;
+                }
+            });
+
+            // 작품 정보 비우기
+            $("button[name='reset']").click(function() {
+                // 작품 idx
+                $("input[name='contentsIdx']").val("");
+                // 카테고리
+                $("td[name=category]").text("");
+                // 장르
+                $("td[name=genre]").text("");
+                // 제목
+                $("td[name=title]").text("");
+            });
+        },
+        // 이용권 등록
+        register: function () {
+
+            // set form data
+            let form = $("#frm")[0];
+            let formData = new FormData(form);
+
+            // 선택한 그룹 코드 idx 리스트 세팅
+            let rowData = {};
+            let groupIdxArr = new Array();
+            let checkbox = $("input[name='code']:checked");
+            if (checkbox.length > 0) {
+                checkbox.each(function (i) {
+                    let groupIdx = checkbox.value;
+                    rowData = {idx: groupIdx};
+                    groupIdxArr.push(rowData);
+                })
+                const jsonData = JSON.stringify(groupIdxArr);
+                formData.set("json", jsonData);
+            }
+
+            // 선택한 지급 연령 세팅
+            formData.set("adult", $("input:radio[name='age']:checked").val());
+
+            // 작품 판매 유형 세팅
+            formData.set("sellType", sellType);
+
+            // 선택한 이용권 사용 기간 세팅
+            formData.set("startDate", $("#searchStartDate").val());
+            formData.set("endDate", $("#searchEndDate").val());
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/tickets/ready',
+                method: 'POST',
+                data: formData,
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        // 등록 성공
+                        toast.alert(res.message);
+                        opener.location.reload();
+                        self.close();
+                    } else {
+                        // 등록 실패
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        }
+    }
+
+    /** 날짜 관련 객체 **/
+    let date = {
+        // YYYY-MM-DD 형태로 변환
+        getFormatDate: (input) => {
+            let formatDate = "";
+            if (input != null) {
+                const year = input.slice(0, 4);
+                const month = input.slice(5, 7);
+                const day = input.slice(8, 10);
+                let dateArr = new Array();
+                dateArr.push(year);
+                dateArr.push(month);
+                dateArr.push(day);
+                formatDate = dateArr.join("-");
+            }
+            return formatDate;
+        },
+        dateTimePicker : () => {
+            // 언어 설정 : 한국어
+            jQuery.datetimepicker.setLocale('kr');
+
+            // 시작일 datetimepicker 생성
+            $("#searchStartDate").datetimepicker({
+                // 언어 설정 : 한국어
+                i18n:{
+                    kr:{
+                        months:[
+                            '1월','2월','3월','4월',
+                            '5월','6월','7월','8월',
+                            '9월','10월','11월','12월',
+                        ],
+                        dayOfWeek:[
+                            "일", "월", "화", "수",
+                            "목", "금", "토",
+                        ]
+                    }
+                },
+                format: "Y-m-d H:00:00",
+                autocomplete: "off",
+                minDate: 0, // 오늘 이후 날짜부터 선택 가능
+                onSelect: function() {
+                    let startDate = $("#searchStartDate").val();
+                    $("#searchStartDate").val(startDate);
+                },
+                beforeShow: function() {
+                    setTimeout(function(){
+                        $('.ui-datepicker').css('z-index', 99999999999999);
+                    }, 0);
+                },
+                onShow: function (ct) {
+                    this.setOptions({
+                        // 종료일의 선택할 수 있는 최소 날짜(minDate)를 선택한 시작일로 지정
+                        maxDate: $("#searchEndDate").val() ? $("#searchEndDate").val() : false
+                    })
+                }
+            }).on('changeDate', function(e){
+                $(this).datetimepicker('hide');
+            });
+
+            // 종료일 datetimepicker 생성
+            $("#searchEndDate").datetimepicker({
+                // 언어 설정 : 한국어
+                i18n:{
+                    kr:{
+                        months:[
+                            '1월','2월','3월','4월',
+                            '5월','6월','7월','8월',
+                            '9월','10월','11월','12월',
+                        ],
+                        dayOfWeek:[
+                            "일", "월", "화", "수",
+                            "목", "금", "토",
+                        ]
+                    }
+                },
+                format: "Y-m-d H:00:00",
+                autocomplete: "off",
+                onSelect: function() {
+                    let endDate = $("#searchEndDate").val();
+                    $("#searchEndDate").val(endDate);
+                },
+                beforeShow: function() {
+                    setTimeout(function(){
+                        $('.ui-datepicker').css('z-index', 99999999999999);
+                    }, 0);
+                },
+                onShow: function (ct) {
+                    this.setOptions({
+                        // 시작일의 선택할 수 있는 최대 날짜(maxDate)를 선택한 종료일로 지정
+                        minDate: $("#searchStartDate").val() ? $("#searchStartDate").val() : false
+                    })
+                }
+            }).on('changeDate', function(e){
+                $(this).datetimepicker('hide');
+            });
+        }
+    }
+</script>

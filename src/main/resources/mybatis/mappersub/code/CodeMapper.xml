@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.code.CodeDaoSub">
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+
+    <!-- 코드 목록 -->
+    <select id="getList" resultType="CodeDto">
+        SELECT
+            co.`idx`,
+            co.`code`,
+            co.`state`,
+            CONVERT_TZ(co.`regdate`, 'UTC', '${convertTZ}') AS `regdate`
+        FROM <include refid="database" />code AS co
+        WHERE
+            co.`state` = 1
+    </select>
+
+
+
+</mapper>

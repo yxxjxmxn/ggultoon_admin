@@ -1,0 +1,77 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function(){
+        // 전화번호 최대 길이까지 입력 시 다음 입력창으로 포커싱 처리
+        $("#phone1").on("keyup", function() {
+            if (this.value.length == 3){
+                $("#phone2").focus();
+            }
+        });
+        $("#phone2").on("keyup", function() {
+            if (this.value.length == 4){
+                $("#phone3").focus();
+            }
+        });
+    });
+
+    let coupon = {
+        // 쿠폰 업체 등록
+        register: function () {
+
+            let form = $("#registerForm")[0];
+            let formData = new FormData(form);
+
+            // 업체 상태 세팅
+            if ($("input:checkbox[name='state']:checked").val() == null) {
+                formData.set("state", 0);
+            }
+
+            // 업체 유형 세팅
+            if ($("input:radio[name='type']:checked").val() == null) {
+                formData.set("type", 1);
+            }
+
+            // 입력받은 담당자 전화번호 세팅
+            let phone = "";
+            $("input[name='phone']").each(function(index) {
+                if ($(this).val() != "" && jQuery.isNumeric($(this).val())) {
+                    phone += $(this).val();
+                }
+            });
+            if (phone != "") {
+                formData.set("phone", phone);
+            }
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/coupons/stores',
+                method: 'POST',
+                data: formData,
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        // 등록 성공
+                        toast.alert(res.message);
+                        opener.location.reload();
+                        self.close();
+                    } else {
+                        // 등록 실패
+                        toast.alert(res.message);
+                    }
+                },
+                error: function(request, status, error) {
+                    // filter error
+                    toast.alert("code: "+request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        }
+    }
+
+    // 담당자 전화번호 입력값 길이 제한
+    function numberMaxLength(e){
+        if (e.value.length > e.maxLength){
+            e.value = e.value.slice(0, e.maxLength);
+        }
+    }
+</script>

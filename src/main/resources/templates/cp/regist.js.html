@@ -1,0 +1,69 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        $("input[name=state]").radioSelect(1);
+        $("input[name=level]").radioSelect(0);
+    });
+
+    let form = $("#frm")[0];
+    let formData = new FormData(form);
+
+    let text = {
+        modifyConfirm : "[[#{lang.cp.confirm.regist}]]", // 수정 confirm
+        deleteConfirm : "[[#{lang.cp.confirm.delete}]]" // 삭제 confirm
+    }
+
+    let cp = {
+        // 등록
+        regist: function () {
+            formData = new FormData(form);
+
+            // CPMG 금액 콤마 제거
+            formData.set("cpmg", formData.get("cpmg").split(",").join(""));
+
+            if (confirm(text.modifyConfirm)) {
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/admin/cp/regist',
+                    method: 'POST',
+                    enctype: 'multipart/form-data',
+                    data: formData,
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            toast.alert(res.message);
+
+                        } else {
+                            // ajax exception error
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+            }
+
+            return false;
+        }
+    }
+
+    // 라디오 버튼 checked
+    $.fn.radioSelect = function(val) {
+        this.each(function() {
+            let _this = $(this);
+
+            if (_this.val() == val) {
+                _this.prop('checked', true);
+            }
+        });
+        return this;
+    }
+
+    // CPMG 금액 천단위 콤마
+    document.getElementById("cpmg").addEventListener("keyup", function (e) {
+        $(this).val($(this).val().replace(/\,/g, '').replace(/(\d)(?=(?:\d{3})+(?!\d))/g, '$1,'));
+    });
+
+</script>

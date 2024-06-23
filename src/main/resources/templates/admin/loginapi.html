@@ -1,0 +1,121 @@
+<script src="https://code.jquery.com/jquery-1.11.3.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-serialize-object/2.5.0/jquery.serialize-object.min.js"></script>
+<form id="dataForm">
+
+  <input name="id" value="aa12">    <!-- 회원사코드 -->
+  <input id="password" name="password" value="aa1111">    <!-- 토큰 -->
+</form>
+
+<div onClick="ajax_send()">dev</div>
+<div onClick="ajax_send_stg()">stg</div>
+<div onClick="ajax_send_local()">local</div>
+
+
+<div onClick="test()">테스트</div>
+
+<div onClick="logout()">로그아웃</div>
+
+
+<script>
+  function logout() {
+
+    $.ajax({
+      url: 'http://localhost:18083/v1/logout', //REST API호출
+      type: 'GET',
+      xhrFields: {
+        withCredentials: true
+      }
+    });
+
+    return false;
+  }
+
+  function ajax_send() {
+
+    var serializeObject = $('#dataForm').serializeObject();
+
+    $.ajax({
+      //url:'https://webtoon-api.devlabs.co.kr:18080/v1/login', //REST API호출
+      //url:'https://webtoon-api.devlabs.co.kr:18080/v1/members/205/mypage', //REST API호출
+      //url:'http://localhost:18083/set/cookie', //REST API호출
+      //url:'http://localhost:18083/v1/members/205/settings', //REST API호출
+      //url:'https://api.gtdev.kr/v1/login', //REST API호출
+      // url:'http://localhost:18083/v1/login', //REST API호출
+      //url:'https://api.gtdev.kr/v1/login', //REST API호출
+
+      url: 'https://webtoon-api.devlabs.co.kr:18080/v1/login', //REST API호출
+
+      type: 'POST',
+      contentType: 'application/json',
+      xhrFields: {
+        withCredentials: true
+      },
+      data: JSON.stringify(serializeObject),
+      success: function (data) {
+        //location.href="https://webtoon-api.devlabs.co.kr:18080/v1/check/popup";
+        //location.href="http://localhost:18083/v1/check/popup";
+        location.href = "https://webtoon-api.devlabs.co.kr:18080/v1/member/mypage";
+      }
+    });
+
+    return false;
+  }
+
+  function ajax_send_stg() {
+
+    var serializeObject = $('#dataForm').serializeObject();
+
+    $.ajax({
+      url: 'https://api.gtdev.kr/v1/login', //REST API호출
+      type: 'POST',
+      contentType: 'application/json',
+      xhrFields: {
+        withCredentials: true
+      },
+      data: JSON.stringify(serializeObject),
+      success: function (data) {
+        location.href = "https://api.gtdev.kr/v1/member/mypage";
+      }
+    });
+
+    return false;
+  }
+
+  function ajax_send_local() {
+
+    var serializeObject = $('#dataForm').serializeObject();
+
+    $.ajax({
+      url: 'http://localhost:18083/v1/login', //REST API호출
+      type: 'POST',
+      contentType: 'application/json',
+      xhrFields: {
+        withCredentials: true
+      },
+      data: JSON.stringify(serializeObject),
+      success: function (data) {
+        location.href = "http://localhost:18083/v1/member/mypage";
+      }
+    });
+
+    return false;
+  }
+
+
+  function test() {
+    axios({
+      url: 'https://webtoon-api.devlabs.co.kr:18080/v1/check/cookie',
+      method: 'POST', // 통신할 방식
+    });
+
+    axios.post(
+            'https://example.com:1234/users/login',
+            {profile: {username: username, password: password}},
+            {withCredentials: true}
+    ).then(response => {
+      console.log(response);
+      console.log(response.data);
+    })
+
+  }
+</script>

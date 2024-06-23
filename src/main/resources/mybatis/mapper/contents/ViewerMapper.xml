@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.dao.contents.ViewerDao">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        INSERT
+    =============================================================== -->
+
+    <!-- 뷰어 웹툰 이미지 등록 -->
+    <insert id="registerImage" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="keyId">
+        INSERT INTO <include refid="database" />viewer_webtoon
+            (
+                `episode_idx`,
+                `parent`,
+                `path`,
+                `filename`,
+                `url`,
+                `width`,
+                `height`,
+                `sort`,
+                `device`,
+                `lang`,
+                `state`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+            <foreach collection="list" item="item" separator=",">
+            (
+                #{item.idx},
+                #{item.parent},
+                #{item.path},
+                #{item.orgFileName},
+                #{item.fileUrl},
+                #{item.width},
+                #{item.height},
+                #{item.sort},
+                #{item.device},
+                "ko",
+                1,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+            </foreach>
+    </insert>
+
+    <!-- 뷰어 만화 이미지 등록 -->
+    <insert id="registerComicImage" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="keyId">
+        INSERT INTO <include refid="database" />viewer_comic
+            (
+                `episode_idx`,
+                `parent`,
+                `path`,
+                `filename`,
+                `url`,
+                `width`,
+                `height`,
+                `sort`,
+                `device`,
+                `lang`,
+                `state`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.idx},
+                #{item.parent},
+                #{item.path},
+                #{item.orgFileName},
+                #{item.fileUrl},
+                #{item.width},
+                #{item.height},
+                #{item.sort},
+                #{item.device},
+                "ko",
+                1,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+    <!-- 뷰어 소설 이미지(epub) 등록 -->
+    <insert id="registerNovelImage" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="keyId">
+        INSERT INTO <include refid="database" />viewer_novel_img
+            (
+                `episode_idx`,
+                `parent`,
+                `path`,
+                `filename`,
+                `url`,
+                `width`,
+                `height`,
+                `sort`,
+                `device`,
+                `lang`,
+                `state`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+            <foreach collection="list" item="item" separator=",">
+            (
+                #{item.idx},
+                #{item.parent},
+                #{item.path},
+                #{item.orgFileName},
+                #{item.fileUrl},
+                #{item.width},
+                #{item.height},
+                #{item.sort},
+                #{item.device},
+                "ko",
+                1,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+            </foreach>
+    </insert>
+
+
+    <!-- 뷰어 소설 등록 -->
+    <insert id="registerNovel" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="keyId">
+        INSERT INTO <include refid="database" />viewer_novel
+            (
+                `episode_idx`,
+                `detail`,
+                `sort`,
+                `lang`,
+                `state`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.episodeIdx},
+                #{item.detail},
+                #{item.sort},
+                'ko',
+                1,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+    <!-- ==============================================================
+        UPDATE
+    =============================================================== -->
+
+    <!-- 뷰어 웹툰 이미지 삭제(origin) -->
+    <update id="deleteWebtoon" parameterType="Integer">
+        UPDATE <include refid="database" />viewer_webtoon
+        <set>
+            `state` = 0
+        </set>
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+    <!-- 뷰어 웹툰 이미지 삭제(resize) -->
+    <update id="deleteResizeWebtoon" parameterType="Integer">
+        UPDATE <include refid="database" />viewer_webtoon
+        <set>
+            `state` = 0
+        </set>
+        WHERE
+            `parent` = #{idx}
+    </update>
+
+    <!-- 뷰어 만화 이미지 삭제(origin) -->
+    <update id="deleteComic" parameterType="Integer">
+        UPDATE <include refid="database" />viewer_comic
+        <set>
+            `state` = 0
+        </set>
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+    <!-- 뷰어 만화 이미지 삭제(resize) -->
+    <update id="deleteResizeComic" parameterType="Integer">
+        UPDATE <include refid="database" />viewer_comic
+        <set>
+            `state` = 0
+        </set>
+        WHERE
+            `parent` = #{idx}
+    </update>
+
+
+    <!-- 뷰어 소설 이미지 삭제(origin) -->
+    <update id="deleteNovel" parameterType="Integer">
+        UPDATE <include refid="database" />viewer_novel_img
+        <set>
+            `state` = 0
+        </set>
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+    <!-- 뷰어 소설 내용 수정 -->
+    <update id="modifyNovel" parameterType="java.util.List">
+        <foreach collection="list" item="item" index="index" open="" close="" separator=";">
+            UPDATE <include refid="database" />viewer_novel
+            <set>
+                `detail` = #{item.detail}
+            </set>
+            WHERE
+                    `idx` = #{item.idx}
+                AND `episode_idx` = #{item.episodeIdx}
+        </foreach>
+    </update>
+
+    <!-- 뷰어 웹툰 이미지 순서 변경 -->
+    <update id="modifyWebtoon" parameterType="java.util.List">
+        <foreach collection="list" item="item" index="index" open="" close="" separator=";">
+            UPDATE <include refid="database" />viewer_webtoon
+            <set>
+                `sort` = #{item.sort}
+            </set>
+            WHERE
+                    `idx` = #{item.idx}
+                AND `episode_idx` = #{item.episodeIdx}
+        </foreach>
+    </update>
+
+    <!-- 뷰어 웹툰 이미지 순서 변경 -->
+    <update id="modifyComic" parameterType="java.util.List">
+        <foreach collection="list" item="item" index="index" open="" close="" separator=";">
+            UPDATE <include refid="database" />viewer_comic
+            <set>
+                `sort` = #{item.sort}
+            </set>
+            WHERE
+                    `idx` = #{item.idx}
+                AND `episode_idx` = #{item.episodeIdx}
+        </foreach>
+    </update>
+
+</mapper>

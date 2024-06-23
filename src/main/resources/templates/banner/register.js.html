@@ -1,0 +1,250 @@
+<script th:fragment="importJsFragment">
+    $(function () {
+        $.datepicker.setDefaults({
+            dateFormat: "yy-mm-dd",
+            yearSuffix: "년",
+            monthNames: ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"],
+            monthNamesShort: ["1월", "2월", "3월", "4월", "5월", "6월","7월", "8월", "9월", "10월", "11월", "12월"],
+            dayNames: ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"],
+            dayNamesShort: ["일", "월", "화", "수", "목", "금", "토"],
+            dayNamesMin: ["일", "월", "화", "수", "목", "금", "토"],
+            showMonthAfterYear: true
+        });
+
+        // datepicker 선언
+        $("input[name=startDate]").datepicker();
+        $("input[name=endDate]").datepicker();
+
+        // 시작일, 종료일 세팅
+        $("input[name=startDate]").datepicker("option", "maxDate", $("input[name=endDate]").val());
+        $("input[name=startDate]").datepicker("option", "onClose", function (selectedDate) {
+            $("input[name=endDate]").datepicker("option", "minDate", selectedDate);
+        });
+
+        // ajax loading
+        $(document).ajaxStart(function () {
+            loading = new bootstrap.Modal($('#layer_dialog'), {
+                keyboard: false
+            });
+
+            $('#section_dialog').html("<div style='display:flex; justify-content:center; hegith:800px; position:relative;'><img src='../../../images/loading_64x64.gif'></div>");
+
+            loading.show($('#section_dialog'));
+        });
+
+        $(document).ajaxStop(function () {
+            loading._hideModal();
+        });
+    });
+
+    let text = {
+        confirm : {
+            delete : "[[#{lang.banner.confirm.delete}]]" // 삭제 하시겠습니까?
+        }
+    }
+
+    // 등록할 이미지 임시 배열
+    let imageRow364 = [];
+    let imageRow260 = [];
+    let imageRow160 = [];
+
+    let banner = {
+        // 배너 등록
+        register : function () {
+            let validate = banner.validate();
+
+            if (validate) {
+                let form = $("#frm")[0];
+                let formData = new FormData(form);
+
+                // 배너 예약
+                let startDate = $("input[name=startDate]").val().trim();
+                let endDate = $("input[name=endDate]").val().trim();
+
+                if (startDate != "") {
+                    let startTime = $("select[name=startHour]").val().trim().concat(":", $("select[name=startMinute]").val().trim(), ":", $("select[name=startSecond]").val().trim());
+                    startDate = startDate.concat(" ", startTime);
+                    formData.set("startDate", startDate);
+                }
+
+                if (endDate != "") {
+                    let endTime = $("select[name=endHour]").val().trim().concat(":", $("select[name=endMinute]").val().trim(), ":", $("select[name=endSecond]").val().trim());
+                    endDate = endDate.concat(" ", endTime);
+                    formData.set("endDate", endDate);
+                }
+
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/banner',
+                    method: 'POST',
+                    enctype: 'multipart/form-data',
+                    data: formData,
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            toast.alert(res.message);
+                            // location.href = "[[${SERVER.currentDomain}]]/contents/view/" + res.data.contentsIdx + location.search;
+                        } else {
+                            // ajax exception error
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+            }
+        },
+        validate: function () {
+            // 제목
+            if ($("input[name=title]").val().trim() == "") {
+                toast.alert("배너 제목을 입력해 주세요");
+                return false;
+            }
+            // 예약
+            if ($("input[name=startDate]").val().trim() == "" || $("input[name=endDate]").val().trim() == "") {
+                toast.alert("예약일을 입력해 주세요.");
+                return false;
+            }
+
+            // 배너 이미지
+            if (imageRow364.length == 0 && imageRow260.length == 0 && imageRow160.length == 0) {
+                toast.alert("배너 이미지가 없습니다.");
+                return false;
+            }
+
+            return true;
+        },
+        // 체크 박스 전체 선택, 취소
+        checkedAll: function (_name) {
+            let checkedSelector = "input[name='" + _name + "']";
+            // 체크 한개라도 있으면 취소
+            if ($(checkedSelector).is(":checked")) {
+                $(checkedSelector).prop("checked", false);
+            } else {
+                $(checkedSelector).prop("checked", true);
+            }
+        }
+    }
+
+
+    // 이미지
+    let image = {
+        // 이미지 변경
+        add : function (_this, _type) {
+            let _imageRowAdd = [];
+            let _imageSelector = "";
+            if (_type == "image_364") {
+                _imageRowAdd = imageRow364;
+                _imageSelector = $("#image_364");
+            } else if (_type == "image_260") {
+                _imageRowAdd = imageRow260;
+                _imageSelector = $("#image_260");
+            } else if (_type == "image_160") {
+                _imageRowAdd = imageRow160;
+                _imageSelector = $("#image_160");
+            }
+
+            // 이미지 배열에 파일 추가
+            $.each(_this.files, function (idx, el) {
+                // 등록할 이미지 배열에 넣기
+                // 배너 이미지 1개만 등록 하기 위해 배열 비우고 push
+                _imageRowAdd.splice(0);
+                _imageRowAdd.push(_this.files[idx]);
+
+                // 이미지 미리보기
+                let imageSrc = "";
+                let name = "";
+                if (el.size != undefined) {
+                    imageSrc = URL.createObjectURL(el);
+                    name = el.name;
+                } else {
+                    imageSrc = el.url;
+                    name = el.filename;
+                }
+                let html = previewHtml(imageSrc, name, _type, null);
+                _imageSelector.html(html);
+            });
+        },
+        // 미리 보기 삭제
+        previewDelete : function (_this) {
+            let imageWrap = $(_this).closest(".image-preview-wrap");
+
+            // 미리보기 삭제
+            imageWrap.remove();
+
+            // 선택 파일 없을때 표시
+            if ($(".image-preview-wrap").length <= 0) {
+                let noFile = "<span th:text=\"#{lang.product.placeholder.file.no}\"></span>";
+
+                $("#preview").html(noFile);
+            }
+        },
+        // 이미지 삭제
+        delete : function (_this, _type, idx) {
+            if (confirm("배너 삭제 하시겠습니까")) {
+                let _imageRowDelete = [];
+                let row = "";
+                let _fileSelector = "";
+                if (_type == "image_364") {
+                    _imageRowDelete = imageRow364;
+                    row = $(_this).closest("#image_364 .image-preview-wrap");
+                    _fileSelector = $("input[name=imageFile_364]");
+                } else if (_type == "image_260") {
+                    _imageRowDelete = imageRow260;
+                    row = $(_this).closest("#image_260 .image-preview-wrap");
+                    _fileSelector = $("input[name=imageFile_260]");
+                } else if (_type == "image_160") {
+                    _imageRowDelete = imageRow160;
+                    row = $(_this).closest("#image_160 .image-preview-wrap");
+                    _fileSelector = $("input[name=imageFile_160]");
+                }
+
+                // 추가 이미지
+                if (_imageRowDelete[row.prevAll().length].idx == undefined) {
+                    const dataTransfer = new DataTransfer();
+
+                    let fileList = _fileSelector.get(0).files;
+                    // fileList -> Array 변환
+                    let fileListArr = Array.from(fileList);
+                    // Array 에서 선택 이미지 삭제
+                    fileListArr.splice(row.prevAll().length, 1);
+                    // 남은 배열을 dataTransfer로 처리(Array -> FileList)
+                    fileListArr.forEach(file => {
+                        dataTransfer.items.add(file);
+                    });
+                    // dataTransfer 로 변환한 data를 fileList에 대입함
+                    _fileSelector[0].files = dataTransfer.files;
+
+                    // 배열에서 삭제
+                    _imageRowDelete.splice(row.prevAll().length, 1);
+
+                    // 미리 보기 삭제
+                    image.previewDelete(_this);
+                }
+            }
+        }
+    }
+
+    // 이미지 미리 보기
+    function previewHtml(imageSrc, name, type, idx) {
+        let imgHtml = `
+            <div class="image-preview-wrap">
+                <div>
+                    <input class="preview-data" type="hidden" name="image_path" value="">
+                    <a href="javascript:void(0);" onclick="image.delete(this, '${type}', ${idx});" class="preview-del"></a>
+                    <div>
+                        <a href="${imageSrc}" target="_blank">
+                            <img src="${imageSrc}" style="width:100%; max-width: 300px;">
+                        </a>
+                    </div>
+                </div>
+                <div class="file-name">${name}</div>
+            </div>
+        `;
+        return imgHtml;
+    }
+
+</script>

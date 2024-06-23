@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.banner.BannerDaoSub">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+
+    <!-- 배너 목록 -->
+    <select id="getList" parameterType="SearchDto" resultType="BannerDto">
+        SELECT
+            `ba`.`idx`,
+            `ba`.`title`,
+            `ba`.`code`,
+            `ba`.`adult_pavilion`,
+            `ba`.`link`,
+            `ba`.`sort`,
+            `ba`.`state`,
+            CONVERT_TZ(`ba`.`start_date`, 'UTC', '${convertTZ}') AS `startDate`,
+            CONVERT_TZ(`ba`.`end_date`, 'UTC', '${convertTZ}') AS `endDate`,
+            GROUP_CONCAT(DISTINCT `bama`.`type` SEPARATOR ',') AS `strType`,
+            GROUP_CONCAT(DISTINCT IF(`bama`.`category_idx` = 1, `bama`.`genre_idx`, NULL) SEPARATOR ', ') AS `strWebtoonGenre`,
+            GROUP_CONCAT(DISTINCT IF(`bama`.`category_idx` = 2, `bama`.`genre_idx`, NULL) SEPARATOR ', ') AS `strComicGenre`,
+            GROUP_CONCAT(DISTINCT IF(`bama`.`category_idx` = 3, `bama`.`genre_idx`, NULL) SEPARATOR ', ') AS `strNovelGenre`,
+            GROUP_CONCAT(DISTINCT IF(`baim`.`img_type` = 1, `baim`.`url`, NULL) SEPARATOR ', ') AS `strImage364`,
+            GROUP_CONCAT(DISTINCT IF(`baim`.`img_type` = 2, `baim`.`url`, NULL) SEPARATOR ', ') AS `strImage260`,
+            GROUP_CONCAT(DISTINCT IF(`baim`.`img_type` = 3, `baim`.`url`, NULL) SEPARATOR ', ') AS `strImage160`,
+            IFNULL(SUM(`bacl`.`click_count`), 0) AS `clickCount`
+        FROM <include refid="database" />`banner` AS `ba`
+        LEFT JOIN <include refid="database"/>`banner_mapping` AS `bama`
+            ON `ba`.`idx` = `bama`.`banner_idx` AND `bama`.`state` = 1
+        LEFT JOIN <include refid="database"/>`banner_img` AS `baim`
+            ON `ba`.`idx` = `baim`.`banner_idx` AND `baim`.`state` = 1
+        LEFT JOIN <include refid="database"/>`banner_click` AS `bacl`
+            ON `ba`.`idx` = `bacl`.`banner_idx`
+        WHERE
+            `ba`.`idx` IN (
+                SELECT
+                    `ba`.`idx`
+                FROM  `webtoon`. `banner` AS `ba`
+                LEFT JOIN  `webtoon`. `banner_mapping` AS `bama`
+                    ON `ba`.`idx` = `bama`.`banner_idx` AND `bama`.`state` = 1
+                <where>
+                    <if test='state != null'>
+                        AND `ba`.`state` = #{state}
+                    </if>
+                    <if test="type != null">
+                        AND `bama`.`type` = #{type}
+                    </if>
+                    <if test="searchWord != null and searchWord != ''">
+                        <bind name="val" value="'%' + searchWord + '%'" />
+                        <choose>
+                            <when test="searchType == 'idx'">
+                                AND `ba`.`idx` = #{searchWord}
+                            </when>
+                            <when test="searchType == 'title'">
+                                AND `ba`.`title` LIKE #{val}
+                            </when>
+                        </choose>
+                    </if>
+                    <if test="searchStartDate != null and searchStartDate != '' and searchEndDate != null and searchEndDate != ''">
+                        AND `ba`.`start_date` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `ba`.`end_date` <![CDATA[ <= ]]> #{searchEndDate}
+                    </if>
+                </where>
+                GROUP BY `ba`.`idx`
+            )
+        GROUP BY `ba`.`idx`
+        ORDER BY `ba`.`idx` DESC
+    </select>
+
+    <!-- 배너 상세 -->
+    <select id="getView" parameterType="_int" resultMap="banner_rm">
+        SELECT
+            `ba`.`idx`,
+            `ba`.`title`,
+            `ba`.`code`,
+            `ba`.`link`,
+            `ba`.`adult_pavilion`,
+            `ba`.`sort`,
+            `ba`.`state`,
+            CONVERT_TZ(`ba`.`start_date`, 'UTC', '${convertTZ}') AS `start_date`,
+            CONVERT_TZ(`ba`.`end_date`, 'UTC', '${convertTZ}') AS `end_date`,
+            GROUP_CONCAT(DISTINCT `bama`.`type` SEPARATOR ', ') AS `str_type`,
+            GROUP_CONCAT(DISTINCT IF(`bama`.`category_idx` = 1, `bama`.`genre_idx`, NULL) SEPARATOR ', ') AS `str_webtoon_genre`,
+            GROUP_CONCAT(DISTINCT IF(`bama`.`category_idx` = 2, `bama`.`genre_idx`, NULL) SEPARATOR ', ') AS `str_comic_genre`,
+            GROUP_CONCAT(DISTINCT IF(`bama`.`category_idx` = 3, `bama`.`genre_idx`, NULL) SEPARATOR ', ') AS `str_novel_genre`,
+            IFNULL(SUM(`bacl`.`click_count`), 0) AS `click_count`
+        FROM `banner` AS `ba`
+        LEFT JOIN <include refid="database"/>`banner_mapping` AS `bama`
+            ON `ba`.`idx` = bama.`banner_idx` AND `bama`.`state` = 1
+        LEFT JOIN <include refid="database"/>`banner_click` AS `bacl`
+            ON `ba`.`idx` = `bacl`.`banner_idx`
+        WHERE
+            `ba`.`idx` = #{idx}
+        LIMIT 1
+    </select>
+
+    <!-- 배너 상세 resultMap -->
+    <resultMap id="banner_rm" type="BannerDto">
+        <id property="idx" column="idx" />
+        <result property="title" column="title" />
+        <result property="code" column="code" />
+        <result property="link" column="link" />
+        <result property="adultPavilion" column="adult_pavilion" />
+        <result property="sort" column="sort" />
+        <result property="state" column="state" />
+        <result property="startDate" column="start_date" />
+        <result property="endDate" column="end_date" />
+        <result property="strType" column="str_type" />
+        <result property="strWebtoonGenre" column="str_webtoon_genre" />
+        <result property="strComicGenre" column="str_comic_genre" />
+        <result property="strNovelGenre" column="str_novel_genre" />
+        <result property="clickCount" column="click_count" />
+
+        <!-- contents image query 호출 -->
+        <collection property="bannerImageList" column="idx" javaType="java.util.ArrayList" ofType="" select="getBannerImage"/>
+    </resultMap>
+
+    <!-- 컨텐츠 이미지 -->
+    <select id="getBannerImage" parameterType="Integer" resultType="BannerImageDto">
+        SELECT
+            `baim`.`idx`,
+            `baim`.`banner_idx`,
+            `baim`.`img_type`,
+            `baim`.`path`,
+            `baim`.`filename`,
+            `baim`.`url`
+        FROM <include refid="database" />`banner_img` AS baim
+        WHERE
+            `baim`.`banner_idx` = #{bannerIdx}
+            AND `baim`.`state` = 1
+    </select>
+
+
+    <!-- 배너 마지막 순번 -->
+    <select id="getSortNumber" resultType="_int">
+        SELECT
+            IFNULL(MAX(`ba`.`sort`) + 1, 1)  AS `sort`
+        FROM <include refid="database" />`banner` as `ba`
+        ORDER BY `ba`.`sort` DESC
+        LIMIT 1
+    </select>
+
+
+</mapper>
+

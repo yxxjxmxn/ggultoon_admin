@@ -1,0 +1,274 @@
+<th:block layout:decorate="~{common/layout}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="col-lg-12 mt-3">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" th:text="#{lang.banner.title.register}"></h5>
+            </div>
+
+            <div class="card-body row">
+                <form id="frm" onsubmit="banner.register(); return false;" accept-charset="utf-8">
+
+                    <!-- 배너 정보 -->
+                    <div id="lay_banner">
+                        <table class="table">
+                            <colgroup>
+                                <col style="width: 10%;">
+                            </colgroup>
+                            <thead>
+                                <tr style="border:solid currentColor; border-width:2px 0px;">
+                                    <th class="table-primary border-bottom-0" colspan="2" th:text="#{lang.banner.title.sub.information}"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.banner.state}"></th>
+                                    <td class="">
+                                        <div class="btn-group" role="group">
+                                            <input type="radio" class="btn-check" name="state" id="normal" value="1" autocomplete="off">
+                                            <label class="btn btn-sm btn-outline-primary" for="normal" th:text="#{lang.banner.state.normal}"></label>
+                                            <input type="radio" class="btn-check" name="state" id="cancel" value="0" autocomplete="off" checked="checked">
+                                            <label class="btn btn-sm btn-outline-danger" for="cancel" th:text="#{lang.banner.state.cancel}"></label>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.banner.adult.pavilion}"></th>
+                                    <td class="">
+                                        <div class="btn-group" role="group">
+                                            <input type="radio" class="btn-check" name="adultPavilion" id="pavilionNormal" value="0" autocomplete="off">
+                                            <label class="btn btn-sm btn-outline-success" for="pavilionNormal" th:text="#{lang.banner.adult.pavilion.normal}"></label>
+                                            <input type="radio" class="btn-check" name="adultPavilion" id="pavilionAll" value="2" autocomplete="off" checked="checked">
+                                            <label class="btn btn-sm btn-outline-danger" for="pavilionAll" th:text="#{lang.banner.adult.pavilion.all}"></label>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.banner.type}"></th>
+                                    <td class="">
+                                        <div class="pt-2">
+                                            <div class="form-check-inline pt-2">
+                                                <input type="checkbox" class="" name="type[]" id="main" autocomplete="off" value="1">&nbsp;
+                                                <label class="col-auto pl-0" for="main" th:text="#{lang.banner.type.main.top}"></label>
+                                            </div>
+                                            <div class="form-check-inline pt-2">
+                                                <input type="checkbox" class="" name="type[]" id="mainBody" autocomplete="off" value="2">&nbsp;
+                                                <label class="col-auto pl-0" for="mainBody" th:text="#{lang.banner.type.main.bottom}"></label>
+                                            </div>
+                                            <div class="form-check-inline pt-2">
+                                                <input type="checkbox" class="" name="type[]" id="viewer" autocomplete="off" value="3">&nbsp;
+                                                <label class="col-auto pl-0" for="viewer" th:text="#{lang.banner.type.viewer}"></label>
+                                            </div>
+                                            <div class="form-check-inline pt-2">
+                                                <input type="checkbox" class="" name="type[]" id="communityList" autocomplete="off" value="4">&nbsp;
+                                                <label class="col-auto pl-0" for="communityList" th:text="#{lang.banner.type.community.list}"></label>
+                                            </div>
+                                            <div class="form-check-inline pt-2">
+                                                <input type="checkbox" class="" name="type[]" id="communityContents" autocomplete="off" value="5">&nbsp;
+                                                <label class="col-auto pl-0" for="communityContents" th:text="#{lang.banner.type.community.content}"></label>
+                                            </div>
+                                            <div class="form-check-inline pt-2">
+                                                <input type="checkbox" class="" name="type[]" id="payment" autocomplete="off" value="6">&nbsp;
+                                                <label class="col-auto pl-0" for="payment" th:text="#{lang.banner.type.charging}"></label>
+                                            </div>
+                                            <div class="form-check-inline pt-2">
+                                                <input type="checkbox" class="" name="type[]" id="mypageNonLogin" autocomplete="off" value="7">&nbsp;
+                                                <label class="col-auto pl-0" for="mypageNonLogin" th:text="#{lang.banner.type.mypage.guest}"></label>
+                                            </div>
+                                            <div class="form-check-inline pt-2">
+                                                <input type="checkbox" class="" name="type[]" id="mypageLogin" autocomplete="off" value="8">&nbsp;
+                                                <label class="col-auto pl-0" for="mypageLogin" th:text="#{lang.banner.type.mypage.member}"></label>
+                                            </div>
+                                            <div class="form-check-inline pt-2">
+                                                <button type="button" class="btn btn-sm btn-success" onclick="banner.checkedAll('type[]');" th:text="#{lang.banner.checkedAll}"></button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.banner.genre}" rowspan="3"></th>
+                                    <td class="row border-top-0">
+                                        <div class="col-1 text-center align-middle font-weight-bold" th:text="#{lang.banner.genre.webtoon}"></div>
+                                        <div class="col-10">
+                                            <div class="form-check-inline">
+                                                <input type="checkbox" class="" name="webtoonGenre[]" id="webtoonRank" autocomplete="off" th:value="0">&nbsp;
+                                                <label class="col-auto pl-0" for="webtoonRank" th:text="#{lang.banner.rank}"></label>
+                                            </div>
+                                            <div class="form-check-inline" th:each="genre : ${data.get('webtoonCategory').get('genreList')}">
+                                                <input type="checkbox" class="" name="webtoonGenre[]" th:id="${genre.get('categoryIdx') + '_' +genre.get('idx')}" th:value="${genre.get('idx')}" autocomplete="off">&nbsp;
+                                                <label class="col-auto pl-0" th:for="${genre.get('categoryIdx') + '_' +genre.get('idx')}" th:text="${genre.get('name')}"></label>
+                                            </div>
+                                            <div class="form-check-inline">
+                                                <button type="button" class="btn btn-sm btn-success" onclick="banner.checkedAll('webtoonGenre[]');" th:text="#{lang.banner.checkedAll}"></button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="row border-top-0">
+                                        <div class="col-1 text-center align-middle font-weight-bold" th:text="#{lang.banner.genre.comic}"></div>
+                                        <div class="col-10">
+                                            <div class="form-check-inline">
+                                                <input type="checkbox" class="" name="comicGenre[]" id="comicRank" autocomplete="off" th:value="0">&nbsp;
+                                                <label class="col-auto pl-0" for="comicRank" th:text="#{lang.banner.rank}"></label>
+                                            </div>
+                                            <div class="form-check-inline" th:each="genre : ${data.get('comicCategory').get('genreList')}">
+                                                <input type="checkbox" class="" name="comicGenre[]" th:id="${genre.get('categoryIdx') + '_' +genre.get('idx')}" th:value="${genre.get('idx')}" autocomplete="off">&nbsp;
+                                                <label class="col-auto pl-0" th:for="${genre.get('categoryIdx') + '_' +genre.get('idx')}" th:text="${genre.get('name')}"></label>
+                                            </div>
+                                            <div class="form-check-inline">
+                                                <button type="button" class="btn btn-sm btn-success" onclick="banner.checkedAll('comicGenre[]');" th:text="#{lang.banner.checkedAll}"></button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="row border-top-0">
+                                        <div class="col-1 text-center align-middle font-weight-bold" th:text="#{lang.banner.genre.novel}"></div>
+                                        <div class="col-10">
+                                            <div class="form-check-inline">
+                                                <input type="checkbox" class="" name="novelGenre[]" id="novelRank" autocomplete="off" th:value="0">&nbsp;
+                                                <label class="col-auto pl-0" for="novelRank" th:text="#{lang.banner.rank}"></label>
+                                            </div>
+                                            <div class="form-check-inline" th:each="genre : ${data.get('novelCategory').get('genreList')}">
+                                                <input type="checkbox" class="" name="novelGenre[]" th:id="${genre.get('categoryIdx') + '_' +genre.get('idx')}" th:value="${genre.get('idx')}" autocomplete="off">&nbsp;
+                                                <label class="col-auto pl-0" th:for="${genre.get('categoryIdx') + '_' +genre.get('idx')}" th:text="${genre.get('name')}"></label>
+                                            </div>
+                                            <div class="form-check-inline">
+                                                <button type="button" class="btn btn-sm btn-success" onclick="banner.checkedAll('novelGenre[]');" th:text="#{lang.banner.checkedAll}"></button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.banner.title}"></th>
+                                    <td class="">
+                                        <input type="text" class="form-control form-control-sm" name="title" id="title" style="width: 50%;">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.banner.reservation}"></th>
+                                    <td class="">
+                                        <div class="form-check form-check-inline input-group-sm mb-2">
+                                            <label class="input-group-text" for="startDate" th:text="#{lang.banner.date.start}"></label>
+                                            <input type="text" class="form-check-input form-control form-control-sm col-5 ui-datepicker" name="startDate" id="startDate" autocomplete="off">
+                                            <select class="form-select form-select-sm col-2 text-center" name="startHour" id="startHour">
+                                                <option th:each="i : ${#numbers.sequence(0, 23)}" th:value="${#numbers.formatInteger(i, 2)}" th:text="${i}"></option>
+                                            </select>
+                                            <label class="input-group-text form-check-label form-check-inline" for="startHour" th:text="#{lang.banner.date.hour}"></label>
+                                            <select class="form-select form-select-sm col-2 text-center" name="startMinute" id="startMinute">
+                                                <option th:each="i : ${#numbers.sequence(0, 59)}" th:value="${#numbers.formatInteger(i, 2)}" th:text="${i}" th:selected="${i} == 0"></option>
+                                            </select>
+                                            <label class="input-group-text form-check-label form-check-inline" for="startMinute" th:text="#{lang.banner.date.minute}"></label>
+                                            <select class="form-select form-select-sm col-2 text-center" name="startSecond" id="startSecond">
+                                                <option th:each="i : ${#numbers.sequence(0, 59)}" th:value="${#numbers.formatInteger(i, 2)}" th:text="${i}" th:selected="${i} == 0"></option>
+                                            </select>
+                                            <label class="input-group-text form-check-label form-check-inline" for="startSecond" th:text="#{lang.banner.date.second}"></label>
+                                        </div>
+                                        <br>
+                                        <div class="form-check form-check-inline input-group-sm mb-2">
+                                            <label class="input-group-text" for="endDate" th:text="#{lang.banner.date.end}"></label>
+                                            <input type="text" class="form-check-input form-control form-control-sm col-5 ui-datepicker" name="endDate" id="endDate" autocomplete="off">
+                                            <select class="form-select form-select-sm col-2 text-center" name="endHour" id="endHour">
+                                                <option th:each="i : ${#numbers.sequence(0, 23)}" th:value="${#numbers.formatInteger(i, 2)}" th:text="${i}" th:selected="${i} == 23"></option>
+                                            </select>
+                                            <label class="input-group-text form-check-label form-check-inline" for="endHour" th:text="#{lang.banner.date.hour}"></label>
+                                            <select class="form-select form-select-sm col-2 text-center" name="endMinute" id="endMinute">
+                                                <option th:each="i : ${#numbers.sequence(0, 59)}" th:value="${#numbers.formatInteger(i, 2)}" th:text="${i}" th:selected="${i} == 59"></option>
+                                            </select>
+                                            <label class="input-group-text form-check-label form-check-inline" for="endMinute" th:text="#{lang.banner.date.minute}"></label>
+                                            <select class="form-select form-select-sm col-2 text-center" name="endSecond" id="endSecond">
+                                                <option th:each="i : ${#numbers.sequence(0, 59)}" th:value="${#numbers.formatInteger(i, 2)}" th:text="${i}" th:selected="${i} == 59"></option>
+                                            </select>
+                                            <label class="input-group-text form-check-label form-check-inline" for="endSecond" th:text="#{lang.banner.date.second}"></label>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.banner.sort}"></th>
+                                    <td class="">
+                                        <input type="text" class="form-control form-control-sm" name="sort" id="sort" th:value="${data.get('lastSort')}" style="width: 50%;">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.banner.link}"></th>
+                                    <td class="">
+                                        <input type="text" class="form-control form-control-sm" name="link" id="link" style="width: 50%;">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.banner.code}"></th>
+                                    <td class="">
+                                        <input type="text" class="form-control form-control-sm" name="code" id="code" style="width: 50%;">
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- //배너 정보 -->
+
+                    <!-- 배너 이미지 -->
+                    <div id="lay_image">
+                        <table class="table">
+                            <colgroup>
+                                <col style="width: 20%;">
+                            </colgroup>
+                            <thead>
+                                <tr style="border:solid currentColor; border-width:2px 0px;">
+                                    <th class="table-primary border-bottom-0" colspan="2" th:text="#{lang.banner.title.sub.image}"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.banner.image.width.364}"></th>
+                                    <td>
+                                        <div class="preview" id="image_364"></div>
+
+                                        <div class="col-md-8 col-sm-9 pt-1">
+                                            <label class="py-1 px-3 rounded-2">
+                                                <input type="file" name="imageFile_364" accept="image/*" onchange="image.add(this, 'image_364');" th:text="#{lang.banner.image.file}">
+                                            </label>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.banner.image.width.260}"></th>
+                                    <td>
+                                        <div class="preview" id="image_260"></div>
+
+                                        <div class="col-md-8 col-sm-9 pt-1">
+                                            <label class="py-1 px-3 rounded-2">
+                                                <input type="file" name="imageFile_260" accept="image/*" onchange="image.add(this, 'image_260');" th:text="#{lang.banner.image.file}">
+                                            </label>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.banner.image.width.160}"></th>
+                                    <td>
+                                        <div class="preview" id="image_160"></div>
+
+                                        <div class="col-md-8 col-sm-9 pt-1">
+                                            <label class="py-1 px-3 rounded-2">
+                                                <input type="file" name="imageFile_160" accept="image/*" onchange="image.add(this, 'image_160');" th:text="#{lang.banner.image.file}">
+                                            </label>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- //배너 이미지 -->
+
+                    <div class="form-group row" id="btnGroup">
+                        <div class="col text-center">
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="banner.list();" th:text="#{lang.button.list}"></button>
+                            <button type="submit" class="btn btn-sm btn-success" th:text="#{lang.button.register}"></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- 컨텐츠 영역 -->
+    </div>
+</th:block>

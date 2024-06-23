@@ -1,0 +1,197 @@
+<script th:fragment="importJsFragment">
+
+    let text = {
+        searchResult : "[[#{lang.curation.search.result}]]", // 검색 결과
+        searchDefaultMessage : "[[#{lang.curation.exception.search_fail}]]", // 검색 결과가 없습니다.
+        title : "[[#{lang.curation.title}]]", // 제목
+        idx : "[[#{lang.curation.idx}]]", // 번호
+        category : "[[#{lang.curation.category}]]", // 카테고리
+        genre : "[[#{lang.curation.genre}]]", // 장르
+        pavilion : "[[#{lang.curation.pavilion}]]", // 이용관
+        adult : "[[#{lang.curation.adult}]]", // 시청연령
+        description : "[[#{lang.curation.description}]]", // 설명
+        writer : "[[#{lang.curation.writer}]]", // 글작가
+        painter : "[[#{lang.curation.painter}]]", // 그림작가
+        tag : "[[#{lang.curation.tag}]]", // 태그
+        episodeCnt : "[[#{lang.curation.episode.count}]]", // 회차 수
+        btn : {
+            choose : "[[#{lang.curation.button.content.choose}]]" // 선택
+        }
+    }
+
+    let curation = {
+        // 작품 검색
+        list: function (page = 1) {
+
+            if (page != undefined) {
+                $("input[name=page]").val(page);
+            }
+
+            // 검색어를 입력한 경우
+            if ($("input[name=searchWord]").val() != "") {
+
+                // 검색 조건을 선택하지 않은 경우
+                if ($("select[name=searchType]").val() == "") {
+                    let searchFailMessage = `[[#{lang.curation.exception.search.type.empty}]]`; // 검색 조건을 설정해주세요.
+                    toast.alert(searchFailMessage);
+
+                    // 검색 조건을 선택한 경우
+                } else {
+                    $.ajax({
+                        url: '[[${SERVER.currentDomain}]]/v1/curations/contents',
+                        cache : true,
+                        method: 'GET',
+                        data: $("#registerForm").serialize(),
+                        dataType: 'json',
+                        processData: false,
+                        contentType: false,
+                        success: function (res) {
+                            if (res.result) {
+
+                                // 페이지 url 갱신 (검색 후 새로고침 시 검색값 유지 )
+                                if (window.location.search !== "?" + $("#frm").serialize()) {
+                                    history.pushState(null, null, "?" + $("#frm").serialize());
+                                }
+
+                                // 검색 결과 개수 세팅
+                                $("#totalCount").html(`<strong> ${text.searchResult} : ${res.data.list.length}건 </strong>`);
+
+                                if (res.data.list.length > 0) {
+
+                                    // list
+                                    let listTbody = "";
+                                    $.each(res.data.list, function (index, el) {
+
+                                        // 썸네일 url 세팅
+                                        let imgUrl = "";
+                                        if (el.imageList.length > 0) {
+                                            $.each(el.imageList, function (idx, element) {
+                                                imgUrl = element.url;
+                                            });
+                                        }
+
+                                        // 작품 소개글 말줄임표 세팅
+                                        let description = el.description.substring(0, 100) + '...';
+
+                                        // 검색 결과 화면 세팅
+                                        listTbody += `
+                                            <tr>
+                                                <td class="text-center" style="width: 20%;">
+                                                    <img src="${imgUrl}" style="max-height:200px; max-width:400px">
+                                                </td>
+                                                <td class="text-left">
+                                                    <table class="table table-bordered">
+                                                        <colgroup>
+                                                            <col style="width: 20%;">
+                                                        </colgroup>
+                                                       <tbody>
+                                                            <tr>
+                                                                <th>${text.title}</th>
+                                                                <td name="title">${el.title || "-"} <span class="badge ${el.stateBg}">${el.stateText || "-"}</span></td>
+                                                                <th>${text.idx}</th>
+                                                                <td name="contentsIdx">${el.idx || "-"}</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>${text.pavilion}</th>
+                                                                <td name="pavilion"><span class="badge ${el.pavilionBg}">${el.pavilionText || "-"}</span></td>
+                                                                <th>${text.adult}</th>
+                                                                <td name="adult"><span class="badge ${el.adultBg}">${el.adultText || "-"}</span></td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>${text.category}</th>
+                                                                <td name="category">${el.category || "-"}</td>
+                                                                 <th>${text.genre}</th>
+                                                                <td name="genre">${el.genre || "-"}</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>${text.writer}</th>
+                                                                <td name="writer">${el.writer || "-"}</td>
+                                                                <th>${text.painter}</th>
+                                                                <td name="painter">${el.painter || "-"}</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>${text.tag}</th>
+                                                                <td colspan="3" name="tag">${el.tag || "-"}</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>${text.description}</th>
+                                                                <td colspan="3" name="description">${description || "-"}</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>${text.episodeCnt}</th>
+                                                                <td colspan="3" name="episodeCnt">${el.episodeCnt || "-"}</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </td>
+                                                <td class="text-center" style="width: 10%;">
+                                                    <button type="button" class="btn btn-sm btn-info" onclick="curation.register(${el.idx});">${text.btn.choose}</button>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    });
+                                    $("#lists tbody").html(listTbody);
+                                    $.cookie("backUrl", $("#frm").serialize());
+
+                                } else {
+                                    // 결과 없음
+                                    let listTbody = `<tr><td colspan="3" class="text-center">${res.message}</td></tr>`;
+                                    $("#lists tbody").html(listTbody);
+                                }
+                            } else {
+                                // ajax exception error
+                                toast.alert(res.message);
+                            }
+                        },
+                        error: function (request, status, error) {
+                            // filter error
+                            toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                        }
+                    });
+                }
+            }
+            return false;
+        },
+        // 새로고침 버튼
+        reset: function () {
+            window.location.reload();
+        },
+        // 작품 추가
+        register: function (idx) {
+
+            // 추가할 작품 idx set
+            let form = $("#registerForm")[0];
+            let formData = new FormData(form);
+            formData.set("contentsIdx", idx);
+
+            // 추가할 작품 sort set
+            let maxSort = $(opener.document).find(".totalCount").next().val();
+            formData.set("maxSort", parseInt(maxSort) + 1);
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/curations/[[${idx}]]/contents',
+                method: 'POST',
+                data: formData,
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        // 등록 성공
+                        toast.alert(res.message);
+                        opener.location.reload();
+                        self.close();
+                    } else {
+                        // 등록 실패
+                        toast.alert(res.message);
+                    }
+                },
+                error: function(request, status, error) {
+                    // filter error
+                    toast.alert("code: "+request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        }
+    }
+</script>

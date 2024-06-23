@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.admin.AdminDaoSub">
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- 공통으로 사용할 field -->
+    <sql id="adminColumns">
+        `idx`,
+        `id`,
+        `password`,
+        `name`,
+        `level`,
+        `state`,
+		CONVERT_TZ(`last_login_date`, 'UTC', '${convertTZ}')  AS lastLoginDate,
+        CONVERT_TZ(`regdate`, 'UTC', '${convertTZ}') AS regdate
+    </sql>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+
+    <!-- id 로 체크하여 카운트 가져오기 -->
+    <select id="getCountById" parameterType="AdminDto" resultType="_int">
+        SELECT
+            COUNT(`idx`) AS cnt
+        FROM <include refid="database" />`admin`
+        WHERE
+            `id` = #{id}
+    </select>
+
+    <!-- 로그인 성공시 관리자 정보 가져오기 -->
+    <select id="getInfoForLogin" parameterType="AdminDto" resultType="AdminDto">
+        SELECT
+            <include refid="adminColumns" />
+        FROM <include refid="database" />`admin`
+        WHERE
+            `id` = #{id}
+            AND `password` = #{password}
+    </select>
+
+    <!-- 관리자 전체 카운트 -->
+    <select id="getAdminTotalCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(`idx`) AS adminCnt
+        FROM <include refid="database" />`admin`
+        <where>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'name'">
+                        AND `name` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="state != null">
+                AND `state` = #{state}
+            </if>
+            <if test="searchStartDate != null and searchStartDate != '' and searchEndDate != null and searchEndDate != ''">
+                <choose>
+                    <when test="searchDate == 'lastLoginDate'">
+                        <![CDATA[
+                            AND `last_login_date` >= #{searchStartDate} AND `last_login_date` <= #{searchEndDate}
+                        ]]>
+                    </when>
+                    <when test="searchDate == 'regdate'">
+                        <![CDATA[
+                           AND `regdate` >= #{searchStartDate} AND `regdate` <= #{searchEndDate}
+                        ]]>
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 관리자 목록 전체 조회 -->
+    <select id="getAdminList" parameterType="SearchDto" resultType="AdminDto">
+        SELECT <include refid="adminColumns"/>
+        FROM <include refid="database" />`admin`
+        <where>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'name'">
+                        AND `name` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="state != null">
+                AND `state` = #{state}
+            </if>
+            <if test="searchStartDate != null and searchStartDate != '' and searchEndDate != null and searchEndDate != ''">
+                <choose>
+                    <when test="searchDate == 'lastLoginDate'">
+                        <![CDATA[
+                            AND `last_login_date` >= #{searchStartDate} AND `last_login_date` <= #{searchEndDate}
+                        ]]>
+                    </when>
+                    <when test="searchDate == 'regdate'">
+                        <![CDATA[
+                           AND `regdate` >= #{searchStartDate} AND `regdate` <= #{searchEndDate}
+                        ]]>
+                    </when>
+                </choose>
+            </if>
+        </where>
+        ORDER BY `idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 관리자 상세 -->
+    <select id="getViewAdmin" parameterType="_long" resultType="AdminDto">
+        SELECT <include refid="adminColumns"/>
+        FROM <include refid="database" />`admin`
+        WHERE
+           `idx` = #{idx}
+    </select>
+
+
+</mapper>

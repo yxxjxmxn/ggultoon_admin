@@ -1,0 +1,607 @@
+<script th:fragment="importJsFragment">
+    $(function () {
+        $(".ui-datepicker").datepicker({
+            changeMonth: true,
+            changeYear: true,
+            showMonthAfterYear: true,
+            yearRange: 'c:c+100',
+            dayNamesMin: ['일', '월', '화', '수', '목', '금', '토'], // 요일의 한글 형식.
+            monthNamesShort: ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
+            dateFormat: "yy-mm-dd",
+            altFormat: "yy-mm-dd",
+            showButtonPanel: true,
+            nextText: '다음 달',
+            prevText: '이전 달',
+            currentText: '오늘',
+            closeText: '닫기'
+        });
+        $("#ui-datepicker-div").css("background", "#fff").css("border", "1px solid #ced4da");
+
+        // ajax loading
+        $(document).ajaxStart(function () {
+            loading = new bootstrap.Modal($('#layer_dialog'), {
+                keyboard: false
+            });
+
+            $('#section_dialog').html("<div style='display:flex; justify-content:center; hegith:800px; position:relative;'><img src='../../../images/loading_64x64.gif'></div>");
+
+            loading.show($('#section_dialog'));
+        });
+
+        $(document).ajaxStop(function () {
+            loading._hideModal();
+        });
+
+        episode.view();
+    });
+
+    let contentsIdx = "[[${contentsIdx}]]";
+    let categoryIdx;
+
+    // modal
+    let loading;
+
+
+    // 등록할 이미지 임시 배열
+    let heightImageRow = [];
+    let widthImageRow = [];
+    let viewerImageRow = [];
+
+    let viewerImageRowTemp = [];
+
+    let text = {
+        confirm : {
+            delete : "[[#{lang.contents.confirm.delete}]]" // 삭제 하시겠습니까?
+        }
+    }
+
+    let episode  = {
+        // 목록
+        list : function () {
+            location.href = "[[${SERVER.currentDomain}]]/episode/list" + location.search;
+
+            return false;
+        },
+        // 상세
+        view : function () {
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/cp-admin/episode/[[${idx}]]?contentsIdx=' + contentsIdx,
+                method: 'GET',
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+
+                        /** 작품 정보 */
+                        // 작품명
+                        $("div[name=contentsTitle]").text(res.data.contents.title);
+                        // 정산타입
+                        switch(res.data.contents.contract) {
+                            case 1 :
+                                $("div[name=contentsContract]").text("[[#{lang.episode.contents.RS}]]");
+                                break;
+                            case 2 :
+                                $("div[name=contentsContract]").text("[[#{lang.episode.contents.MG.episode}]]");
+                                break;
+                            case 3 :
+                                $("div[name=contentsContract]").text("[[#{lang.episode.contents.MG.contents}]]");
+                                break;
+                            case 4 :
+                                $("div[name=contentsContract]").text("[[#{lang.episode.contents.MG.CP}]]");
+                                break;
+                            default :
+                                $("div[name=contentsContract]").text("-");
+                                break;
+                        }
+                        // 정산비율
+                        let calculate = "[" + res.data.contents.calculate + "] %";
+                        $("div[name=calculate]").text(calculate);
+                        let categoryName = "[" + res.data.contents.categoryName + "] ";
+                        $("div[name=category]").text(categoryName);
+                        categoryIdx = res.data.contents.categoryIdx;
+                        /** // 작품정보 */
+
+
+                        /** 회차 정보 */
+                        $("#idx").text(res.data.view.idx);
+                        $("input[name=idx]").val(res.data.view.idx);
+
+                        $("div[name=view]").text(res.data.view.view);
+                        $("div[name=rating]").text(res.data.view.rating);
+
+                        $("input[name=title]").val(res.data.view.title);
+                        $("div[name=episodeNumber]").text(res.data.view.episodeNumber);
+                        $("div[name=sort]").text(res.data.view.sort);
+                        $("select[name=episodeTypeIdx]").val(res.data.view.episodeTypeIdx);
+                        $("input:radio[name=checkArrow]:radio[value='"+res.data.view.checkArrow+"']").prop("checked", true);
+                        $("input[name=pubdate]").val(res.data.view.pubdate);
+                        $("select[name=pubTime]").val(Number(res.data.view.pubTime));
+
+                        $("input[name=coinRent]").val(res.data.view.coinRent);
+                        $("input[name=coin]").val(res.data.view.coin);
+
+                        $("input:radio[name=state]:radio[value='"+res.data.view.state+"']").prop("checked", true);
+
+                        $("input[name=eventStartDate]").val(res.data.view.eventStartDate);
+                        $("select[name=eventStartTime]").val(Number(res.data.view.eventStartTime));
+                        $("input[name=eventEndDate]").val(res.data.view.eventEndDate);
+                        $("select[name=eventEndTime]").val(Number(res.data.view.eventEndTime));
+                        $("input[name=eventCoinRent]").val(res.data.view.eventCoinRent);
+                        $("input[name=eventCoin]").val(res.data.view.eventCoin);
+
+                        // 이미지 미리보기
+                        let heightHtml = "";
+                        let widthHtml = "";
+                        res.data.view.imageList.forEach(data => {
+                            if (data.type == "height") {
+                                heightHtml += previewHtml(data.url, data.filename, data.type, data.idx);
+                                heightImageRow.push(data);
+
+                            } else {
+                                widthHtml += previewHtml(data.url, data.filename, data.type, data.idx);
+                                widthImageRow.push(data);
+                            }
+                        });
+                        $("#heightImage").html(heightHtml);
+                        $("#widthImage").html(widthHtml);
+                        /** // 회차 정보 */
+
+
+                        /** 뷰어 이미지 */
+                        let viewerHtml = "";
+                        // 소설 일때
+                        if (res.data.contents.categoryIdx == 3) {
+
+                            // 내용
+                            let viewerDiv = $('<div class="border" id="detail" style="padding:22px 8px 8px 8px;">');
+                            res.data.viewer.forEach(data => {
+                                viewerDiv.append(`
+                                    <li data-idx="${data.idx}" style="width: 100%;">
+                                        <div contenteditable="true">${data.detail}</div>
+                                    </li>
+                                `);
+                            });
+
+                            if (res.data.images.length > 0) {
+                                $("#viewerImage").append(viewerHtml);
+
+                                $("#btnViewerGroup button:first").text("이미지 추가");
+                                $("#btnViewerGroup button:first").removeClass("btn-success").addClass("btn-warning")
+                            }
+
+                            if (res.data.viewer.length > 0) {
+                                let modifyText = "[[#{lang.contents.button.modify}]]";
+                                $("#btnViewerGroup").append(`
+                                    <div class="col-6">
+                                        <button type="button" class="btn btn-sm btn-warning" onClick="viewer.modify(${res.data.contents.categoryIdx})">${modifyText}</button>
+                                    </div>
+                                `);
+
+                                viewerDiv.appendTo($("#viewerImage"));
+                            }
+
+                        } else {
+                            res.data.viewer.forEach(data => {
+                                // resize image 이므로 parent(원본 idx) 로 삭제
+                                viewerHtml += `
+                                <li class="image-preview-wrap" style="width:100px">
+                                    <div>
+                                        <input class="preview-data" type="hidden" name="image_path" value="">
+                                        <a href="javascript:void(0);" onclick="viewer.delete(this, ${data.idx})" class="preview-del"></a><!-- x 닫기 -->
+                                        <div>
+                                            <img src="${data.url}" style="width:100%; max-width: 300px;">
+                                        </div>
+                                    </div>
+                                    <div class="file-name">${name}</div>
+                                </li>`;
+
+                                data.categoryIdx = res.data.contents.categoryIdx;
+                                viewerImageRow.push(data);
+                            });
+                            $("#viewerImage").html(viewerHtml);
+
+                            if (res.data.viewer.length > 0) {
+                                $("#btnViewerGroup button:first").text("이미지 추가");
+                                $("#btnViewerGroup button:first").removeClass("btn-success").addClass("btn-warning");
+
+                                let modifyText = "[[#{lang.contents.button.modify}]]";
+                                $("#btnViewerGroup").append(`
+                                    <div class="col-6">
+                                        <button type="button" class="btn btn-sm btn-warning" onClick="viewer.modify(${res.data.contents.categoryIdx})">순서 변경</button>
+                                    </div>
+                                `);
+                            }
+
+                            // drag & drop
+                            drag();
+                        }
+
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        },
+        modify : function () {
+            let validate = episode.validate();
+            // 저장
+            if (validate) {
+                let form = $("#frm")[0];
+                let formData = new FormData(form);
+                formData.set("contentsIdx", contentsIdx);
+
+                // 가로 썸네일
+                let widthImage = new Array();
+                if (widthImageRow.length > 0) {
+                    const dataTransfer = new DataTransfer();
+                    let index = 0;
+                    widthImageRow.forEach((file, idx) => {
+                        let data = new Object();
+                        if (file.size != undefined) {
+                            // 추가 이미지
+                            dataTransfer.items.add(file);
+                            formData.append("fileDataWidth", dataTransfer.files[index]);
+                            index++;
+
+                            data.idx = null;
+                            data.type = "file";
+                            data.fileName = String(file.name);
+                        } else {
+                            // 기존 이미지
+                            data.idx = file.idx;
+                            data.type = "data"
+                            data.fileName = String(file.url);
+                        }
+                        data.sort = idx;
+
+                        widthImage.push(data);
+                    })
+                }
+                formData.append("widthImage", JSON.stringify(widthImage));
+
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/cp-admin/episode',
+                    method: 'PUT',
+                    enctype: 'multipart/form-data',
+                    data: formData,
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            location.reload();
+                            toast.alert(res.message);
+                        } else {
+                            // ajax exception error
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+            }
+        },
+        /** validation 체크 */
+        validate : function () {
+            // 제목 체크
+            // 판매가격
+            // 썸네일
+            return true;
+        }
+    }
+
+
+    let image = {
+        // 이미지 추가
+        add : function (_this, _type) {
+            let _imageRowAdd = [];
+            let _imageSelector = "";
+            let _fileSelector = "";
+            if (_type == "height") {
+                _imageRowAdd = heightImageRow;
+                _imageSelector = $("#heightImage");
+                _fileSelector = $("input[name=fileDataHeight]");
+            } else if (_type == "width") {
+                _imageRowAdd = widthImageRow;
+                _imageSelector = $("#widthImage");
+                _fileSelector = $("input[name=fileDataWidth]");
+            }
+
+            // 이미지 배열에 파일 추가
+            $.each(_this.files, function (idx, el) {
+                // 등록할 이미지 배열에 넣기
+                _imageRowAdd.push(_this.files[idx]);
+
+                // 이미지 미리보기
+                let imageSrc = "";
+                let name = "";
+                if (el.size != undefined) {
+                    imageSrc = URL.createObjectURL(el);
+                    name = el.name;
+                } else {
+                    imageSrc = el.url;
+                    name = el.filename;
+                }
+                let html = previewHtml(imageSrc, name, _type, null);
+                _imageSelector.append(html);
+                _fileSelector.val("");
+            });
+        },
+        // 미리 보기 삭제
+        previewDelete : function (_this) {
+            let imageWrap = $(_this).closest(".image-preview-wrap");
+
+            // 미리보기 삭제
+            imageWrap.remove();
+
+            // 선택 파일 없을때 표시
+            if ($(".image-preview-wrap").length <= 0) {
+                let noFile = "<span th:text=\"#{lang.product.placeholder.file.no}\"></span>";
+
+                $("#preview").html(noFile);
+            }
+        },
+        // 이미지 삭제
+        delete : function (_this, _type, idx) {
+            if (confirm(text.confirm.delete)) {
+                let _imageRowDelete = [];
+                let row = "";
+                let _fileSelector = "";
+                if (_type == "height") {
+                    _imageRowDelete = heightImageRow;
+                    row = $(_this).closest("#heightImage .image-preview-wrap");
+                    _fileSelector = $("input[name=fileDataHeight]");
+                } else if (_type == "width") {
+                    _imageRowDelete = widthImageRow;
+                    row = $(_this).closest("#widthImage .image-preview-wrap");
+                    _fileSelector = $("input[name=fileDataWidth]");
+                }
+
+                // 추가 이미지
+                if (_imageRowDelete[row.prevAll().length].idx == undefined) {
+                    const dataTransfer = new DataTransfer();
+
+                    let fileList = _fileSelector.get(0).files;
+                    // fileList -> Array 변환
+                    let fileListArr = Array.from(fileList);
+                    // Array 에서 선택 이미지 삭제
+                    fileListArr.splice(row.prevAll().length, 1);
+                    // 남은 배열을 dataTransfer로 처리(Array -> FileList)
+                    fileListArr.forEach(file => {
+                        dataTransfer.items.add(file);
+                    });
+                    // dataTransfer 로 변환한 data를 fileList에 대입함
+                    _fileSelector[0].files = dataTransfer.files;
+
+
+                    // 배열에서 삭제
+                    _imageRowDelete.splice(row.prevAll().length, 1);
+
+                    // 미리 보기 삭제
+                    image.previewDelete(_this);
+
+                } else { // 기존 이미지
+
+                    // 이미지 삭제
+                    $.ajax({
+                        url: '[[${SERVER.currentDomain}]]/v1/cp-admin/episode/image/'+idx,
+                        method: 'DELETE',
+                        dataType: 'json',
+                        processData: false,
+                        contentType: false,
+                        success: function (res) {
+                            if (res.result) {
+                                // 배열에서 삭제
+                                _imageRowDelete.splice(row.prevAll().length, 1);
+
+                                // 미리 보기 삭제
+                                image.previewDelete(_this);
+
+                                toast.alert(res.message);
+                            } else {
+                                // ajax exception error
+                                toast.alert(res.message);
+                            }
+                        },
+                        error: function (request, status, error) {
+                            // filter error
+                            toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    // TODO 뷰어 이미지 낱개 등록
+    let viewer = {
+        // 뷰어(zip, epub) 등록
+        add : function () {
+            let form = $("#frm")[0];
+            let formData = new FormData(form);
+            formData.set("contentsIdx", contentsIdx);
+            formData.set("categoryIdx", categoryIdx);
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/cp-admin/viewer',
+                method: 'POST',
+                enctype: 'multipart/form-data',
+                data: formData,
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        toast.alert(res.message);
+
+                        location.reload();
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+        },
+        // 뷰어 이미지 삭제
+        delete : function (_this, idx) {
+            if (confirm(text.confirm.delete)) {
+                let viewerRow = $(_this).closest("#viewerImage .image-preview-wrap");
+
+                // 추가 이미지
+                if (viewerImageRow[viewerRow.prevAll().length].idx == undefined) {
+
+                    // 배열에서 삭제
+                    viewerImageRow.splice(viewerRow.prevAll().length, 1);
+
+                    // 미리 보기 삭제
+                    image.previewDelete(_this);
+
+                } else { // 기존 이미지
+
+                    if (categoryIdx == undefined) {
+                        toast.alert("카테고리가 없습니다.");
+                        return false;
+                    }
+
+                    let form = $("#frm")[0];
+                    let formData = new FormData(form);
+                    formData.set("categoryIdx", categoryIdx);
+
+                    // 이미지 삭제
+                    $.ajax({
+                        url: '[[${SERVER.currentDomain}]]/v1/cp-admin/viewer/image/'+idx,
+                        method: 'DELETE',
+                        dataType: 'json',
+                        data : formData,
+                        processData: false,
+                        contentType: false,
+                        success: function (res) {
+                            if (res.result) {
+
+                                // 배열에서 삭제
+                                viewerImageRow.splice(viewerRow.prevAll().length, 1);
+
+                                // 미리 보기 삭제
+                                image.previewDelete(_this);
+
+                                toast.alert(res.message);
+                            } else {
+                                // ajax exception error
+                                toast.alert(res.message);
+                            }
+                        },
+                        error: function (request, status, error) {
+                            // filter error
+                            toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                        }
+                    });
+                }
+            }
+        },
+        modify : function (_categoryIdx) {
+
+            let detailArray = new Array();
+
+            if (_categoryIdx == 3) {
+                // 소설 내용 수정
+                let detailDiv = $("#viewerImage #detail").children("li");
+
+                detailDiv.each((idx, el) => {
+                    let data = new Object();
+                    data.idx = $(el).data("idx");
+                    data.detail = $(el).children("div").change().html();
+                    data.episodeIdx = Number('[[${idx}]]');
+                    data.categoryIdx = _categoryIdx;
+
+                    detailArray.push(data);
+                });
+
+            } else if ([1,2].indexOf(_categoryIdx) >= 0) {
+                // 이미지 순서 변경
+                viewerImageRow.forEach (function (el, idx) {
+                    el.sort = idx + 1;
+                });
+                detailArray = viewerImageRow;
+            }
+
+            if (detailArray.length > 0) {
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/cp-admin/viewer',
+                    method: 'PUT',
+                    data: JSON.stringify(detailArray),
+                    dataType: 'json',
+                    processData: false,
+                    contentType: 'application/json',
+                    success: function (res) {
+                        if (res.result) {
+                            // location.reload();
+                            toast.alert(res.message);
+                        } else {
+                            // ajax exception error
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+            } else {
+                toast.alert("변경할 정보가 없습니다.");
+            }
+        }
+    }
+
+
+    /** 미리 보기 html */
+    function previewHtml(imageSrc, name, type, idx) {
+        let imgHtml = `
+            <div class="image-preview-wrap">
+                <div>
+                    <input class="preview-data" type="hidden" name="image_path" value="">
+                    <a href="javascript:void(0);" onclick="image.delete(this, '${type}', ${idx});" class="preview-del"></a><!-- x 닫기 -->
+                    <div>
+                        <a href="${imageSrc}" target="_blank">
+                            <img src="${imageSrc}" style="width:100%; max-width:300px;">
+                        </a>
+                    </div>
+                </div>
+                <div class="file-name">${name}</div>
+            </div>
+        `;
+        return imgHtml;
+    }
+
+
+    /** drag & drop **/
+    function drag () {
+        // drag & drop
+        let temp = null;
+        $("#viewerImage").sortable({
+            start: function (event, ui) {
+                let order = ui.item.index();
+                temp = viewerImageRow.splice(order, 1);
+            },
+            stop: function (event, ui) {
+                let order = ui.item.index();
+                viewerImageRow.splice(order, 0, temp[0]);
+                temp = null;
+            }
+        }).disableSelection();
+    }
+
+</script>

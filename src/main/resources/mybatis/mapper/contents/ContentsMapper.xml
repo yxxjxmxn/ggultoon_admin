@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.dao.contents.ContentsDao">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        INSERT
+    =============================================================== -->
+
+    <!-- 컨텐츠 등록 -->
+    <insert id="register" parameterType="ContentsDto" useGeneratedKeys="true" keyProperty="insertedId">
+        INSERT INTO <include refid="database" />contents
+        <set>
+            `category_idx`  = #{categoryIdx},
+            `genre_idx`     = #{genreIdx},
+            `title`         = #{title},
+            `description`   = #{description},
+            `adult`         = #{adult},
+            <if test="adultPavilion != null and !adultPavilion.equals('')">`adult_pavilion`= #{adultPavilion},</if>
+            `progress`      = #{progress},
+            `label`         = #{label},
+            `exclusive`     = #{exclusive},
+            `publication`   = #{publication},
+            <if test="revision != null and !revision.equals('')">`revision`      = #{revision},</if>
+            `sell_type`     = #{sellType},
+            `state`         = 1,
+            `regdate`       = #{regdate},
+            `regdate_tz`    = '${convertTZ}',
+            `pubdate`       = #{pubdate},
+            `pubdate_tz`    = '${convertTZ}'
+        </set>
+    </insert>
+
+
+    <!-- 컨텐츠 추가 정보 -->
+    <insert id="registerInfo" parameterType="ContentsDto">
+        INSERT INTO <include refid="database" />contents_info
+        <set>
+            `contents_idx`	= #{insertedId},
+            <if test="viewDummy != null">`view_dummy` = #{viewDummy},</if>
+        </set>
+    </insert>
+
+    <!-- 컨텐츠 CP 등록 -->
+    <insert id="registerCp" parameterType="ContentsDto">
+        INSERT INTO <include refid="database" />contents_cp
+        <set>
+            `contents_idx`	= #{insertedId},
+            `cp_member_idx`	= #{cpMemberIdx},
+            `tax`			= #{tax},
+            `tax_type`		= #{taxType},
+            `tax_code`		= #{taxCode},
+            <if test='contract != null and contract != ""'>`contract` = #{contract},</if>
+            <if test='calculate != null and calculate != ""'>`calculate` = #{calculate},</if>
+            <if test='calculateApp != null and calculateApp != ""'>`calculate_app` = #{calculateApp},</if>
+            <if test='guarantee != null and guarantee != ""'>`guarantee` = #{guarantee},</if>
+            <if test='webFee != null and webFee != ""'>`web_fee` = #{webFee},</if>
+            <if test='appFee != null and appFee != ""'>`app_fee` = #{appFee},</if>
+            `state`			= 1,
+            `regdate`		= #{regdate},
+            `regdate_tz`	= '${convertTZ}'
+        </set>
+    </insert>
+
+
+    <!-- 컨텐츠 이미지 등록 -->
+    <insert id="registerImage" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="keyId">
+        INSERT INTO <include refid="database" />contents_img
+            (
+                `contents_idx`,
+                `path`,
+                `parent`,
+                `filename`,
+                `url`,
+                `width`,
+                `height`,
+                `type`,
+                `sort`,
+                `device`,
+                `lang`,
+                `state`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.idx},
+                #{item.path},
+                #{item.parent},
+                #{item.orgFileName},
+                #{item.fileUrl},
+                #{item.width},
+                #{item.height},
+                #{item.type},
+                #{item.sort},
+                #{item.device},
+                "ko",
+                1,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+
+    </insert>
+
+
+    <!-- 작가 등록 -->
+    <insert id="registerAuthor" parameterType="AuthorDto" useGeneratedKeys="true" keyProperty="idx">
+        INSERT INTO <include refid="database" />`author`
+        <set>
+            `name`          = #{name},
+            `state`         = 1,
+            `regdate`       = #{regdate},
+            `regdate_tz`    = '${convertTZ}'
+        </set>
+    </insert>
+
+
+    <!-- 작가 매핑 -->
+    <insert id="registerContentsAuthor" parameterType="AuthorDto">
+        INSERT IGNORE INTO <include refid="database" />`author_mapping`
+        <set>
+            `contents_idx`  = #{contentsIdx},
+            `author_idx`    = #{idx},
+            `type`          = #{type},
+            `state`         = 1,
+            `regdate`       = #{regdate},
+            `regdate_tz`    = '${convertTZ}'
+        </set>
+    </insert>
+
+    <!-- 컨텐츠 무료, 이벤트 무료 등록 -->
+    <insert id="registerEventFree" parameterType="ContentsDto">
+        INSERT INTO <include refid="database" />contents_event_free
+        <set>
+            `contents_idx` = #{insertedId},
+            <if test="freeEpisodeCnt != null and !freeEpisodeCnt.equals('')">`free_episode_cnt` = #{freeEpisodeCnt},</if>
+            <if test="eventFreeEpisodeCnt != null and !eventFreeEpisodeCnt.equals('')">`event_free_episode_cnt` = #{eventFreeEpisodeCnt},</if>
+            `event_free_used` = #{eventFreeUsed},
+            <if test="eventStartDate != null and !eventStartDate.equals('')">`event_start_date` = #{eventStartDate},</if>
+            <if test="eventStartDate != null and !eventStartDate.equals('')">`event_start_date_tz` = '${convertTZ}',</if>
+            <if test="eventEndDate != null and !eventEndDate.equals('')">`event_end_date` = #{eventEndDate},</if>
+            <if test="eventEndDate != null and !eventEndDate.equals('')">`event_end_date_tz` = '${convertTZ}',</if>
+            <if test="minimumPurchase != null and !minimumPurchase.equals('')">`minimum_purchase` = #{minimumPurchase},</if>
+            <if test="discount != null and !discount.equals('')">`discount` = #{discount},</if>
+            <if test="minimumPurchaseRent != null and !minimumPurchaseRent.equals('')">`minimum_purchase_rent` = #{minimumPurchaseRent},</if>
+            <if test="discountRent != null and !discountRent.equals('')">`discount_rent` = #{discountRent},</if>
+        </set>
+    </insert>
+
+
+    <!-- 코드 매핑 -->
+    <insert id="registerCode" parameterType="CodeDto">
+        INSERT INTO <include refid="database" />code_mapping
+        <set>
+            `contents_idx`    = #{contentsIdx},
+            `code_idx`        = #{codeIdx},
+            `state`           = 1,
+            `regdate`         = #{regdate},
+            `regdate_tz`      = '${convertTZ}'
+        </set>
+    </insert>
+
+
+    <!-- 연재 요일 매핑 -->
+    <insert id="registerWeekly" parameterType="java.util.List">
+        INSERT INTO <include refid="database" />weekly_mapping
+            (
+                `contents_idx`,
+                `weekly_idx`,
+                `state`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.contentsIdx},
+                #{item.weeklyIdx},
+                1,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+
+    <!-- 태그 매핑 -->
+    <insert id="registerTag" parameterType="java.util.List">
+        INSERT INTO <include refid="database" />tag_mapping
+            (
+                `contents_idx`,
+                `tag_idx`,
+                `state`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.contentsIdx},
+                #{item.tagIdx},
+                1,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+    <!-- ==============================================================
+        UPDATE
+    =============================================================== -->
+
+    <!-- 컨텐츠 수정 -->
+    <update id="modify" parameterType="ContentsDto">
+        UPDATE <include refid="database" />contents
+        <set>
+            <if test="categoryIdx != null and !categoryIdx.equals('')">`category_idx`  = #{categoryIdx},</if>
+            <if test="genreIdx != null and !genreIdx.equals('')">`genre_idx`        = #{genreIdx},</if>
+            <if test="title != null and !title.equals('')">`title`               = #{title},</if>
+            <if test="description != null and !description.equals('')">`description`   = #{description},</if>
+            <if test="adult != null and !adult.equals('')">`adult`               = #{adult},</if>
+            <if test="adultPavilion != null and !adultPavilion.equals('')">`adult_pavilion`= #{adultPavilion},</if>
+            <if test="adultPavilion == null or adultPavilion.equals('')">`adult_pavilion`= 0,</if>
+            <if test="progress != null and !progress.equals('')">`progress`         = #{progress},</if>
+            <if test="label != null and !label.equals('')">`label`               = #{label},</if>
+            <if test="exclusive != null and !exclusive.equals('')">`exclusive`       = #{exclusive},</if>
+            <if test="publication != null and !publication.equals('')">`publication`   = #{publication},</if>
+            <if test="revision != null and !revision.equals('')">`revision`         = #{revision},</if>
+            <if test="sellType != null and !sellType.equals('')">`sell_type`        = #{sellType},</if>
+            <if test="state != null and !state.equals('')">`state`               = #{state},</if>
+            <if test="pubdate != null and !pubdate.equals('')">`pubdate`           = #{pubdate},</if>
+            <if test="pubdate != null and !pubdate.equals('')">`pubdate_tz`        = '${convertTZ}'</if>
+        </set>
+        WHERE
+            idx = #{idx}
+    </update>
+
+    <!-- 컨텐츠 추가 정보 수정 -->
+    <update id="modifyInfo" parameterType="ContentsDto">
+        UPDATE <include refid="database" />contents_info
+        <set>
+            <choose>
+                <when test="viewDummy != null and !viewDummy.equals('')">
+                    `view_dummy` = #{viewDummy}
+                </when>
+                <otherwise>
+                    `view_dummy` = 0
+                </otherwise>
+            </choose>
+        </set>
+        WHERE
+            `contents_idx` = #{idx}
+    </update>
+
+    <!-- 컨텐츠 이벤트 무료 수정 -->
+    <update id="modifyEventFree" parameterType="ContentsDto">
+        UPDATE <include refid="database" />contents_event_free
+        <set>
+            <if test="freeEpisodeCnt != null and !freeEpisodeCnt.equals('')">`free_episode_cnt` = #{freeEpisodeCnt},</if>
+            <if test="eventFreeEpisodeCnt != null and !eventFreeEpisodeCnt.equals('')">`event_free_episode_cnt` = #{eventFreeEpisodeCnt},</if>
+            `event_free_used` = #{eventFreeUsed},
+            <if test="eventStartDate != null and !eventStartDate.equals('')">`event_start_date` = #{eventStartDate},</if>
+            <if test="eventStartDate != null and !eventStartDate.equals('')">`event_start_date_tz` = '${convertTZ}',</if>
+            <if test="eventEndDate != null and !eventEndDate.equals('')">`event_end_date` = #{eventEndDate},</if>
+            <if test="eventEndDate != null and !eventEndDate.equals('')">`event_end_date_tz` = '${convertTZ}',</if>
+            <if test="minimumPurchase != null and !minimumPurchase.equals('')">`minimum_purchase` = #{minimumPurchase},</if>
+            <if test="discount != null and !discount.equals('')">`discount` = #{discount},</if>
+            <if test="minimumPurchaseRent != null and !minimumPurchaseRent.equals('')">`minimum_purchase_rent` = #{minimumPurchaseRent},</if>
+            <if test="discountRent != null and !discountRent.equals('')">`discount_rent` = #{discountRent},</if>
+        </set>
+        WHERE
+            `contents_idx` = #{idx}
+    </update>
+
+    <!-- 컨텐츠 CP 수정 -->
+    <update id="modifyCp" parameterType="ContentsDto">
+        UPDATE <include refid="database" />contents_cp
+        <set>
+            `tax`			= #{tax},
+            `tax_type`		= #{taxType},
+            <if test="taxCode != null and !taxCode.equals('')">`tax_code` = #{taxCode},</if>
+            <if test="contract != null and !contract.equals('')">`contract` = #{contract},</if>
+            <if test="calculate != null and !calculate.equals('')">`calculate` = #{calculate},</if>
+            <if test="calculateApp != null and !calculateApp.equals('')">`calculate_app` = #{calculateApp},</if>
+            <if test="guarantee != null and !guarantee.equals('')">`guarantee` = #{guarantee},</if>
+            <if test="webFee != null and !webFee.equals('')">`web_fee` = #{webFee},</if>
+            <if test="appFee != null and !appFee.equals('')">`app_fee` = #{appFee},</if>
+        </set>
+        WHERE
+            `contents_idx` = #{idx}
+    </update>
+
+
+    <!-- 컨텐츠 이미지 삭제(origin) -->
+    <update id="deleteImage" parameterType="Integer">
+        UPDATE <include refid="database" />contents_img
+        <set>
+            `state` = 0
+        </set>
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+
+    <!-- 컨텐츠 이미지 sort 수정 -->
+    <update id="imageSort" parameterType="java.util.List">
+        <foreach collection="list" item="item" index="index" open="" close="" separator=";">
+            UPDATE <include refid="database" />contents_img
+            <set>
+                `sort` = #{item.sort}
+            </set>
+            WHERE
+                    `idx` = #{item.idx}
+                AND `contents_idx` = #{item.contentsIdx}
+        </foreach>
+    </update>
+
+    <!-- ==============================================================
+        DELETE
+    =============================================================== -->
+
+    <!-- 연재 요일 삭제 -->
+    <delete id="deleteWeekly" parameterType="Integer">
+        DELETE
+        FROM <include refid="database" />weekly_mapping
+        WHERE
+            `contents_idx` = #{idx}
+    </delete>
+
+    <!-- 태그 삭제 -->
+    <delete id="deleteTag" parameterType="Integer">
+        DELETE
+        FROM <include refid="database" />tag_mapping
+        WHERE
+            `contents_idx` = #{idx}
+    </delete>
+
+    <!-- 작가 삭제 -->
+    <delete id="deleteContentsAuthor" parameterType="hashMap">
+        DELETE
+        FROM <include refid="database" />author_mapping
+        WHERE
+                `contents_idx` = #{idx}
+            AND `type` = #{type}
+    </delete>
+
+    <!-- 코드 삭제 -->
+    <delete id="deleteCode" parameterType="Integer">
+        DELETE
+        FROM <include refid="database" />code_mapping
+        WHERE
+            `contents_idx` = #{idx}
+    </delete>
+
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+    <!--
+        - 작가 등록후 조회하는 경우가 생겨 main 에서 조회
+        - 작가 관리페이지 추가 되면 이동
+    -->
+    <select id="getAuthor" parameterType="String" resultType="Integer">
+        SELECT
+            au.`idx`
+        FROM <include refid="database" />author AS au
+        <where>
+                au.`name` = #{name}
+            AND au.`state` = 1
+        </where>
+    </select>
+
+
+</mapper>

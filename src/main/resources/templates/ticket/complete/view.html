@@ -1,0 +1,83 @@
+<th:block layout:decorate="~{common/layout_popup_nomenu}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="container-fluid">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" name="title" th:text="#{lang.ticket.title.view}"></h5>
+            </div>
+            <div class="card-body row">
+                <form id="frm" accept-charset="utf-8">
+                    <table class="table">
+                        <thead></thead>
+                        <tbody>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.idx}"></th>
+                            <td class="text-center" name="idx" id="idx"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.group.name}"></th>
+                            <td class="text-center" name="name" id="name"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.group.code}"></th>
+                            <td class="text-center" name="code" id="code"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.contents.category}"></th>
+                            <td class="text-center" name="category" id="category"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.contents.genre}"></th>
+                            <td class="text-center" name="genre" id="genre"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.contents.contentsIdx}"></th>
+                            <td class="text-center" name="contentsIdx" id="contentsIdx"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.contents.title}"></th>
+                            <td class="text-center" name="title" id="title"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.group.age}"></th>
+                            <td class="text-center" name="adult" id="adult"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.give.count}"></th>
+                            <td class="text-center" name="giveCnt" id="giveCnt"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.use.count}"></th>
+                            <td class="text-center" name="useCnt" id="useCnt"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.use.percent}"></th>
+                            <td class="text-center" name="usePercent" id="usePercent"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.startDate}"></th>
+                            <td class="text-center" name="startDate" id="startDate">
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.endDate}"></th>
+                            <td class="text-center" name="endDate" id="endDate">
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.ticket.regdate}"></th>
+                            <td class="text-center" name="regdate" id="regdate"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div class="form-group row">
+                        <div class="col text-center">
+                            <button type="button" name="close" class="btn btn-sm btn-secondary" th:onclick="|self.close()|" th:text="#{lang.ticket.button.close}"></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- //컨텐츠 영역 -->
+    </div>
+</th:block>

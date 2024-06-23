@@ -1,0 +1,183 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        // 배너 목록 조회
+        banner.list();
+        date.datePicker();
+    });
+
+    let text = {
+        genre : "[[#{lang.contents.genre}]]",
+        btn : {
+            episode : "[[#{lang.contents.button.episode}]]"
+        }
+    }
+
+    let banner = {
+        // 목록
+        list : function () {
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/banner',
+                method: 'GET',
+                data : $("#frm").serialize(),
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+
+                        //페이지 url 갱신 ( 검색 후 새로고침 시 검색값 유지 )
+                        if( window.location.search !== "?"+ $("#frm").serialize() ){
+                            history.pushState(null, null, "?" + $("#frm").serialize());
+                        }
+
+                        // list
+                        if (res.data.list.length > 0) {
+
+                            // total count
+                            $(".totalCount").next().text(res.data.list.length + "건");
+
+                            let listTbody = "";
+                            $.each(res.data.list, function (idx, el) {
+
+                                // 배너 이미지 세팅
+                                let image364 = "-";
+                                if (el.strImage364 != undefined) {
+                                    image364 = '<img src="' + el.strImage364 + '" style="max-height:100px; max-width:200px">';
+                                }
+                                let image260 = "-";
+                                if (el.strImage260 != undefined) {
+                                    image260 = '<img src="' + el.strImage260 + '" style="max-height:100px; max-width:200px">';
+                                }
+                                let image160 = "-";
+                                if (el.strImage160 != undefined) {
+                                    image160 = '<img src="' + el.strImage160 + '" style="max-height:100px; max-width:200px">';
+                                }
+
+                                // 배너 노출영역 말줄임표 세팅
+                                let bannerType = el.typeText + "";
+                                if (bannerType != "undefined") {
+                                    if (bannerType.length >= 20) {
+                                        bannerType = bannerType.substring(0, 20) + '...';
+                                    }
+                                } else {
+                                    bannerType = "-";
+                                }
+
+                                listTbody += `
+                                    <tr onclick="banner.view(${el.idx});" style="cursor:pointer;">
+                                        <td class="text-center">${el.idx}</td>
+                                        <td class="text-center">${el.sort}</td>
+                                        <td class="text-center"><span class="badge ${el.stateBg}">${el.stateText}</span></td>
+                                        <td class="text-center">${image364}</td>
+                                        <td class="text-center">${image260}</td>
+                                        <td class="text-center">${image160}</td>
+                                        <td class="text-center">${el.title || "-"}</td>
+                                        <td class="text-center">${bannerType}</td>
+                                        <td class="text-center">${el.clickCount}회</td>
+                                        <td class="text-center">${el.startDate || "-"}</td>
+                                        <td class="text-center">${el.endDate || "-"}</td>
+                                    </tr>
+                                `;
+                            });
+                            $("#lists tbody").html(listTbody);
+                            $(".notUsed").css("background", "#ddd");
+
+                        } else {
+                            // 결과 없음
+                            let listTbody = `<tr><td colspan="12" class="text-center">${res.message}</td></tr>`;
+                            $("#lists tbody").html(listTbody);
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        },
+        // 상세
+        view : function (idx) {
+            location.href = "[[${SERVER.currentDomain}]]/banner/" + idx + "?" + $("#frm").serialize();
+        },
+        // 등록
+        register : function () {
+            location.href = "[[${SERVER.currentDomain}]]/banner/register" + "?" + $("#frm").serialize();
+        },
+        // 새로고침 버튼
+        reset: function () {
+            location.href = '[[${SERVER.currentDomain}]]/banner/list';
+        }
+    }
+
+    /** 날짜 관련 객체 **/
+    let date = {
+        // input 날짜 하이픈(-) 자동 입력
+        forMatter : (date) => {
+            $(".datePicker").on("input", () => {
+                let dateValue = date.value.replace(/[^0-9]/g, '')
+                    .replace(/^(\d{0,4})(\d{0,2})(\d{0,2})$/g, "$1-$2-$3")
+                    .replace(/(\-{1,2})$/g, "");
+                date.value = dateValue;
+            })
+        },
+        datePicker : () => {
+            // 시작일 date picker 생성
+            $("#searchStartDate").datepicker({
+                onSelect: function() {
+                    let startDate = $.datepicker.formatDate("yy-mm-dd", $(this).datepicker('getDate'));
+                    $("#searchStartDate").val(startDate);
+                },
+
+                // 시작일 datepicker가 닫힐 때
+                onClose: function(selectedDate) {
+                    // 종료일의 선택할 수 있는 최소 날짜(minDate)를 선택한 시작일로 지정
+                    $("#searchEndDate").datepicker("option", "minDate", selectedDate);
+                },
+                beforeShow: function() {
+                    setTimeout(function(){
+                        $('.ui-datepicker').css('z-index', 99999999999999);
+                    }, 0);
+                }
+            }).on('changeDate', function(e){
+                $(this).datepicker('hide');
+            });
+
+            // 종료일 date picker 생성
+            $("#searchEndDate").datepicker({
+                onSelect: function() {
+                    let endDate = $.datepicker.formatDate("yy-mm-dd", $(this).datepicker('getDate'));
+                    $("#searchEndDate").val(endDate);
+                },
+
+                // 종료일 datepicker가 닫힐 때
+                onClose: function(selectedDate) {
+                    // 시작일의 선택할 수 있는 최대 날짜(maxDate)를 선택한 종료일로 지정
+                    $("#searchStartDate").datepicker("option", "maxDate", selectedDate);
+                },
+                beforeShow: function() {
+                    setTimeout(function(){
+                        $('.ui-datepicker').css('z-index', 99999999999999);
+                    }, 0);
+                }
+            }).on('changeDate', function(e){
+                $(this).datepicker('hide');
+            });
+
+            // date picker 설정
+            $.datepicker.setDefaults({
+                dateFormat: "yy-mm-dd",
+                yearSuffix: "년",
+                monthNames: ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"],
+                monthNamesShort: ["1월", "2월", "3월", "4월", "5월", "6월","7월", "8월", "9월", "10월", "11월", "12월"],
+                dayNames: ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"],
+                dayNamesShort: ["일", "월", "화", "수", "목", "금", "토"],
+                dayNamesMin: ["일", "월", "화", "수", "목", "금", "토"],
+                showMonthAfterYear: true
+            });
+        }
+    }
+</script>

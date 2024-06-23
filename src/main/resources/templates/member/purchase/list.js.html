@@ -1,0 +1,181 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        let page = "[[${page}]]";
+        purchase.list(page);
+        date.dateSet();
+    });
+
+    /** 구매 객체 **/
+    let purchase = {
+        // 조회
+        list: function (page = 1) {
+            if (page != undefined) {
+                $("input[name=page]").val(page);
+            }
+            // 회원 상세페이지에서 팝업으로 열었을 경우
+            if(opener != null){
+                let memberIdx = opener.$('#idx').text();
+                $('#idx').val(memberIdx);
+            }
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/members/purchases',
+                cache : true,
+                method: 'GET',
+                data: $("#frm").serialize(),
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        if(res.data.params != undefined) {
+                            //페이지 url 갱신 ( 검색 후 새로고침 시 검색값 유지 )
+                            if (window.location.search !== "?" + $("#frm").serialize()) {
+                                history.pushState(null, null, "?" + $("#frm").serialize());
+                            }
+
+                            // total count
+                            $(".totalCount").next().text(res.data.params.pagination.totalRecordCount + "건");
+
+                            let purchaseList = res.data.list;
+
+                            let listTbody = '';
+                            $.each(purchaseList, (index, el) => {
+                                listTbody += `
+                                 <tr>
+                                    <td class="text-center">${el.idx}</td>
+                                    <td class="text-center"><a href="[[${SERVER.currentDomain}]]/members/${el.memberIdx}">${el.id}</a></td>
+                                    <td class="text-center">${el.nick||'-'}</td>
+                                    <td class="text-center"><a href="[[${SERVER.currentDomain}]]/contents/view/${el.contentsIdx}">${el.title||'-'}</a></td>
+                                    <td class="text-center">${el.category||'-'}</td>
+                                    <td class="text-center">${el.genre||'-'}</td>
+                                    <td class="text-center"><a href="[[${SERVER.currentDomain}]]/episode/view/${el.episodeIdx}?contentsIdx=${el.contentsIdx}">${el.episodeTitle||'-'}</a></td>
+                                    <td class="text-center"><span class="badge ${el.typeBg}">${el.typeText}</span></td>
+                                    <td class="text-center">${purchase.comma(Math.floor(el.coin))}</td>
+                                    <td class="text-center">${purchase.comma(Math.floor(el.mileage))}</td>
+                                    <td class="text-center">${purchase.comma(Math.floor(el.ticket))}</td>
+                                    <td class="text-center">${el.regdate||'-'}</td>
+                                    <td class="text-center">${el.expiredate||'-'}</td>
+                                </tr>
+                                `
+                            });
+                            $('#lists tbody').html(listTbody);
+
+                            /** 코인 개수 **/
+                            listTbody = '';
+
+                            let data = res.data.coin
+                            $('#totalSumCoin').text()
+
+                            // paging - common.js
+                            pagination("purchase", res.data.params.page, res.data.params.pagination);
+                            $.cookie("backUrl", $("#frm").serialize());
+                        }
+                        else {
+                            // total count
+                            $(".totalCount").next().text("0건");
+                            // 결과 없음
+                            let listTbody = `<tr><td colspan="12" class="text-center">${res.message}</td></tr>`;
+                            $('#lists tbody').html(listTbody);
+                            $('.pagination').html("");
+                        }
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        },
+        // 새로고침 버튼
+        reset: function () {
+            // 회원 상세보기에서 넘어온 경우
+            if(opener != null){
+                opener = null;
+            }
+            location.href = '[[${SERVER.currentDomain}]]/members/purchases';
+        },
+        // 엑셀 다운로드
+        excel : () =>{
+            let formData = $('#frm').serialize();
+            location.href= '[[${SERVER.currentDomain}]]/v1/payments/purchases/members/excel?' + formData ;
+        },
+        // 숫자 콤마 표시
+        comma: function (num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+    }
+
+    //뒤로가기 이벤트 시 실행
+    $(window).on('popstate', function(event) {
+        window.location = document.location.href;
+    });
+
+
+    /** 날짜 관련 객체 **/
+    let date = {
+        // input 날짜 하이픈(-) 자동 입력
+        forMatter : (date) => {
+            $(".datePicker").on("input", () => {
+                let dateValue = date.value.replace(/[^0-9]/g, '')
+                    .replace(/^(\d{0,4})(\d{0,2})(\d{0,2})$/g, "$1-$2-$3")
+                    .replace(/(\-{1,2})$/g, "");
+                date.value = dateValue;
+            })
+        },
+        dateSet : () => {
+            // 시작일 date picker 생성
+            $("#startDate").datepicker({
+                onSelect: function() {
+                    let startDate = $.datepicker.formatDate("yy-mm-dd", $(this).datepicker('getDate'));
+                    $("#startDate").val(startDate);
+                },
+                onClose: function(selectedDate) {
+                    // 시작일 datepicker가 닫힐 때
+                    // 종료일의 선택할 수 있는 최소 날짜(minDate)를 선택한 시작일로 지정
+                    $("#endDate").datepicker( "option", "minDate", selectedDate);
+                },
+                beforeShow: function() {
+                    setTimeout(function(){
+                        $('.ui-datepicker').css('z-index', 99999999999999);
+                    }, 0);
+                }
+            }).on('changeDate', function(e){
+                $(this).datepicker('hide');
+            });
+
+            // 종료일 date picker 생성
+            $("#endDate").datepicker({
+                onSelect: function() {
+                    let endDate = $.datepicker.formatDate("yy-mm-dd", $(this).datepicker('getDate'));
+                    $("#endDate").val(endDate);
+                },
+                onClose: function(selectedDate) {
+                    // 종료일 datepicker가 닫힐 때
+                    // 시작일의 선택할 수 있는 최대 날짜(maxDate)를 선택한 종료일로 지정
+                    $("#startDate").datepicker( "option", "maxDate", selectedDate);
+                },
+                beforeShow: function() {
+                    setTimeout(function(){
+                        $('.ui-datepicker').css('z-index', 99999999999999);
+                    }, 0);
+                }
+            }).on('changeDate', function(e){
+                $(this).datepicker('hide');
+            });
+
+            // 데이트 피커 기본셋
+            $.datepicker.setDefaults({
+                dateFormat: "yy-mm-dd",
+                yearSuffix: "년",
+                monthNames: ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"],
+                monthNamesShort: ["1월", "2월", "3월", "4월", "5월", "6월","7월", "8월", "9월", "10월", "11월", "12월"],
+                dayNames: ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"],
+                dayNamesShort: ["일", "월", "화", "수", "목", "금", "토"],
+                dayNamesMin: ["일", "월", "화", "수", "목", "금", "토"],
+                showMonthAfterYear: true
+            });
+        }
+    }
+</script>

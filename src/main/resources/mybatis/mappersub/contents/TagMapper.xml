@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.contents.TagDaoSub">
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+
+    <!-- 작품 등록용 태그 개수 카운트 -->
+    <select id="getRegisterTagTotalCnt" resultType="int">
+        SELECT
+            COUNT(DISTINCT(`idx`)) AS totalCnt
+        FROM <include refid="database" />tag
+        WHERE
+            `state` = 1
+    </select>
+
+    <!-- 작품 등록용 태그 리스트 조회 -->
+    <select id="getRegisterTagList" resultType="TagDto">
+        SELECT
+            `idx`,
+            `tag_group_idx`,
+            `name`,
+            `state`,
+            CONVERT_TZ(`regdate`, 'UTC', '${convertTZ}') AS `regdate`
+        FROM <include refid="database" />tag
+        WHERE
+            `state` = 1
+        ORDER BY `idx` DESC
+    </select>
+
+    <!-- 작품 태그 전체 개수 카운트 -->
+    <select id="getTagTotalCnt" parameterType="SearchDto" resultType="int">
+        SELECT
+            COUNT(DISTINCT(`idx`)) AS `tagTotalCnt`
+        FROM <include refid="database" />tag
+        <where>
+            <choose>
+                <when test="state != null">
+                    AND `state` = #{state}
+                </when>
+                <otherwise>
+                    AND `state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'name'">
+                        AND `name` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'number'">
+                        AND `tag_group_idx` = #{searchWord}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 작품 태그 리스트 조회 -->
+    <select id="getTagList" parameterType="SearchDto" resultType="TagDto">
+        SELECT
+            `idx`,
+            `tag_group_idx`,
+            `name`,
+            `state`,
+            CONVERT_TZ(`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database" />tag
+        <where>
+            <choose>
+                <when test="state != null">
+                    AND `state` = #{state}
+                </when>
+                <otherwise>
+                    AND `state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'name'">
+                        AND `name` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'number'">
+                        AND `tag_group_idx` = #{searchWord}
+                    </when>
+                </choose>
+            </if>
+        </where>
+        ORDER BY `idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 유효한 작품 태그 idx인지 조회 -->
+    <select id="getTagIdxCnt" parameterType="Integer" resultType="int">
+        SELECT
+            COUNT(DISTINCT(`idx`)) AS `tagIdxCnt`
+        FROM <include refid="database" />tag
+        WHERE
+            `idx` = #{idx}
+            AND `state` IN (1,2)
+    </select>
+
+    <!-- 작품 태그 상세 -->
+    <select id="getViewTag" parameterType="Integer" resultType="TagDto">
+        SELECT
+            `idx`,
+            `tag_group_idx`,
+            `name`,
+            `state`,
+            CONVERT_TZ(`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database" />tag
+        WHERE
+            `idx` = #{idx}
+            AND `state` IN (1,2)
+        LIMIT 1
+    </select>
+
+</mapper>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.log.AdminActionLogDaoSub">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- 공통으로 사용할 field -->
+    <sql id="adminActionLogColumns">
+        `adaclo`.idx,
+        `adaclo`.admin_idx,
+        `adaclo`.referrer,
+        `adaclo`.class,
+        `adaclo`.method,
+        `adaclo`.params,
+        `adaclo`.ip,
+        CONVERT_TZ(`adaclo`.`regdate`, 'UTC', '${convertTZ}') AS regdate
+    </sql>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+
+    <!-- ==============================================================
+        INSERT
+    =============================================================== -->
+
+    <!-- ==============================================================
+        UPDATE
+    =============================================================== -->
+
+</mapper>

@@ -1,0 +1,200 @@
+<script th:fragment="importJsFragment">
+    $(function () {
+        select.list();
+        let currentPage = $("input[name=page]").val() == "" ? 1 : $("input[name=page]").val();
+        contents.list(currentPage);
+    });
+
+    let text = {
+        genre : "[[#{lang.contents.genre}]]",
+        btn : {
+            episode : "[[#{lang.contents.button.episode}]]"
+        }
+    }
+
+    let select = {
+        // 선택한 카테고리에 따른 장르 목록
+        list : function () {
+            let categoryIdx = 0;
+
+            /* 특정 카테고리 미선택 시 -> 전체 장르 노출(기본) */
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/cp-admin/contents/category/' + categoryIdx,
+                method: 'GET',
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        if (res.data.list.length > 0) {
+
+                            // 전체 옵션 초기화
+                            $("#selectLayer select[name=genreIdx]").empty();
+
+                            // 기본 옵션 설정
+                            $("#selectLayer select[name=genreIdx]").append("<option value=''>" + text.genre + "</option>");
+
+                            // list
+                            $.each(res.data.list, function (idx, el) {
+                                $("#selectLayer select[name=genreIdx]").append("<option value='" + el.genreIdx + "'>" + el.genreName + "</option>");
+                            });
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+
+            /* 특정 카테고리 선택 시 -> 선택한 카테고리에 따른 장르 노출 */
+            $("#selectLayer select[name=categoryIdx]").change(function() {
+
+                // 카테고리 idx String -> Integer 형변환
+                categoryIdx = Number($(this).val());
+
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/cp-admin/contents/category/' + categoryIdx,
+                    method: 'GET',
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            if (res.data.list.length > 0) {
+
+                                // 전체 옵션 초기화
+                                $("#selectLayer select[name=genreIdx]").empty();
+
+                                // 기본 옵션 설정
+                                $("#selectLayer select[name=genreIdx]").append("<option value=''>" + text.genre + "</option>");
+
+                                // list
+                                $.each(res.data.list, function (idx, el) {
+                                    $("#selectLayer select[name=genreIdx]").append("<option value='" + el.genreIdx + "'>" + el.genreName + "</option>");
+                                });
+                            }
+                        } else {
+                            // ajax exception error
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+            });
+        }
+    }
+
+    let contents = {
+        // 작품 추가
+        register : function () {
+            location.href = "[[${SERVER.currentDomain}]]/contents/register" + "?" + $("#frm").serialize();
+            return false;
+        },
+        // 컨텐츠 목록
+        list : function (page=1) {
+            $("input[name=page]").val(page);
+
+            // 검색 조건을 선택하지 않고 검색어를 입력한 경우
+            if ($("select[name=searchType]").val() == "" && $("input[name=searchWord]").val() != "") {
+                let searchFailMessage = `[[#{lang.contents.exception.search.type.empty}]]`; // 검색 조건을 설정해주세요.
+                toast.alert(searchFailMessage);
+            }
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/cp-admin/contents',
+                method: 'GET',
+                data : $("#frm").serialize(),
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        //페이지 url 갱신 ( 검색 후 새로고침 시 검색값 유지 )
+                        if( window.location.search !== "?"+ $("#frm").serialize() ){
+                            history.pushState(null, null, "?" + $("#frm").serialize());
+                        }
+
+                        // total count
+                        $(".totalCount").next().text(res.data.params.pagination.totalRecordCount + "건");
+
+                        if (res.data.list.length > 0) {
+                            // list
+                            let listTbody = "";
+                            $.each(res.data.list, function (idx, el) {
+
+                                // 대표 이미지
+                                let imgUrl = "";
+                                if (el.imageList.length > 0) {
+                                    let imageIdx = (el.imageList).findIndex(function(key) {return key["type"] =="height"});
+                                    if (imageIdx >= 0) {
+                                        imgUrl = el.imageList[imageIdx].url;
+                                    }
+                                }
+
+                                listTbody += `
+                                    <tr>
+                                        <td class="text-center">${el.idx}</td>
+                                        <td class="text-center"><span class="badge ${el.adultPavilionBg}">${el.adultPavilionText}</span></td>
+                                        <td class="text-center"><span class="badge ${el.adultBg}">${el.adultText}</span></td>
+                                        <td class="text-center">${el.categoryName}</td>
+                                        <td class="text-center">${el.genreName}</td>
+                                        <td class="text-center"><img src="${imgUrl}" style="max-height:100px; max-width:200px"></td>
+                                        <td class="text-center"><a href="javascript:void(0);" onclick="contents.view(${el.idx});">${el.title}</a></td>
+                                        <td class="text-center">${el.exclusiveText}</td>
+                                        <td class="text-center">${el.companyName}</td>
+                                        <td class="text-center"><span class="badge ${el.stateBg}">${el.stateText}</span></td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-primary p-1 rounded" onclick="contents.episodeList(${el.idx});">${text.btn.episode}</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+                            $("#lists tbody").html(listTbody);
+
+                            // paging - common.js
+                            pagination("contents", res.data.params.page, res.data.params.pagination);
+                        } else {
+                            // 결과 없음
+                            let listTbody = `<tr><td colspan="11" class="text-center">${res.message}</td></tr>`;
+                            $("#lists tbody").html(listTbody);
+                            $(".pagination").html("");
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        },
+        // 새로고침 버튼
+        reset: function () {
+            location.href = '[[${SERVER.currentDomain}]]/contents/list' + "?" + $("#frm").serialize();
+        },
+        // 컨텐츠 상세
+        view : function (idx) {
+            location.href = "[[${SERVER.currentDomain}]]/contents/view/" + idx + "?" + $("#frm").serialize();
+            return false;
+        },
+        // 회차 목록
+        episodeList : function (contentsIdx) {
+            let params = $("#frm").serialize();
+            params += "&contentsIdx=" + contentsIdx;
+
+            location.href = "[[${SERVER.currentDomain}]]/episode/list" + "?" + params;
+            return false;
+        }
+    }
+
+</script>

@@ -1,0 +1,514 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.coin.CoinDaoSub">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- 공통으로 사용할 field -->
+    <sql id="MemberColumns">
+        `me`.`idx`,
+        `me`.`id`,
+        `me`.`nick`,
+        `me`.`state`,
+        CONVERT_TZ(`me`.`regdate`, 'UTC', '${convertTZ}') AS `regdate`,
+        `mein`.`birth`,
+        `mein`.`gender`,
+        `mein`.`email`,
+        `mein`.`phone`,
+        `mein`.`lang`
+    </sql>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+
+    <!-- 전체 회원 코인 적립 내역 개수 -->
+    <select id="getSavedCoinTotalCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(`mecosa`.`idx`) AS `coinTotalCnt`
+        FROM <include refid="database"/>`member_coin_save` AS `mecosa`
+        JOIN <include refid="database"/>`member` AS `me`
+            ON `me`.`idx` = `mecosa`.`member_idx`
+        <where>
+            <if test="searchStartDate != null and searchEndDate != null">
+                <if test="searchStartDate != '' and searchEndDate != ''">
+                    AND `mecosa`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                    AND `mecosa`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+                </if>
+            </if>
+            <if test="searchWord != null and searchWord != '' and searchType != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test='state != null'>
+                AND `mecosa`.`state` = #{state}
+            </if>
+        </where>
+    </select>
+
+    <!-- 전체 회원 코인 적립 리스트 -->
+    <select id="getSavedCoinTotalList" parameterType="SearchDto" resultType="CoinDto">
+        SELECT
+            `me`.`id`,
+            `me`.`idx` AS `member_idx`,
+            `me`.`nick`,
+            `mecosa`.`idx`,
+            `mecosa`.`title`,
+            `mecosa`.`coin`,
+            `mecosa`.`coin_free`,
+            `mecosa`.`state`,
+            CONVERT_TZ(`mecosa`.`regdate`, 'UTC', '${convertTZ}') AS `regdate`
+        FROM <include refid="database"/>`member_coin_save` AS `mecosa`
+        JOIN <include refid="database"/>`member` AS `me`
+            ON `me`.`idx` = `mecosa`.`member_idx`
+        <where>
+            <if test="searchStartDate != null and searchEndDate != null">
+                <if test="searchStartDate != '' and searchEndDate != ''">
+                    AND `mecosa`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                    AND `mecosa`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+                </if>
+            </if>
+            <if test="searchWord != null and searchType != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="searchWord == null and searchType != null">
+                <if test="searchType == 'idx'">
+                    AND `mecosa`.`member_idx` = #{idx}
+                </if>
+            </if>
+            <if test='state != null'>
+                AND `mecosa`.`state` = #{state}
+            </if>
+        </where>
+        ORDER BY `mecosa`.`idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 전체 회원 마일리지 적립 전체 개수 -->
+    <select id="getSavedMileageTotalCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(`memisa`.`idx`) AS `mileageTotalCnt`
+        FROM <include refid="database"/>`member_mileage_save` AS `memisa`
+        JOIN <include refid="database"/>`member` AS `me`
+            ON `me`.`idx` = `memisa`.`member_idx`
+        <where>
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                AND `memisa`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                AND `memisa`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+            </if>
+            <if test="searchWord != null and searchWord != '' and searchType != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test='state != null'>
+                AND `memisa`.`state` = #{state}
+            </if>
+        </where>
+    </select>
+
+    <!-- 전체 회원 마일리지 적립 리스트 -->
+    <select id="getSavedMileageTotalList" parameterType="SearchDto" resultType="MileageSaveDto">
+        SELECT
+            `me`.`id`,
+            `me`.`idx` AS `member_idx`,
+            `me`.`nick`,
+            `memisa`.`idx`,
+            `memisa`.`achievement_idx`,
+            `memisa`.`mileage`,
+            `memisa`.`title`,
+            `memisa`.`admin`,
+            `memisa`.`position`,
+            `memisa`.`state`,
+            CONVERT_TZ(`memisa`.`regdate`, 'UTC', '${convertTZ}') AS `regdate`
+        FROM <include refid="database"/>`member_mileage_save` AS `memisa`
+        JOIN <include refid="database"/>`member` AS `me`
+            ON `me`.`idx` = `memisa`.`member_idx`
+        <where>
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                AND `memisa`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                AND `memisa`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+            </if>
+            <if test="searchWord != null and searchWord != '' and searchType != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test='state != null'>
+                AND `memisa`.`state` = #{state}
+            </if>
+        </where>
+        ORDER BY  `memisa`.`idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+
+    <!-- 전체 회원 코인 사용 개수 -->
+    <select id="getUsedCoinTotalCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(`mecosa`.`idx`) AS `coinTotalCnt`
+        FROM <include refid="database"/>`member_coin_used` AS `mecous`
+        JOIN <include refid="database"/>`member` AS `me`
+            ON `mecous`.`member_idx` = `me`.idx
+        JOIN <include refid="database"/>`member_coin_save` AS `mecosa`
+            ON `mecous`.`member_coin_save_idx` = `mecosa`.`idx`
+        <where>
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                <choose>
+                    <when test="searchDateType  == 'regdate'">
+                        AND `mecous`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `mecous`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                    <when test="searchDateType == 'expiredate'">
+                        AND `mecous`.`expiredate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `mecous`.`expiredate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                </choose>
+            </if>
+            <if test="searchWord != null and searchWord != '' and searchType != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test='state != null'>
+                AND `mecous`.`state` = #{state}
+            </if>
+        </where>
+    </select>
+
+    <!-- 코인 사용 리스트 -->
+    <select id="getUsedCoinTotalList" parameterType="SearchDto" resultType="CoinDto">
+        SELECT
+            `me`.`id`,
+            `me`.nick,
+            `mecous`.`idx`,
+            `mecosa`.title,
+            `mecous`.`coin`,
+            `mecous`.`rest_coin`,
+            (`mecous`.`coin` - `mecous`.`rest_coin`) AS `usedCoin`,
+            `mecous`.`type`,
+            `mecous`.`state`,
+            CONVERT_TZ(`mecous`.`expiredate`, 'UTC', '${convertTZ}') AS `expiredate`,
+            CONVERT_TZ(`mecous`.`regdate`, 'UTC', '${convertTZ}') AS `regdate`
+        FROM <include refid="database"/>`member_coin_used` AS `mecous`
+        JOIN <include refid="database"/>`member` AS `me`
+            ON `mecous`.`member_idx` = `me`.idx
+        JOIN <include refid="database"/>`member_coin_save` AS `mecosa`
+            ON `mecous`.`member_coin_save_idx` = `mecosa`.`idx`
+        <where>
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                <choose>
+                    <when test="searchDateType  == 'regdate'">
+                        AND `mecous`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `mecous`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                   <when test="searchDateType == 'expiredate'">
+                       AND `mecous`.`expiredate` <![CDATA[ >= ]]> #{searchStartDate}
+                       AND `mecous`.`expiredate` <![CDATA[ <= ]]> #{searchEndDate}
+                   </when>
+                </choose>
+            </if>
+            <if test="searchWord != null and searchWord != '' and searchType != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test='state != null'>
+                AND `mecous`.`state` = #{state}
+            </if>
+        </where>
+        ORDER BY  `mecous`.`idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 전체 회원 마일리지 사용 개수 -->
+    <select id="getUsedMileageTotalCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(`memius`.`idx`) AS `mileageTotalCnt`
+        FROM <include refid="database"/>`member_mileage_used` AS `memius`
+        JOIN <include refid="database"/>`member`AS `me`
+            ON `memius`.`member_idx` = `me`.`idx`
+        JOIN <include refid="database"/>`member_mileage_save` AS `memisa`
+            ON `memisa`.`idx` = `memius`.`member_mileage_save_idx`
+        <where>
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                AND `memisa`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                AND `memisa`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+            </if>
+            <if test="searchWord != null and searchWord != '' and searchType != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test='state != null'>
+                AND `memius`.`state` = #{state}
+            </if>
+        </where>
+    </select>
+
+    <!-- 마일리지 사용 리스트 -->
+    <select id="getUsedMileageTotalList" parameterType="SearchDto" resultType="MileageUseDto">
+        SELECT
+            `memius`.`idx`,
+            `me`.`nick`,
+            `me`.`id`,
+            `me`.`idx` AS `memberIdx`,
+            `me`.`site`,
+            `memisa`.`title`,
+            `memius`.`mileage`,
+            `memius`.`rest_mileage`,
+            (`memius`.`mileage` - `memius`.`rest_mileage`) AS `usedMileage`,
+            `memius`.`state`,
+            IFNULL(CONVERT_TZ(`memius`.`regdate`,'UTC','${convertTZ}'),'') AS `regdate`,
+            IFNULL(CONVERT_TZ(`memius`.`expiredate`,'UTC','${convertTZ}'),'') AS `expiredate`
+        FROM <include refid="database"/>`member_mileage_used` AS `memius`
+        JOIN <include refid="database"/>`member`AS `me`
+            ON `memius`.`member_idx` = `me`.`idx`
+        JOIN <include refid="database"/>`member_mileage_save` AS `memisa`
+            ON `memisa`.`idx` = `memius`.`member_mileage_save_idx`
+        <where>
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                AND `memisa`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                AND `memisa`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+            </if>
+            <if test="searchWord != null and searchWord != '' and searchType != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test='state != null'>
+                AND `memius`.`state` = #{state}
+            </if>
+        </where>
+        ORDER BY  `memius`.`idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 잔여 코인 & 잔여 마일리지 조회(member_coin 테이블) -->
+    <select id="getRestCoinAndMileage" parameterType="_long" resultType="CoinDto">
+        SELECT
+            IFNULL(sum(`coin`), 0) AS `restCoin`,
+            IFNULL(sum(`coin_free`), 0) AS `restCoinFree`,
+            IFNULL(sum(`mileage`),0) AS `restMileage`
+        FROM <include refid="database"/>`member_coin`
+        WHERE
+            `member_idx` = #{idx}
+    </select>
+
+    <!-- 누적 결제 코인 & 누적 사용 코인 & 사용 가능 코인 조회 -->
+    <select id="getMemberCoinInfo" parameterType="_long" resultType="CoinDto">
+        SELECT
+            IFNULL(SUM(CASE WHEN `type`= 1 THEN `coin` ELSE 0 END), 0) AS `coin`,
+            IFNULL(SUM(CASE WHEN `type`= 1 THEN `rest_coin` ELSE 0 END), 0) AS `restCoin`,
+            IFNULL(SUM(CASE WHEN `type`= 2 THEN `coin` ELSE 0 END), 0) AS `coinFree`,
+            IFNULL(SUM(CASE WHEN `type`= 2 THEN `rest_coin` ELSE 0 END), 0) AS `restCoinFree`,
+            IFNULL((SUM(CASE WHEN `type`= 1 THEN `coin` ELSE 0 END)- SUM(CASE WHEN `type`=1 THEN `rest_coin` ELSE 0 END)), 0) AS `usedCoin`,
+            IFNULL((SUM(CASE WHEN `type`= 2 THEN `coin` ELSE 0 END)- SUM(CASE WHEN `type`=2 THEN `rest_coin` ELSE 0 END)), 0) AS `usedCoinFree`
+        FROM <include refid="database"/>`member_coin_used`
+        WHERE
+                `member_idx` = #{memberIdx}
+            AND `state` = 1
+    </select>
+
+    <!-- 누적 마일리지 & 누적 사용 마일리지 & 사용 가능 마일리지 조회 -->
+    <select id="getMemberMileageInfo" parameterType="_long" resultType="CoinDto">
+        SELECT
+            IFNULL(SUM(`mileage`), 0) AS mileage,
+            IFNULL(SUM(`rest_mileage`), 0) AS restMileage,
+            IFNULL((SUM(`mileage`) - SUM(`rest_mileage`)), 0) AS `usedMileage`
+        FROM <include refid="database"/>`member_mileage_used`
+        WHERE
+                `member_idx` = #{memberIdx}
+            AND `state` = 1
+    </select>
+
+    <!-- 잔여 코인 & 잔여 무료 코인 조회 -->
+    <select id="getRestCoinAndCoinFree" parameterType="_long" resultType="CoinDto">
+        SELECT
+            IFNULL(SUM(CASE WHEN `type`= 1 THEN `rest_coin` ELSE 0 END), 0) AS `restCoin`,
+            IFNULL(SUM(CASE WHEN `type`= 2 THEN `rest_coin` ELSE 0 END), 0) AS `restCoinFree`
+        FROM <include refid="database"/>`member_coin_used`
+        WHERE
+                `member_idx` = #{memberIdx}
+            AND `rest_coin`  > 0
+            AND `state` = 1
+    </select>
+
+    <!-- 잔여 마일리지 조회 -->
+    <select id="getRestMileage" parameterType="_long" resultType="CoinDto">
+        SELECT
+            IFNULL(SUM(`rest_mileage`), 0) AS restMileage
+        FROM <include refid="database"/>`member_mileage_used`
+        WHERE
+                `member_idx` = #{memberIdx}
+            AND `rest_mileage`  > 0
+            AND `state` = 1
+    </select>
+
+    <!-- 관리자 지급 & 차감 개수 카운트 -->
+    <select id="getAdminCoinTotalCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(DISTINCT (`adco`.`group_idx`)) AS `totalCnt`
+        FROM <include refid="database"/>`admin_coin` AS `adco`
+        JOIN <include refid="database"/>`member` AS `me`
+            ON `adco`.`member_idx` = `me`.`idx`
+        JOIN <include refid="database"/>`admin` AS `ad`
+            ON `adco`.`admin_idx` = `ad`.`idx`
+        WHERE
+                `adco`.`is_add` = #{isAdd}
+            AND `adco`.`state`  = 1
+        <if test="searchStartDate != null and searchEndDate != null">
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                AND `adco`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                AND `adco`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+            </if>
+        </if>
+        <if test="searchWord != null and searchWord != '' and searchType != null">
+            <bind name="val" value="'%' + searchWord + '%'" />
+            <choose>
+                <when test="searchType == 'id'">
+                    AND `me`.`id` LIKE #{val}
+                </when>
+                <when test="searchType == 'nick'">
+                    AND `me`.`nick` LIKE #{val}
+                </when>
+            </choose>
+        </if>
+        <if test="idx != null and idx > 0">
+            AND `adco`.`member_idx` = #{idx}
+        </if>
+    </select>
+
+    <!-- 관리자 지급 & 차감 리스트 -->
+    <select id="getAdminCoinList" parameterType="SearchDto" resultType="CoinDto">
+        SELECT
+            `me`.`idx` AS memberIdx,
+            `me`.`id`,
+            IFNULL(`me`.`nick`, '') AS nick,
+            `ad`.`name`,
+            `adco`.`idx`,
+            `adco`.`title`,
+            `adco`.`is_add`,
+            IFNULL(MAX(CASE WHEN `adco`.`type`= 'coin' THEN `adco`.`coin` END), 0) AS `coin`,
+            IFNULL(MAX(CASE WHEN `adco`.`type`= 'coinFree' THEN `adco`.`coin` END), 0) AS `coinFree`,
+            IFNULL(MAX(CASE WHEN `adco`.`type`= 'mileage' THEN `adco`.`coin` END), 0) AS `mileage`,
+            CONVERT_TZ(`adco`.`regdate`, 'UTC', '${convertTZ}') AS `regdate`
+        FROM <include refid="database"/>`admin_coin` AS `adco`
+        JOIN <include refid="database"/>`member` AS `me`
+            ON `adco`.`member_idx` = `me`.`idx`
+        JOIN <include refid="database"/>`admin` AS `ad`
+            ON `adco`.`admin_idx` = `ad`.`idx`
+        WHERE
+                `adco`.`is_add` = #{isAdd}
+            AND `adco`.`state`  = 1
+        <if test="searchStartDate != null and searchEndDate != null">
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                AND `adco`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                AND `adco`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+            </if>
+        </if>
+        <if test="searchWord != null and searchWord != '' and searchType != null">
+            <bind name="val" value="'%' + searchWord + '%'" />
+            <choose>
+                <when test="searchType == 'id'">
+                    AND `me`.`id` LIKE #{val}
+                </when>
+                <when test="searchType == 'nick'">
+                    AND `me`.`nick` LIKE #{val}
+                </when>
+            </choose>
+        </if>
+        <if test="idx != null and idx > 0">
+            AND `adco`.`member_idx` = #{idx}
+        </if>
+        GROUP BY `adco`.`group_idx`
+        ORDER BY `adco`.`regdate` DESC
+        <choose>
+            <when test="pagination != null">
+                LIMIT #{recordSize}
+                OFFSET #{pagination.limitStart}
+            </when>
+            <otherwise>
+                LIMIT 10
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 코인 OR 마일리지 지급일 조회 -->
+    <select id="getCoinOrMileageRegdate" parameterType="NotificationDto" resultType="String">
+        SELECT
+            `regdate`
+        FROM <include refid="database"/> ${type}
+        WHERE
+            `idx` = #{typeIdx}
+    </select>
+
+</mapper>

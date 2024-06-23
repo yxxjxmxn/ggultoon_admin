@@ -1,0 +1,569 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.comment.CommentDaoSub">
+    <!-- ==============================================================
+           SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+       작품 목록
+    =============================================================== -->
+
+    <!-- 작품 목록 개수 카운트 -->
+    <select id="getTotalContentCount" parameterType="SearchDto" resultType="int">
+        SELECT
+            COUNT(DISTINCT(`co`.`idx`)) AS totalContentCnt
+        FROM <include refid="database" /> `contents` AS `co`
+        JOIN <include refid="database" /> `category` AS `ca`
+            ON `co`.`category_idx` = `ca`.`idx`
+        JOIN <include refid="database" /> `genre` AS `ge`
+            ON `co`.`genre_idx` = `ge`.`idx`
+        <where>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'title'">
+                        AND `co`.`title` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'label'">
+                        AND `co`.`lebel` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="state != null">
+                AND `co`.`state` = #{state}
+            </if>
+            <if test="categoryIdx != null">
+                AND `co`.`category_idx` = #{categoryIdx}
+            </if>
+            <if test="adultPavilion != null">
+                AND `co`.adult_pavilion = #{adultPavilion}
+            </if>
+            <if test="progress != null">
+                AND `co`.`progress` = #{progress}
+            </if>
+            <if test="searchStartDate != null and !searchStartDate.equals('')">
+                <bind name="start_date" value="searchStartDate" />
+                <bind name="end_date" value="searchEndDate" />
+                <![CDATA[
+                    AND date(`co`.`regdate`) >= #{start_date}
+                    AND date(`co`.`regdate`) > #{end_date}
+                ]]>
+            </if>
+        </where>
+    </select>
+
+    <!-- 작품(+해당 작품의 댓글 개수 포함) 목록 -->
+    <select id="getContentList" parameterType="SearchDto" resultMap="getContentList_rm">
+        SELECT
+            `co`.`idx`,
+            `co`.`category_idx`,
+            `co`.`genre_idx`,
+            `co`.`title`,
+            `co`.`description`,
+            `co`.`last_episode_idx`,
+            `co`.`last_episode_title`,
+            `co`.`adult`,
+            `co`.`adult_pavilion`,
+            `co`.`complete_type_idx`,
+            `co`.`progress`,
+            `co`.`exclusive`,
+            `co`.`publication`,
+            `co`.`revision`,
+            `co`.`state`,
+            `co`.`label`,
+            CONVERT_TZ(`co`.`pubdate`, 'UTC', '${convertTZ}') AS `pubdate`,
+            CONVERT_TZ(`co`.`regdate`, 'UTC', '${convertTZ}') AS `regdate`,
+            `ca`.`name` AS `category_name`,
+            `ge`.`name` AS `genre_name`,
+            COUNT(`coco`.`idx`) AS `commentCnt`
+        FROM <include refid="database" /> `contents` AS `co`
+        JOIN <include refid="database" /> `category` AS `ca`
+            ON `co`.`category_idx` = `ca`.`idx`
+        JOIN <include refid="database" /> `genre` AS `ge`
+            ON `co`.`genre_idx` = `ge`.`idx`
+        LEFT JOIN <include refid="database" /> `contents_comment` AS `coco`
+            ON `co`.`idx` = `coco`.`contents_idx`
+        <where>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'title'">
+                        AND `co`.`title` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'label'">
+                        AND `co`.`lebel` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="state != null">
+                AND `co`.`state` = #{state}
+            </if>
+            <if test="categoryIdx != null">
+                AND `co`.`category_idx` = #{categoryIdx}
+            </if>
+            <if test="adultPavilion != null">
+                AND `co`.`adult_pavilion` = #{adultPavilion}
+            </if>
+            <if test="progress != null">
+                AND `co`.`progress` = #{progress}
+            </if>
+            <if test="searchStartDate != null and !searchStartDate.equals('')">
+                <bind name="start_date" value="searchStartDate" />
+                <bind name="end_date" value="searchEndDate" />
+                <![CDATA[
+                    AND date(`co`.`regdate`) >= #{start_date}
+                    AND date(`co`.`regdate`) > #{end_date}
+                ]]>
+            </if>
+        </where>
+        GROUP BY `co`.`idx`
+        ORDER BY `commentCnt` DESC, `co`.`idx` ASC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 컨텐츠 목록 resultMap -->
+    <resultMap id="getContentList_rm" type="ContentCommentDto">
+        <!-- idx -->
+        <result property="idx" column="idx"/>
+        <!-- contents image query 호출 -->
+        <collection property="imageList" column="idx" javaType="java.util.ArrayList" ofType="" select="getContentImage"/>
+    </resultMap>
+
+    <!-- 컨텐츠 이미지 -->
+    <select id="getContentImage" parameterType="Integer" resultType="ImageDto">
+        SELECT
+            `coim`.`contents_idx`,
+            `coim`.`parent`,
+            `coim`.`filename`,
+            `coim`.`url`,
+            `coim`.`width`,
+            `coim`.`height`,
+            `coim`.`type`,
+            `coim`.`sort`,
+            `coim`.`device`,
+            `coim`.`state`,
+            CONVERT_TZ(`coim`.`regdate`, 'UTC', '${convertTZ}') AS `regdate`
+        FROM <include refid="database" /> `contents_img` AS `coim`
+        WHERE
+            `coim`.`contents_idx` = #{idx}
+            AND `coim`.`device` = 'origin'
+            AND `coim`.`state` = 1
+        ORDER BY `coim`.`type` ASC, `coim`.`sort` ASC
+    </select>
+
+    <!-- ==============================================================
+        회차 목록
+    =============================================================== -->
+
+    <!-- 회차 목록 개수 카운트 -->
+    <select id="getTotalEpisodeCount" parameterType="SearchDto" resultType="int">
+        SELECT
+            COUNT(DISTINCT(`ep`.`idx`)) AS totalEpisodeCnt
+        FROM <include refid="database" /> `episode` AS `ep`
+        <where>
+            `ep`.`contents_idx` = #{contentsIdx}
+            <if test='state != null'>
+                AND `ep`.`state` = #{state}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                    AND `ep`.`title` LIKE #{val}
+            </if>
+        </where>
+    </select>
+
+    <!-- 회차 목록(+해당 회차의 댓글 개수 포함) -->
+    <select id="getEpisodeList" parameterType="SearchDto" resultMap="getEpisodeList_rm">
+        SELECT
+            `co`.`idx` AS `contentsIdx`,
+            `ep`.`idx` AS `episodeIdx`,
+            `ep`.`episode_number`,
+            `ep`.`sort`,
+            `ep`.`title`,
+            `ep`.`state`,
+            CONVERT_TZ(`ep`.`pubdate`, 'UTC', '${convertTZ}') AS pubdate,
+            CONVERT_TZ(`ep`.`regdate`, 'UTC', '${convertTZ}') AS regdate,
+            COUNT(`epco`.`idx`) AS `commentCnt`
+        FROM <include refid="database" /> `episode` AS `ep`
+        JOIN <include refid="database" /> `contents` AS `co`
+            ON `co`.`idx` = `ep`.`contents_idx`
+        LEFT JOIN <include refid="database" /> `episode_comment` AS `epco`
+            ON `ep`.`idx` = `epco`.`episode_idx`
+        <where>
+            `ep`.`contents_idx` = #{contentsIdx}
+            <if test='state != null'>
+                AND `ep`.`state` = #{state}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                AND `ep`.`title` LIKE #{val}
+            </if>
+        </where>
+        GROUP BY `ep`.`idx`
+        ORDER BY `commentCnt` DESC, `episodeIdx` ASC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 회차 목록 resultMap -->
+    <resultMap id="getEpisodeList_rm" type="EpisodeCommentDto">
+        <!-- idx -->
+        <id property="episodeIdx" column="episodeIdx"/>
+        <!-- episode image query 호출 -->
+        <collection property="imageList" column="episodeIdx" javaType="java.util.ArrayList" ofType="" select="getEpisodeImage" />
+    </resultMap>
+
+    <!-- 회차 이미지 -->
+    <select id="getEpisodeImage" parameterType="Long" resultType="ImageDto">
+        SELECT
+            `epim`.`episode_idx`,
+            `epim`.`parent`,
+            `epim`.`filename`,
+            `epim`.`url`,
+            `epim`.`width`,
+            `epim`.`height`,
+            `epim`.`type`,
+            `epim`.`sort`,
+            `epim`.`state`,
+            CONVERT_TZ(`epim`.`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database" /> `episode_img` AS `epim`
+        WHERE
+            `epim`.`episode_idx` = #{episodeIdx}
+            AND `epim`.`device` = 'origin'
+            AND `epim`.`state` = 1
+        ORDER BY `epim`.`type` ASC, `epim`.`sort` ASC
+    </select>
+
+    <!-- ==============================================================
+        작품 댓글 목록
+    =============================================================== -->
+
+    <!-- 작품 댓글 목록 전체 개수 카운트 -->
+    <select id="getContentCommentTotalCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(DISTINCT(`coco`.`idx`)) AS contentCommentCnt
+        FROM <include refid="database"/>`contents_comment` AS `coco`
+        JOIN <include refid="database" />`member` AS `me`
+            ON `coco`.`member_idx` = `me`.`idx`
+        JOIN <include refid="database" />`contents` AS `co`
+            ON `coco`.`contents_idx` = `co`.`idx`
+        <where>
+            `coco`.`contents_idx` = #{contentsIdx}
+            AND `coco`.`parent_idx` = 0
+            <if test='state != null'>
+                AND `coco`.`state` = #{state}
+            </if>
+            <if test='view != null'>
+                AND `coco`.`view` = #{view}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'content'">
+                        AND `coco`.`content` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 작품 댓글 목록 조회 -->
+    <select id="getContentCommentList" parameterType="SearchDto" resultType="ContentCommentDto">
+        SELECT
+            `coco`.`idx`,
+            `coco`.`contents_idx`,
+            `coco`.`member_idx` AS writerIdx,
+            `coco`.`group_idx`,
+            `coco`.`parent_idx`,
+            `coco`.`content`,
+            `coco`.`comment_cnt`,
+            `coco`.`like_cnt`,
+            `coco`.`view`,
+            `coco`.`state`,
+            CONVERT_TZ(`coco`.`regdate`, 'UTC', '${convertTZ}') AS regdate,
+            CONVERT_TZ(`coco`.`modify_date`, 'UTC', '${convertTZ}') AS modifyDate,
+            `me`.`id` AS writerId,
+            `me`.`nick` AS writerNick,
+            `co`.`idx` AS `contentsIdx`,
+            `co`.`title` AS `contentTitle`
+        FROM <include refid="database"/>`contents_comment` AS `coco`
+        JOIN <include refid="database" />`member` AS `me`
+            ON `coco`.`member_idx` = `me`.`idx`
+        JOIN <include refid="database" />`contents` AS `co`
+            ON `coco`.`contents_idx` = `co`.`idx`
+        <where>
+            `coco`.`contents_idx` = #{contentsIdx}
+            AND `coco`.`parent_idx` = 0
+            <if test='state != null'>
+                AND `coco`.`state` = #{state}
+            </if>
+            <if test='view != null'>
+                AND `coco`.`view` = #{view}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'content'">
+                        AND `coco`.`content` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+        ORDER BY `coco`.`idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 유효한 작품 댓글 idx인지 조회 -->
+    <select id="getContentCommentIdxCnt" parameterType="Long" resultType="_int">
+        SELECT
+            COUNT(`idx`) AS contentCommentIdxCnt
+        FROM <include refid="database"/>`contents_comment`
+        WHERE
+            `idx` = #{idx}
+    </select>
+
+    <!-- 선택한 작품 댓글 정보 조회 -->
+    <select id="getContentComment" parameterType="Long" resultType="ContentCommentDto">
+        SELECT
+            `idx`,
+            `contents_idx`,
+            `member_idx` AS writerIdx,
+            `group_idx`,
+            `parent_idx`,
+            `content`,
+            `comment_cnt`,
+            `like_cnt`,
+            `view`,
+            `state`,
+            CONVERT_TZ(`regdate`, 'UTC', '${convertTZ}') AS regdate,
+            CONVERT_TZ(`modify_date`, 'UTC', '${convertTZ}') AS modifyDate
+        FROM <include refid="database"/>`contents_comment`
+        WHERE
+            `idx` = #{idx}
+    </select>
+
+    <!-- ==============================================================
+        작품 대댓글 목록
+    =============================================================== -->
+
+    <!-- 대댓글 목록 전체 개수 카운트 -->
+    <select id="getContentReplyTotalCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(DISTINCT(`coco`.`idx`)) AS contentReplyCnt
+        FROM <include refid="database"/>`contents_comment` AS `coco`
+        JOIN <include refid="database" />`member` AS `me`
+            ON `coco`.`member_idx` = `me`.`idx`
+        <where>
+            `coco`.`parent_idx` = #{idx}
+            <if test='state != null'>
+                AND `coco`.`state` = #{state}
+            </if>
+            <if test='view != null'>
+                AND `coco`.`view` = #{view}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'content'">
+                        AND `coco`.`content` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 대댓글 목록 조회 -->
+    <select id="getContentReplyList" parameterType="SearchDto" resultType="ContentReplyDto">
+        SELECT
+            `coco`.`idx`,
+            `coco`.`contents_idx`,
+            `coco`.`member_idx` AS writerIdx,
+            `coco`.`group_idx`,
+            `coco`.`parent_idx`,
+            `coco`.`content`,
+            `coco`.`comment_cnt`,
+            `coco`.`like_cnt`,
+            `coco`.`view`,
+            `coco`.`state`,
+            CONVERT_TZ(`coco`.`regdate`, 'UTC', '${convertTZ}') AS regdate,
+            CONVERT_TZ(`coco`.`modify_date`, 'UTC', '${convertTZ}') AS modifyDate,
+            `me`.`id` AS writerId,
+            `me`.`nick` AS writerNick
+        FROM <include refid="database"/>`contents_comment` AS `coco`
+        JOIN <include refid="database" />`member` AS `me`
+            ON `coco`.`member_idx` = `me`.`idx`
+        <where>
+            `coco`.`parent_idx` = #{idx}
+            <if test='state != null'>
+                AND `coco`.`state` = #{state}
+            </if>
+            <if test='view != null'>
+                AND `coco`.`view` = #{view}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'content'">
+                        AND `coco`.`content` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+        ORDER BY `coco`.`idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- ==============================================================
+        회차 댓글 목록
+    =============================================================== -->
+
+    <!-- 회차 댓글 목록 전체 개수 카운트 -->
+    <select id="getEpisodeCommentTotalCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(DISTINCT(`epco`.`idx`)) AS episodeCommentCnt
+        FROM <include refid="database"/>`episode_comment` AS `epco`
+        JOIN <include refid="database" />`member` AS `me`
+            ON `epco`.`member_idx` = `me`.`idx`
+        JOIN <include refid="database" />`episode` AS `ep`
+            ON `epco`.`episode_idx` = `ep`.`idx`
+        <where>
+            `epco`.`episode_idx` = #{idx}
+            AND `epco`.`parent_idx` = 0
+            <if test='state != null'>
+                AND `epco`.`state` = #{state}
+            </if>
+            <if test='view != null'>
+                AND `epco`.`view` = #{view}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'content'">
+                        AND `epco`.`content` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 회차 댓글 목록 조회 -->
+    <select id="getEpisodeCommentList" parameterType="SearchDto" resultType="EpisodeCommentDto">
+        SELECT
+            `epco`.`idx`,
+            `epco`.`episode_idx`,
+            `epco`.`parent_idx`,
+            `epco`.`group_idx`,
+            `epco`.`member_idx` AS writerIdx,
+            `epco`.`content`,
+            `epco`.`comment_cnt`,
+            `epco`.`like_cnt`,
+            `epco`.`view`,
+            `epco`.`state`,
+            CONVERT_TZ(`epco`.`regdate`, 'UTC', '${convertTZ}') AS regdate,
+            CONVERT_TZ(`epco`.`modify_date`, 'UTC', '${convertTZ}') AS modifyDate,
+            `me`.`id` AS writerId,
+            `me`.`nick` AS writerNick,
+            `ep`.`idx` AS `episodeIdx`,
+            `ep`.`title` AS `episodeTitle`
+        FROM <include refid="database"/>`episode_comment` AS `epco`
+        JOIN <include refid="database" />`member` AS `me`
+            ON `epco`.`member_idx` = `me`.`idx`
+        JOIN <include refid="database" />`episode` AS `ep`
+            ON `epco`.`episode_idx` = `ep`.`idx`
+            <where>
+                `epco`.`episode_idx` = #{idx}
+                AND `epco`.`parent_idx` = 0
+                <if test='state != null'>
+                    AND `epco`.`state` = #{state}
+                </if>
+                <if test='view != null'>
+                    AND `epco`.`view` = #{view}
+                </if>
+                <if test="searchWord != null and searchWord != ''">
+                    <bind name="val" value="'%' + searchWord + '%'" />
+                    <choose>
+                        <when test="searchType == 'id'">
+                            AND `me`.`id` LIKE #{val}
+                        </when>
+                        <when test="searchType == 'nick'">
+                            AND `me`.`nick` LIKE #{val}
+                        </when>
+                        <when test="searchType == 'content'">
+                            AND `epco`.`content` LIKE #{val}
+                        </when>
+                    </choose>
+                </if>
+            </where>
+        ORDER BY `epco`.`idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 선택한 회차 댓글 정보 조회 -->
+    <select id="getEpisodeComment" parameterType="Long" resultType="EpisodeCommentDto">
+        SELECT
+            `idx`,
+            `episode_idx`,
+            `member_idx` AS writerIdx,
+            `group_idx`,
+            `parent_idx`,
+            `content`,
+            `comment_cnt`,
+            `like_cnt`,
+            `view`,
+            `state`,
+            CONVERT_TZ(`regdate`, 'UTC', '${convertTZ}') AS regdate,
+            CONVERT_TZ(`modify_date`, 'UTC', '${convertTZ}') AS modifyDate
+        FROM <include refid="database"/>`episode_comment`
+        WHERE
+            `idx` = #{idx}
+    </select>
+</mapper>

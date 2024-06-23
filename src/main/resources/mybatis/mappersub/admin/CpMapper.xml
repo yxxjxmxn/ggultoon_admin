@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.admin.CpDaoSub">
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- 공통으로 사용할 field -->
+    <sql id="CpColumns">
+        `cpme`.`idx`,
+        `cpme`.`state`,
+        `cpme`.`id`,
+        `cpme`.`name`,
+        `cpme`.`level`,
+        `cpme`.`parent`,
+        CONVERT_TZ(`cpme`.`regdate`, 'UTC', '${convertTZ}') as `regdate`
+    </sql>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+
+    <!-- 관리자 전체 카운트 -->
+    <select id="getCpTotalCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(`cpme`.`idx`) AS cnt
+        FROM <include refid="database" />`cp_member` as `cpme`
+
+        <where>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `cpme`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'name'">
+                        AND `cpme`.`name` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="state != null and !state.equals('')">
+                AND `cpme`.state = #{state}
+            </if>
+            <if test="searchStartDate != null and searchStartDate != '' and searchEndDate != null and searchEndDate != ''">
+                <choose>
+                    <when test="searchDate == 'regdate'">
+                        <![CDATA[
+                           AND (DATE_FORMAT(`cpme`.`regdate`, '%Y-%m-%d') >= #{searchStartDate} AND DATE_FORMAT(`cpme`.`regdate`, '%Y-%m-%d') <= #{searchEndDate})
+                        ]]>
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 관리자 목록 전체 조회 -->
+    <select id="getCpList" parameterType="SearchDto" resultType="CpDto">
+        SELECT<include refid="CpColumns"/>
+        FROM <include refid="database" />`cp_member` as `cpme`
+        <where>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `cpme`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'name'">
+                        AND `cpme`.`name` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="state != null and !state.equals('')">
+                AND `cpme`.state = #{state}
+            </if>
+            <if test="searchStartDate != null and searchStartDate != '' and searchEndDate != null and searchEndDate != ''">
+                <choose>
+                    <when test="searchDate == 'regdate'">
+                        <![CDATA[
+                           AND (DATE_FORMAT(`cpme`.`regdate`, '%Y-%m-%d') >= #{searchStartDate} AND DATE_FORMAT(`cpme`.`regdate`, '%Y-%m-%d') <= #{searchEndDate})
+                        ]]>
+                    </when>
+                </choose>
+            </if>
+        </where>
+        ORDER BY `cpme`.`idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 관리자 상세 -->
+    <select id="getViewCp" parameterType="_long" resultType="CpDto">
+        SELECT
+            <include refid="CpColumns"/>
+        ,`cpmein`.`manager`
+        ,`cpmein`.`phone`
+        ,`cpmein`.`ceo`
+        ,`cpmein`.`manager_phone`
+        ,`cpmein`.`company_name`
+        ,`cpmein`.`business_number`
+        ,`cpmein`.`business_type`
+        ,`cpmein`.`company_email`
+        ,`cpmein`.`bank_name`
+        ,`cpmein`.`bank_number`
+        ,`cpmein`.`holder`
+        ,`cpmein`.`billing_email`
+        ,`cpmein`.`cpmg`
+        ,CONVERT_TZ(`cpmein`.`modify_date`, 'UTC', '${convertTZ}') as `modify_date`
+        ,(  SELECT url
+            FROM `cp_member_img`
+            WHERE
+                    `cp_member_idx` = #{idx}
+                AND `state`         = 1
+                AND `type`          = 0
+        ) as bankFileUrl
+        ,(  SELECT url
+            FROM `cp_member_img`
+            WHERE
+                    `cp_member_idx` = #{idx}
+                AND `state`         = 1
+                AND `type`          = 1
+        ) as businessFileUrl
+
+        FROM <include refid="database" />`cp_member` as `cpme`
+           LEFT JOIN <include refid="database" />`cp_member_info` as `cpmein`
+                ON `cpme`.`idx` = `cpmein`.`cp_member_idx`
+        WHERE
+           `cpme`.`idx` = #{idx}
+    </select>
+
+
+    <!-- 회사명 목록 -->
+    <select id="getCompanyList" resultType="CpDto">
+        SELECT
+            `cpme`.`idx`,
+            `cpme`.`id`,
+            `cpme`.`name`
+        FROM <include refid="database" />`cp_member` AS `cpme`
+        WHERE
+            <![CDATA[
+                `cpme`.`parent` = 0
+            AND `cpme`.`state` = 1
+            AND `cpme`.level < 9
+            ]]>
+    </select>
+</mapper>

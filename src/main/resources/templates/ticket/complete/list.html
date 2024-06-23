@@ -1,0 +1,125 @@
+<th:block layout:decorate="~{common/layout}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="col-lg-12 mt-3">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" th:text="#{lang.ticket.complete.title.list}"></h5>
+            </div>
+            <div class="card-body row">
+
+                <div class="col-12">
+                    <!-- 검색 폼 -->
+                    <form id="frm" class="d-flex bd-highlight gx-3" onsubmit="ticket.list(1); return false;" accept-charset="utf-8">
+                        <table class="table m-0">
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <div class="row p-0">
+                                            <div class="input-group input-group-sm m-1 p-0 col-9">
+
+                                                <!-- Date Picker -->
+                                                <input type="text" th:placeholder="#{lang.ticket.search.start.date}" class="form-control form-control-sm text-center col-2 ml-1" disabled/>
+                                                <input type="text" th:placeholder="YYYY-MM-DD" id="searchStartDate" name="searchStartDate" maxlength="10" class="datePicker form-control text-center col-2 mr-2" oninput="date.forMatter(this)" autocomplete="off"/>
+                                                <span class="h5 fw-bold" style="color: gray">~</span>
+                                                <input type="text" th:placeholder="#{lang.ticket.search.end.date}" class="form-control form-control-sm text-center col-2 ml-1" disabled/>
+                                                <input type="text" th:placeholder="YYYY-MM-DD" id="searchEndDate" name="searchEndDate" maxlength="10" class="datePicker form-control text-center col-2 mr-2" oninput="date.forMatter(this)" autocomplete="off"/>
+
+                                                <!-- 카테고리 -->
+                                                <select name="categoryIdx" class="form-select form-select-sm col-2 ml-1">
+                                                    <option value="" th:text="#{lang.contents.category}"></option>
+                                                    <option value="1" th:text="#{lang.contents.category.webtoon}"></option>
+                                                    <option value="2" th:text="#{lang.contents.category.comic}"></option>
+                                                    <option value="3" th:text="#{lang.contents.category.novel}"></option>
+                                                </select>
+
+                                                <!-- 장르 -->
+                                                <select name="genreIdx" class="form-select form-select-sm col-3 ml-1">
+                                                </select>
+
+                                                <!-- 현재 페이지 -->
+                                                <input type="hidden" id="page" name="page">
+
+                                                <!-- 검색 조건 -->
+                                                <select name="searchType" class="form-control form-select col-3 ml-1">
+                                                    <option value="" th:text="#{lang.ticket.search}" ></option>
+                                                    <option th:value="name" th:text="#{lang.ticket.group.name}" th:selected="${search.searchType} == 'name'"></option>
+                                                    <option th:value="title" th:text="#{lang.contents.title}" th:selected="${search.searchType} == 'title'"></option>
+                                                </select>
+
+                                                <!-- 검색어 -->
+                                                <input type="text" name="searchWord" class="form-control form-control-sm text-center col-3" th:value="${search.searchWord}" th:placeholder="#{lang.ticket.placeholder.search.word}" style="width:30%;">
+                                            </div>
+
+                                            <!-- 검색 버튼 -->
+                                            <div class="col-auto btn-group btn-group-sm m-1 p-0">
+                                                <button type="button" id="searchBtn" th:text="#{lang.ticket.button.search}" onclick="ticket.list(1);" class="btn btn-success pr-3 pl-3"></button>
+                                                <button type="button" class="btn btn-outline-success" onclick="ticket.reset();"><i class="fa-solid fa-rotate-left"></i></button>
+                                            </div>
+
+                                            <!-- 엑셀 다운로드 버튼 -->
+                                            <div class="text-right col">
+                                                <button type="button" id="excelBtn" onclick="ticket.excel();" class="btn btn-sm btn-info" th:text="#{lang.ticket.button.excel}"></button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="d-inline p-0">
+
+                                            <!-- 검색 결과 총 개수 -->
+                                            <div class="float-left form-control-sm">
+                                                <strong class="totalCount" th:text="#{lang.ticket.search.result} + ' : ' "></strong><span></span>
+                                            </div>
+
+                                            <!-- 조회 개수 필터 -->
+                                            <div class="float-right form-control-sm col-2">
+                                                <select id="searchCount" name="searchCount" class="float-right form-select form-select-sm col-10" onchange="ticket.list(1);">
+                                                    <option th:value="50" th:text="#{lang.ticket.search.count.50}" th:selected="${search.searchCount} == '50'"></option>
+                                                    <option th:value="100" th:text="#{lang.ticket.search.count.100}" th:selected="${search.searchCount} == '100'"></option>
+                                                    <option th:value="150" th:text="#{lang.ticket.search.count.150}" th:selected="${search.searchCount} == '150'"></option>
+                                                    <option th:value="200" th:text="#{lang.ticket.search.count.200}" th:selected="${search.searchCount} == '200'"></option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </form>
+                    <!-- //검색 폼 -->
+
+                    <!-- list -->
+                    <table class="table table-hover" id="lists">
+                        <thead class="table-dark">
+                            <tr class="text-center">
+                                <th scope="col" rowspan="2" th:text="#{lang.ticket.idx}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.ticket.group.name}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.ticket.group.code}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.contents.category}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.contents.genre}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.contents.title}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.ticket.group.age}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.ticket.give.count}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.ticket.use.count}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.ticket.use.percent}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.ticket.startDate}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.ticket.endDate}" class="text-center"></th>
+                                <th scope="col" rowspan="2" th:text="#{lang.ticket.regdate}" class="text-center"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                    <th:block layout:fragment="paging">
+                        <div class="col-md-12 d-flex flex-row-reverse my-3">
+                            <ul class="pagination" style="font-size: 12px;">
+                            </ul>
+                        </div>
+                    </th:block>
+                </div>
+            </div>
+        </div>
+        <!-- 컨텐츠 영역 -->
+    </div>
+</th:block>

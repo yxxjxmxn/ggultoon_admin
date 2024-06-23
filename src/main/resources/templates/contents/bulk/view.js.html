@@ -1,0 +1,76 @@
+<script th:fragment="importJsFragment">
+    $(function () {
+        $(document).ajaxStart(function () {
+            loading = new bootstrap.Modal($('#layer_dialog'), {
+                keyboard: false
+            });
+
+            $('#section_dialog').html("<div style='display:flex; justify-content:center; hegith:800px; position:relative;'><img src='../../../images/loading_64x64.gif'></div>");
+
+            loading.show($('#section_dialog'));
+        });
+
+        $(document).ajaxStop(function () {
+            loading._hideModal();
+        });
+    });
+
+
+    let bulk = {
+        // 엑셀 등록
+        excel : function () {
+
+            let form = $("#frm")[0];
+            let formData = new FormData(form);
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/cp-admin/bulk/contents',
+                method: 'POST',
+                enctype: 'multipart/form-data',
+                data: formData,
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        toast.alert(res.message);
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+        },
+        excelImage : function () {
+            let form = $("#frmImg")[0];
+            let formData = new FormData(form);
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/cp-admin/bulk/contents/image',
+                method: 'POST',
+                enctype: 'multipart/form-data',
+                data: formData,
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        toast.alert(res.message);
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+        }
+    }
+
+</script>

@@ -1,0 +1,99 @@
+<script th:fragment="importJsFragment">
+    $(function () {
+        episode.list();
+    });
+
+    let contentsIdx = "[[${contentsIdx}]]";
+
+    let text = {
+        btn : {
+            episode : "[[#{lang.contents.button.episode}]]"
+        }
+    }
+
+    let episode = {
+        // 작품
+        contentsList :  function () {
+            location.href = "[[${SERVER.currentDomain}]]/contents/view/"+contentsIdx;
+            return false;
+        },
+        // 회차 목록
+        list : function () {
+            $("input[name=page]").val(page);
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/cp-admin/bulk/episodeAll',
+                method: 'GET',
+                data : $("#frm").serialize(),
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        //페이지 url 갱신 ( 검색 후 새로고침 시 검색값 유지 )
+                        if( window.location.search !== "?"+ $("#frm").serialize() ){
+                            history.pushState(null, null, "?" + $("#frm").serialize());
+                        }
+
+                        // total count
+                        $(".totalCount").next().text(res.data.list.length + "건");
+
+                        if (res.data.list.length > 0) {
+
+                            // list
+                            let listTbody = "";
+                            $.each(res.data.list, function (idx, el) {
+
+
+                                let imgUrl = "";
+                                if (el.imageList.length > 0) {
+                                    imgUrl = el.imageList[0].url;
+                                }
+
+                                listTbody += `
+                                    <tr>
+                                        <td></td>
+                                        <td class="text-center">${el.idx}</td>
+                                        <td class="text-center"><img src="${imgUrl}" style="max-height:100px; max-width:200px"></td>
+                                        <td class="text-left"><a href="javascript:void(0);" onclick="episode.view(${el.idx});">${el.title}</a></td>
+                                        <td class="text-center"><span class="badge ${el.stateBg}">${el.stateText}</span></td>
+                                        <td class="text-center">${el.coinRent}</td>
+                                        <td class="text-center">${el.coin}</td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-primary p-1 rounded" onclick="episode.view(${el.idx});">${text.btn.episode}</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+                            $("#lists tbody").html(listTbody);
+
+                        } else {
+                            // 결과 없음
+                            let listTbody = `<tr><td colspan="11" class="text-center">${res.message}</td></tr>`;
+                            $("#lists tbody").html(listTbody);
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        },
+        // 회차 추가
+        register : function () {
+            location.href = "[[${SERVER.currentDomain}]]/contents/" + contentsIdx + "/episode/register";
+            return false;
+        },
+        // viewer 이미지 등록
+        view : function (episodeIdx) {
+            location.href = "[[${SERVER.currentDomain}]]/contents/" + contentsIdx + "/episode/" + episodeIdx;
+            return false;
+        }
+    }
+
+</script>

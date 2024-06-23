@@ -1,0 +1,278 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        select.list();
+        let page = "[[${page}]]";
+        ticket.list(page);
+        date.datePicker();
+    });
+
+    let text = {
+        genre : "[[#{lang.contents.genre}]]" // 장르
+    }
+
+    let select = {
+        // 선택한 카테고리에 따른 장르 목록
+        list : function () {
+            let categoryIdx = 0;
+
+            /* 특정 카테고리 미선택 시 -> 전체 장르 노출(기본) */
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/cp-admin/contents/category/' + categoryIdx,
+                method: 'GET',
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        if (res.data.list.length > 0) {
+
+                            // 전체 옵션 초기화
+                            $("select[name=genreIdx]").empty();
+
+                            // 기본 옵션 설정
+                            $("select[name=genreIdx]").append("<option value=''>" + text.genre + "</option>");
+
+                            // list
+                            $.each(res.data.list, function (idx, el) {
+                                $("select[name=genreIdx]").append("<option value='" + el.genreIdx + "'>" + el.genreName + "</option>");
+                            });
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+
+            /* 특정 카테고리 선택 시 -> 선택한 카테고리에 따른 장르 노출 */
+            $("select[name=categoryIdx]").change(function() {
+
+                // 카테고리 idx String -> Integer 형변환
+                categoryIdx = Number($(this).val());
+
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/cp-admin/contents/category/' + categoryIdx,
+                    method: 'GET',
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            if (res.data.list.length > 0) {
+
+                                // 전체 옵션 초기화
+                                $("select[name=genreIdx]").empty();
+
+                                // 기본 옵션 설정
+                                $("select[name=genreIdx]").append("<option value=''>" + text.genre + "</option>");
+
+                                // list
+                                $.each(res.data.list, function (idx, el) {
+                                    $("select[name=genreIdx]").append("<option value='" + el.genreIdx + "'>" + el.genreName + "</option>");
+                                });
+                            }
+                        } else {
+                            // ajax exception error
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+            });
+        }
+    }
+
+    let ticket = {
+        // 지급 완료 이용권 리스트
+        list: function (page = 1) {
+            if (page != undefined) {
+                $("input[name=page]").val(page);
+            }
+
+            // value set
+            let searchType = $("select[name=searchType]").val();
+            let searchWord = $("input[name=searchWord]").val();
+            let searchStartDate = $("input[name=searchStartDate]").val();
+            let searchEndDate = $("input[name=searchEndDate]").val();
+
+            // 검색 조건을 선택하지 않고 검색어를 입력한 경우
+            if (searchType == "" && searchWord != "") {
+                let searchFailMessage = `[[#{lang.ticket.exception.search.type.empty}]]`; // 검색 조건을 설정해주세요.
+                toast.alert(searchFailMessage);
+
+                // 검색할 시작일과 종료일 중 하나를 선택하지 않은 경우
+            } else if (searchStartDate != "" && searchEndDate == "" || searchStartDate == "" && searchEndDate != "") {
+                let searchFailMessage = `[[#{lang.ticket.exception.search.date.empty}]]`; // 검색할 날짜를 선택해주세요.
+                toast.alert(searchFailMessage);
+            }
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/tickets/complete',
+                cache : true,
+                method: 'GET',
+                data: $("#frm").serialize(),
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+
+                        // 페이지 url 갱신 (검색 후 새로고침 시 검색값 유지 )
+                        if (window.location.search !== "?" + $("#frm").serialize()) {
+                            history.pushState(null, null, "?" + $("#frm").serialize());
+                        }
+
+                        if (res.data.list.length > 0) {
+
+                            // total count
+                            $(".totalCount").next().text(res.data.list.length + "건");
+
+                            // list
+                            let listTbody = "";
+                            $.each(res.data.list, function (index, el) {
+
+                                listTbody += `
+                                    <tr onclick="ticket.view(${el.idx});" style="cursor:pointer;">
+                                        <td class="text-center">${el.idx || "-"}</td>
+                                        <td class="text-center">${el.name || "-"}</td>
+                                        <td class="text-center">${el.code || "-"}</td>
+                                        <td class="text-center">${el.category || "-"}</td>
+                                        <td class="text-center">${el.genre || "-"}</td>
+                                        <td class="text-center">${el.title || "-"}</td>
+                                        <td class="text-center"><span class="badge ${el.adultBg}">${el.adultText || "-"}</span></td>
+                                        <td class="text-center">${el.giveCnt}개</td>
+                                        <td class="text-center">${el.useCnt}개</td>
+                                        <td class="text-center">${el.usePercent}%</td>
+                                        <td class="text-center">${el.startDate || "-"}</td>
+                                        <td class="text-center">${el.endDate || "-"}</td>
+                                        <td class="text-center">${el.regdate || "-"}</td>
+                                    </tr>
+                                `;
+                            });
+                            $("#lists tbody").html(listTbody);
+
+                            // paging - common.js
+                            pagination("ticket", res.data.params.page, res.data.params.pagination);
+                            $.cookie("backUrl", $("#frm").serialize());
+
+                        } else {
+                            // total count
+                            $(".totalCount").next().text("0건");
+                            // 결과 없음
+                            let listTbody = `<tr><td colspan="14" class="text-center">${res.message}</td></tr>`;
+                            $("#lists tbody").html(listTbody);
+                            $(".pagination").html("");
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        },
+        // 이용권 상세 팝업
+        view: function (idx) {
+            js_popup('[[${SERVER.currentDomain}]]/tickets/complete/' + idx, 'ticket_complete_details', '600', '800');
+        },
+        // 새로고침 버튼
+        reset: function () {
+            location.href = '[[${SERVER.currentDomain}]]/tickets/complete';
+        },
+        // 엑셀
+        excel: function () {
+            // 엑셀로 다운로드할 데이터가 없습니다.
+            let excelDownloadFailMessage = `[[#{lang.ticket.exception.excel.data.empty}]]`;
+
+            if ($(".totalCount").next().text() == '0건') {
+                toast.alert(excelDownloadFailMessage);
+            } else {
+                location.href = '[[${SERVER.currentDomain}]]/v1/tickets/complete/excel?'+$("#frm").serialize();
+            }
+        }
+    }
+
+    // 뒤로가기 이벤트 시 실행
+    $(window).on('popstate', function(event) {
+        window.location = document.location.href;
+    });
+
+    /** 날짜 관련 객체 **/
+    let date = {
+        // input 날짜 하이픈(-) 자동 입력
+        forMatter : (date) => {
+            $(".datePicker").on("input", () => {
+                let dateValue = date.value.replace(/[^0-9]/g, '')
+                    .replace(/^(\d{0,4})(\d{0,2})(\d{0,2})$/g, "$1-$2-$3")
+                    .replace(/(\-{1,2})$/g, "");
+                date.value = dateValue;
+            })
+        },
+        datePicker : () => {
+            // 시작일 date picker 생성
+            $("#searchStartDate").datepicker({
+                onSelect: function() {
+                    let startDate = $.datepicker.formatDate("yy-mm-dd", $(this).datepicker('getDate'));
+                    $("#searchStartDate").val(startDate);
+                },
+
+                // 시작일 datepicker가 닫힐 때
+                onClose: function(selectedDate) {
+                    // 종료일의 선택할 수 있는 최소 날짜(minDate)를 선택한 시작일로 지정
+                    $("#searchEndDate").datepicker("option", "minDate", selectedDate);
+                },
+                beforeShow: function() {
+                    setTimeout(function(){
+                        $('.ui-datepicker').css('z-index', 99999999999999);
+                    }, 0);
+                }
+            }).on('changeDate', function(e){
+                $(this).datepicker('hide');
+            });
+
+            // 종료일 date picker 생성
+            $("#searchEndDate").datepicker({
+                onSelect: function() {
+                    let endDate = $.datepicker.formatDate("yy-mm-dd", $(this).datepicker('getDate'));
+                    $("#searchEndDate").val(endDate);
+                },
+
+                // 종료일 datepicker가 닫힐 때
+                onClose: function(selectedDate) {
+                    // 시작일의 선택할 수 있는 최대 날짜(maxDate)를 선택한 종료일로 지정
+                    $("#searchStartDate").datepicker("option", "maxDate", selectedDate);
+                },
+                beforeShow: function() {
+                    setTimeout(function(){
+                        $('.ui-datepicker').css('z-index', 99999999999999);
+                    }, 0);
+                }
+            }).on('changeDate', function(e){
+                $(this).datepicker('hide');
+            });
+
+            // date picker 설정
+            $.datepicker.setDefaults({
+                dateFormat: "yy-mm-dd",
+                yearSuffix: "년",
+                monthNames: ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"],
+                monthNamesShort: ["1월", "2월", "3월", "4월", "5월", "6월","7월", "8월", "9월", "10월", "11월", "12월"],
+                dayNames: ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"],
+                dayNamesShort: ["일", "월", "화", "수", "목", "금", "토"],
+                dayNamesMin: ["일", "월", "화", "수", "목", "금", "토"],
+                showMonthAfterYear: true
+            });
+        }
+    }
+</script>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "HTTP://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+
+    <properties resource="mybatis.properties"></properties>
+
+    <settings>
+        <setting name="cacheEnabled" value="true"/>
+        <setting name="callSettersOnNulls" value="true"/>
+        <setting name="lazyLoadingEnabled" value="false"/>
+        <setting name="aggressiveLazyLoading" value="true"/>
+        <setting name="multipleResultSetsEnabled" value="true"/>
+        <setting name="useColumnLabel" value="true"/>
+        <setting name="useGeneratedKeys" value="false"/>
+        <setting name="autoMappingBehavior" value="PARTIAL"/>
+        <setting name="defaultExecutorType" value="REUSE" />
+        <setting name="defaultStatementTimeout" value="25000" />
+        <setting name="jdbcTypeForNull" value="NULL"/>
+        <setting name="mapUnderscoreToCamelCase" value="true" />
+    </settings>
+
+    <typeAliases>
+        <typeAlias type="java.util.HashMap" alias="hashMap" />
+        <typeAlias type="java.lang.String" alias="String"/>
+        <typeAlias type="com.architecture.admin.models.dto.admin.AdminDto" alias="AdminDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.menu.MenuDto" alias="MenuDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.log.AdminActionLogDto" alias="AdminActionLogDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.member.MemberDto" alias="MemberDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.coin.CoinDto" alias="CoinDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.coin.MileageSaveDto" alias="MileageSaveDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.coin.MileageUseDto" alias="MileageUseDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.member.MemberPurchaseDto" alias="MemberPurchaseDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.member.MemberOttDto" alias="MemberOttDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.member.MemberOttListDto" alias="MemberOttListDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.payment.PaymentDto" alias="PaymentDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.payment.PaymentMethodDto" alias="PaymentMethodDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.payment.PaymentProductDto" alias="PaymentProductDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.SearchDto" alias="SearchDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.admin.CpDto" alias="CpDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.contents.CategoryDto" alias="CategoryDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.contents.GenreDto" alias="GenreDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.contents.ContentsDto" alias="ContentsDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.contents.ImageDto" alias="ImageDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.contents.EpisodeDto" alias="EpisodeDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.contents.ViewerDto" alias="ViewerDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.contents.AuthorDto" alias="AuthorDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.contents.TagDto" alias="TagDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.contents.CodeDto" alias="CodeDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.report.ReportContentDto" alias="ReportContentDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.report.ReportContentCommentDto" alias="ReportContentCommentDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.report.ReportEpisodeCommentDto" alias="ReportEpisodeCommentDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.comment.ContentCommentDto" alias="ContentCommentDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.comment.ContentReplyDto" alias="ContentReplyDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.comment.EpisodeCommentDto" alias="EpisodeCommentDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.notification.NotificationDto" alias="NotificationDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.board.NoticeDto" alias="NoticeDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.board.FileResponseDto" alias="FileResponseDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.ip.IpDto" alias="IpDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.member.MemberGradeDto" alias="MemberGradeDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.curation.CurationDto" alias="CurationDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.curation.CurationContentDto" alias="CurationContentDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.statistics.StatDto" alias="StatDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.banner.BannerDto" alias="BannerDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.banner.BannerImageDto" alias="BannerImageDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.ticket.GroupDto" alias="GroupDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.ticket.TicketDto" alias="TicketDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.event.NewYearViewDto" alias="NewYearViewDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.event.NewYearStatDto" alias="NewYearStatDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.event.PromotionDto" alias="PromotionDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.coupon.CouponStoreDto" alias="CouponStoreDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.coupon.CouponDto" alias="CouponDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.coupon.CouponUsedDto" alias="CouponUsedDto"/>
+        <typeAlias type="com.architecture.admin.models.dto.coupon.CouponStatDto" alias="CouponStatDto"/>
+    </typeAliases>
+
+    <mappers>
+    </mappers>
+
+</configuration>

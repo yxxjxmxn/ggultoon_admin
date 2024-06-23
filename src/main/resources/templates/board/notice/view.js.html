@@ -1,0 +1,170 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        $(document).ready(function () {
+            // ckeditor5 설정
+            ClassicEditor
+                .create(document.querySelector('#content'), {
+                    // toolbar 설정(Editor.defaultConfig)
+                    toolbar: [
+                        'undo',
+                        'redo',
+                        '|',
+                        'insertTable',
+                        'blockQuote',
+                        '|',
+                        'imageUpload',
+                        '|',
+                        'fontFamily',
+                        'fontSize',
+                        'bold',
+                        'italic',
+                        'fontColor',
+                        '|',
+                        'fontBackgroundColor'
+                    ],
+                    language: "ko",
+                    simpleUpload: {
+                        uploadUrl: "[[${SERVER.currentDomain}]]/v1/boards/notices/tempImage",
+                        withCredentials: true
+                    }
+                })
+                .then(newEditor => {
+                    editor = newEditor;
+                })
+                .catch( error => {
+                    console.error( error );
+                });
+        });
+        // 공지사항 상세 조회
+        notice.view();
+    });
+
+    let notice = {
+
+        // 공지사항 상세
+        view: function () {
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/boards/notices/[[${idx}]]',
+                method: 'GET',
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        if (res.data != undefined) {
+
+                            // 공지사항 사용 상태 세팅
+                            if (res.data.state == 1) {
+                                $("input:checkbox[id='state']").prop("checked", true);
+                            }
+
+                            // 공지사항 필독 여부 세팅
+                            if (res.data.mustRead == 1) {
+                                $("input:checkbox[id='mustRead']").prop("checked", true);
+                            }
+
+                            // 공지사항 상세 정보 폼
+                            $("td[name=idx]").text(res.data.idx||"-");
+                            $("td[name=type]").text(res.data.typeText||"-");
+                            $("td[name=title]").html(`<input type="text" name="title" id="title" class="form-control form-control-sm" value="${res.data.title||"-"}">`);
+                            editor.setData(res.data.content); // 공지사항 내용에 포함된 <br> => enter 변환
+                            $("td[name=regdate]").text(res.data.regdate||"-");
+
+                        } else {
+                            // 결과 없음
+                            toast.alert(res.message);
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+
+            return false;
+        },
+        // 공지사항 삭제
+        delete: function () {
+
+            let deleteConfirmMessage = `[[#{lang.board.notice.confirm.delete}]]`;
+
+            if (confirm(deleteConfirmMessage)) {
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/boards/notices/[[${idx}]]',
+                    method: "DELETE",
+                    data: '',
+                    dataType: 'json',
+                    processData: false,
+                    contentType: "application/json",
+                    success: function (res) {
+                        if (res.result) {
+                            toast.alert(res.message);
+                            opener.location.reload();
+                            self.close();
+                        } else {
+                            // 삭제 실패
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+                return false;
+            }
+        },
+        // 공지사항 수정
+        modify: function () {
+
+            let modifyConfirmMessage = `[[#{lang.board.notice.confirm.modify}]]`;
+
+            if (confirm(modifyConfirmMessage)) {
+
+                let form = $("#frm")[0];
+                let formData = new FormData(form);
+
+                // 공지사항 사용 상태값 set
+                if ($("input:checkbox[name='state']:checked").val() == null) {
+                    formData.append("state", 2);
+                }
+
+                // 공지사항 필독 여부 set
+                if ($("input:checkbox[name='mustRead']:checked").val() == null) {
+                    formData.append("mustRead", 0);
+                }
+
+                // 공지사항 내용 set
+                formData.set('content' , editor.getData());
+
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/boards/notices/[[${idx}]]',
+                    method: "PUT",
+                    data: formData,
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            toast.alert(res.message);
+                            opener.location.reload();
+                            self.close();
+                        } else {
+                            // 수정 실패
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+                return false;
+            }
+        }
+    }
+</script>

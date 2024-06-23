@@ -1,0 +1,113 @@
+<th:block layout:decorate="~{common/layout}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="col-lg-12 mt-3">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" th:text="#{lang.member.title.ott}"></h5>
+            </div>
+            <div class="card-body row">
+                <!-- 리스트 -->
+                <div class="col-12">
+                    <!-- 검색 폼 -->
+                    <form id="frm" class="d-flex bd-highlight gx-3" onsubmit="member.list(1); return false;" accept-charset="utf-8">
+                        <table class="table m-0">
+                            <tbody>
+                            <tr>
+                                <td>
+                                    <div class="row p-0">
+                                        <div class="col-auto input-group input-group-sm m-1 p-0 col-5">
+                                            <select name="site" class="form-select form-select-sm col-2">
+                                                <option value=""  th:text="#{lang.member.ott.site}"></option>
+                                                <option value="me2disk" th:text="me2disk" th:selected="${search.site} == 'me2disk'"></option>
+                                                <option value="fileis" th:text="fileis" th:selected="${search.site} == 'fileis'"></option>
+                                                <option value="filecity" th:text="filecity" th:selected="${search.site} == 'filecity'"></option>
+                                                <option value="filecast" th:text="filecast" th:selected="${search.site} == 'filecast'"></option>
+                                            </select>
+
+                                            <select name="searchType" class="form-control form-select col-2" style="width:80px;">
+                                                <option value="" th:text="#{lang.member.search}" ></option>
+                                                <option th:value="id" th:text="#{lang.member.id}" th:selected="${search.searchType} == 'id'"></option>
+                                                <option th:value="ottId" th:text="#{lang.member.ott.id}" th:selected="${search.searchType} == 'ottId'"></option>
+                                                <option th:value="bannerCode" th:text="#{lang.member.ott.code}" th:selected="${search.searchType} == 'bannerCode'"></option>
+                                            </select>
+
+                                            <!-- 검색어 -->
+                                            <input type="text" name="searchWord" class="form-control form-control-sm text-center col-5" th:value="${search.searchWord}" th:placeholder="#{lang.member.placeholder.search.word}" style="width:30%;">
+                                            <!-- 보기 조건 -->
+                                            <select name="searchCount" class="form-select form-select-sm col-3" style="width: 80px">
+                                                <option value="10"  th:text="#{lang.common.search.ten}" th:selected="${search.searchCount} == '10'"></option>
+                                                <option value="30" th:text="#{lang.common.search.thirty}" th:selected="${search.searchCount} == '30'"></option>
+                                                <option value="50" th:text="#{lang.common.search.fifty}" th:selected="${search.searchCount} == '50'"></option>
+                                                <option value="100" th:text="#{lang.common.search.hundred}" th:selected="${search.searchCount} == '100'"></option>
+                                            </select>
+                                            <!-- 현재 페이지 -->
+                                            <input type="hidden" id="page" name="page" value="1">
+                                        </div>
+
+                                        <div class="col-auto btn-group btn-group-sm m-1 p-0">
+                                            <!-- 검색버튼 -->
+                                            <button type="button" id="searchBtn" th:text="#{lang.member.button.search}" onclick="member.list(1);" class="btn btn-success pr-3 pl-3"></button>
+                                            <button type="button" class="btn btn-outline-success" onclick="member.reset();"><i class="fa-solid fa-rotate-left"></i></button>
+                                        </div>
+                                        <!-- 엑셀 다운로드 버튼 -->
+                                        <div class="text-right col">
+                                            <button type="button" id="excelBtn" onclick="member.excel();" class="btn btn-sm btn-info" th:text="#{lang.payment.button.excel}"></button>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-inline p-0">
+                                        <div class="float-left form-control-sm">
+                                            <strong class="totalCount" th:text="#{lang.member.search.result} + ' : ' "></strong> <span></span>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </form>
+                    <!-- //검색 폼 -->
+
+                    <!-- list -->
+                    <table class="table table-hover" id="lists">
+                        <colgroup>
+                            <col style="width: 30px"/>
+                            <col style="width: 100px"/>
+                            <col style="width: 30px"/>
+                            <col style="width: 100px"/>
+                            <col style="width: 100px"/>
+                            <col style="width: 40px"/>
+                            <col style="width: 100px"/>
+                            <col style="width: 100px"/>
+                            <col style="width: 100px"/>
+                        </colgroup>
+                        <thead class="table-dark">
+                        <tr class="text-center">
+                            <th scope="col" th:text="#{lang.member.ott.idx}" class="text-center"></th>
+                            <th scope="col" th:text="#{lang.member.id}" class="text-center"></th>
+                            <th scope="col" th:text="#{lang.member.ott.site}" class="text-center"></th>
+                            <th scope="col" th:text="#{lang.member.ott.id}" class="text-center"></th>
+                            <th scope="col" th:text="#{lang.member.ott.code}" class="text-center"></th>
+                            <th scope="col" th:text="#{lang.member.ott.point}" class="text-center"></th>
+                            <th scope="col" th:text="#{lang.member.ott.sand.msg}" class="text-center"></th>
+                            <th scope="col" th:text="#{lang.member.ott.return.msg}" class="text-center"></th>
+                            <th scope="col" th:text="#{lang.member.regdate}" class="text-center"></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                    <th:block layout:fragment="paging">
+                        <div class="col-md-12 d-flex flex-row-reverse my-3">
+                            <ul class="pagination" style="font-size: 12px;">
+                            </ul>
+                        </div>
+                    </th:block>
+                </div>
+            </div>
+        </div>
+        <!-- 컨텐츠 영역 -->
+    </div>
+</th:block>

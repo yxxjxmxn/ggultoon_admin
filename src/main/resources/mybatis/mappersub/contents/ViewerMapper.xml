@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.contents.ViewerDaoSub">
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+
+    <!-- 뷰어 웹툰 이미지 -->
+    <select id="getViewerWebtoon" parameterType="Integer" resultType="ImageDto">
+        SELECT
+            viwe.`idx`,
+            viwe.`episode_idx`,
+            viwe.`parent`,
+            viwe.`path`,
+            viwe.`filename`,
+            viwe.`url`,
+            viwe.`width`,
+            viwe.`height`,
+            viwe.`sort`,
+            viwe.`device`,
+            viwe.`state`,
+            CONVERT_TZ(viwe.`regdate`, 'UTC', '${convertTZ}') AS `regdate`
+        FROM <include refid="database" />viewer_webtoon AS viwe
+        <where>
+                viwe.`episode_idx` = #{idx}
+            AND viwe.`device` = 'origin'
+            AND viwe.`state` = 1
+        </where>
+        ORDER BY viwe.`sort` ASC;
+    </select>
+
+    <!-- 뷰어 만화 이미지 -->
+    <select id="getViewerComic" parameterType="Integer" resultType="ImageDto">
+        SELECT
+            vico.`idx`,
+            vico.`episode_idx`,
+            vico.`parent`,
+            vico.`path`,
+            vico.`filename`,
+            vico.`url`,
+            vico.`width`,
+            vico.`height`,
+            vico.`sort`,
+            vico.`device`,
+            vico.`state`,
+            CONVERT_TZ(vico.`regdate`, 'UTC', '${convertTZ}') AS `regdate`
+        FROM <include refid="database" />viewer_comic AS vico
+        <where>
+                vico.`episode_idx` = #{idx}
+            AND vico.`device` = 'origin'
+            AND vico.`state` = 1
+        </where>
+        ORDER BY vico.`sort` ASC;
+    </select>
+
+    <!-- 뷰어 소설 -->
+    <select id="getViewerNovel" parameterType="Integer" resultType="ViewerDto">
+        SELECT
+            vino.`idx`,
+            vino.`episode_idx`,
+            vino.`detail`,
+            vino.`sort`,
+            vino.`state`,
+            CONVERT_TZ(vino.`regdate`, 'UTC', '${convertTZ}') AS `regdate`
+        FROM <include refid="database" />viewer_novel AS vino
+        <where>
+                vino.`episode_idx` = #{idx}
+            AND vino.`state` = 1
+        </where>
+    </select>
+
+    <!-- 뷰어 소설 커버 이미지 -->
+    <select id="getViewerNovelImg" parameterType="Integer" resultType="ImageDto">
+        SELECT
+            vinoim.`idx`,
+            vinoim.`episode_idx`,
+            vinoim.`parent`,
+            vinoim.`path`,
+            vinoim.`filename`,
+            vinoim.`url`,
+            vinoim.`width`,
+            vinoim.`height`,
+            vinoim.`sort`,
+            vinoim.`device`,
+            vinoim.`state`,
+            CONVERT_TZ(vinoim.`regdate`, 'UTC', '${convertTZ}') AS `regdate`
+        FROM <include refid="database" />viewer_novel_img AS vinoim
+        <where>
+                vinoim.`episode_idx` = #{idx}
+            AND vinoim.`device` = 'origin'
+            AND vinoim.`state` = 1
+        </where>
+    </select>
+
+    <!-- 뷰어 웹툰 마지막 sort 번호 -->
+    <select id="getViewerWebtoonLastSort" parameterType="Long" resultType="Integer">
+        SELECT
+            max(viwe.`sort`) AS sort
+        FROM <include refid="database" />viewer_webtoon AS viwe
+        WHERE
+                viwe.`episode_idx` = #{idx}
+            AND viwe.`parent` = 0
+            AND viwe.`state` = 1
+    </select>
+
+    <!-- 뷰어 만화 마지막 sort 번호 -->
+    <select id="getViewerComicLastSort" parameterType="Long" resultType="Integer">
+        SELECT
+            max(vico.`sort`) AS sort
+        FROM <include refid="database" />viewer_comic AS vico
+        WHERE
+                vico.`episode_idx` = #{idx}
+            AND vico.`parent` = 0
+            AND vico.`state` = 1
+    </select>
+
+</mapper>

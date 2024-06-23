@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.contents.EpisodeDaoSub">
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+
+    <!-- 회차 목록 -->
+    <select id="getList" parameterType="Integer" resultMap="getList_rm">
+        SELECT
+            ep.`idx`,
+            ep.`contents_idx`,
+            ep.`coin`,
+            ep.`coin_rent`,
+            ep.`episode_number`,
+            ep.`sort`,
+            ep.`episode_type_idx`,
+            ep.`title`,
+            ep.`check_login`,
+            ep.`check_arrow`,
+            ep.`state`,
+            CONVERT_TZ(ep.`pubdate`, 'UTC', '${convertTZ}') AS pubdate,
+            CONVERT_TZ(ep.`regdate`, 'UTC', '${convertTZ}') AS regdate,
+            `co`.`title`
+        FROM <include refid="database" />episode AS ep
+        JOIN <include refid="database" />`contents` AS `co`
+            ON `ep`.`contents_idx` = `co`.`idx`
+        <where>
+            `ep`.`contents_idx` = #{contentsIdx}
+        </where>
+        ORDER BY ep.`sort` DESC
+    </select>
+
+    <!-- 회차 목록 resultMap -->
+    <resultMap id="getList_rm" type="EpisodeDto">
+        <id property="idx" column="idx" />
+
+        <result property="contentsIdx" column="contents_idx" />
+        <result property="coin" column="coin" />
+        <result property="coinRent" column="coin_rent" />
+        <result property="episodeNumber" column="episode_number" />
+        <result property="sort" column="sort" />
+        <result property="episodeTypeIdx" column="episode_type_idx" />
+        <result property="title" column="title" />
+        <result property="checkLogin" column="check_login" />
+        <result property="checkArrow" column="check_arrow" />
+        <result property="state" column="state" />
+        <result property="pubdate" column="pubdate" />
+        <result property="regdate" column="regdate" />
+
+        <!-- contents image query 호출 -->
+        <collection property="imageList" column="idx" javaType="java.util.ArrayList" ofType="" select="getEpisodeImage" />
+    </resultMap>
+
+    <!-- 회차 이미지 -->
+    <select id="getEpisodeImage" parameterType="hashmap" resultType="ImageDto">
+        SELECT
+            epim.`idx`,
+            epim.`episode_idx`,
+            epim.`parent`,
+            epim.`filename`,
+            epim.`url`,
+            epim.`width`,
+            epim.`height`,
+            epim.`type`,
+            epim.`sort`,
+            epim.`state`,
+            CONVERT_TZ(epim.`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database" />episode_img AS epim
+        <where>
+                epim.`episode_idx` = #{idx}
+            AND epim.`device` = 'origin'
+            AND epim.`state` = 1
+        </where>
+        ORDER BY epim.`type` ASC, epim.`sort` ASC
+    </select>
+
+    <!-- 회차 순서 정보 -->
+    <select id="getLastEpisodeOrder" parameterType="Integer" resultType="hashmap">
+        SELECT
+            ifnull(max(ep.`episode_number`)+1, 1) AS episodeNumber,
+            ifnull(max(ep.`sort`)+1, 1) AS sort
+        FROM <include refid="database" />episode AS ep
+        <where>
+            ep.`contents_idx` = #{contentsIdx}
+        </where>
+    </select>
+
+    <!-- 회차 상세 -->
+    <select id="getView" parameterType="Integer" resultMap="getView_rm">
+        SELECT
+            ep.`idx`,
+            ep.`contents_idx`,
+            ep.`coin`,
+            ep.`coin_rent`,
+            ep.`episode_number`,
+            ep.`sort`,
+            ep.`episode_type_idx`,
+            ep.`title`,
+            ep.`check_login`,
+            ep.`check_arrow`,
+            ep.`state`,
+            CONVERT_TZ(ep.`pubdate`, 'UTC', '${convertTZ}') AS pubdate,
+            CONVERT_TZ(ep.`regdate`, 'UTC', '${convertTZ}') AS regdate,
+            epevco.`event_coin`,
+            epevco.`event_coin_rent`,
+            CONVERT_TZ(epevco.`event_start_date`, 'UTC', '${convertTZ}') AS event_start_date,
+            CONVERT_TZ(epevco.`event_end_date`, 'UTC', '${convertTZ}') AS event_end_date,
+            epin.`view`,
+            epin.`rating`
+        FROM <include refid="database" />episode AS ep
+        LEFT JOIN <include refid="database" />episode_event_coin AS epevco
+            ON ep.`idx` = epevco.`episode_idx`
+        JOIN <include refid="database" />episode_info as epin
+            ON ep.`idx` = epin.`episode_idx`
+        WHERE
+            ep.`idx` = #{idx}
+    </select>
+
+    <!-- 회차 상세 resultMap -->
+    <resultMap id="getView_rm" type="EpisodeDto">
+        <id property="idx" column="idx" />
+
+        <result property="contentsIdx" column="contents_idx" />
+        <result property="coin" column="coin" />
+        <result property="coinRent" column="coin_rent" />
+        <result property="episodeNumber" column="episode_number" />
+        <result property="sort" column="sort" />
+        <result property="episodeTypeIdx" column="episode_type_idx" />
+        <result property="title" column="title" />
+        <result property="checkLogin" column="check_login" />
+        <result property="checkArrow" column="check_arrow" />
+        <result property="state" column="state" />
+        <result property="pubdate" column="pubdate" />
+        <result property="regdate" column="regdate" />
+        <result property="eventCoin" column="event_coin" />
+        <result property="eventCoinRent" column="event_coin_rent" />
+        <result property="eventStartDate" column="event_start_date" />
+        <result property="eventEndDate" column="event_end_date" />
+        <result property="view" column="view" />
+        <result property="rating" column="rating" />
+
+        <!-- contents image query 호출 -->
+        <collection property="imageList" column="idx" javaType="java.util.ArrayList" ofType="" select="getEpisodeImage" />
+    </resultMap>
+
+    <!-- 특정 작품의 전체 회차 idx 리스트 -->
+    <select id="getEpIdxList" parameterType="SearchDto" resultType="Long">
+        SELECT
+            `idx`
+        FROM <include refid="database" />`episode`
+        WHERE
+            `contents_idx` = #{contentsIdx}
+            AND `pubdate` <![CDATA[ <= ]]> #{nowDate}
+            AND `state` = 1
+        ORDER BY `idx` DESC
+    </select>
+
+</mapper>

@@ -1,0 +1,92 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        paymentMethod.view();
+    });
+
+    let paymentMethod = {
+        // 결제 수단 상세
+        view: function () {
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/payments/methods/[[${idx}]]',
+                method: 'GET',
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        if (res.data != undefined) {
+
+                            // 결제 수단 상세 정보 폼
+                            $("td[name=idx]").text(res.data.idx||"-");
+                            $("td[name=state]").html(`<span class="badge ${res.data.stateBg}">${res.data.stateText||"-"}</span>`);
+                            $("td[name=autoPay]").html(`<span class="badge ${res.data.autoPayBg}">${res.data.autoPayText||"-"}</span>`);
+                            $("td[name=pgName]").text(res.data.pgName||"-");
+                            $("td[name=mchtId]").text(res.data.mchtId||"-");
+                            $("td[name=licenseKey]").text(res.data.licenseKey||"-");
+                            $("td[name=aes256Key]").text(res.data.aes256Key||"-");
+                            $("td[name=methodType]").text(res.data.methodType||"-");
+                            $("td[name=method]").text(res.data.method||"-");
+                            $("td[name=corpPayCode]").text(res.data.corpPayCode||"-");
+                            $("td[name=methodNoti]").text(res.data.methodNoti||"-");
+                            $("td[name=mchtName]").text(res.data.mchtName||"-");
+                            $("td[name=mchtEName]").text(res.data.mchtEName||"-");
+                            $("td[name=notiUrl]").text(res.data.notiUrl||"-");
+                            $("td[name=paymentServer]").text(res.data.paymentServer||"-");
+                            $("td[name=cancelServer]").text(res.data.cancelServer||"-");
+                            $("td[name=info]").text(res.data.info||"-");
+                            $("td[name=regdate]").text(res.data.regdate||"-");
+
+                        } else {
+                            // 결과 없음
+                            toast.alert(res.message);
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+
+            return false;
+        },
+        // 결제 수단 삭제
+        delete: function () {
+
+            let deleteConfirmMessage = `[[#{lang.payment.method.confirm.delete}]]`;
+
+            if (confirm(deleteConfirmMessage)) {
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/payments/methods/[[${idx}]]',
+                    method: "DELETE",
+                    data: '',
+                    dataType: 'json',
+                    processData: false,
+                    contentType: "application/json",
+                    success: function (res) {
+                        if (res.result) {
+                            toast.alert(res.message);
+                            opener.location.reload();
+                            self.close();
+                        } else {
+                            // 삭제 실패
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+                return false;
+            }
+        },
+        // 결제 수단 수정 팝업
+        modifyPopUp: function () {
+            window.location.href = '[[${SERVER.currentDomain}]]/payments/methods/modify/[[${idx}]]';
+        }
+    }
+</script>

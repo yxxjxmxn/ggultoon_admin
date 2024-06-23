@@ -1,0 +1,423 @@
+<th:block layout:decorate="~{common/layout}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="col-lg-12 mt-3">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" th:text="#{lang.member.title.view}"></h5>
+            </div>
+
+            <div class="card-body row">
+                <form id="frm" accept-charset="utf-8">
+                    <table class="table">
+                        <thead></thead>
+                        <colgroup>
+                            <col style="width: 20%;">
+                        </colgroup>
+                        <tbody>
+                        <tr style="border:solid currentColor; border-width:2px 0px;">
+                            <th class="table-primary" colspan="3">
+                                <span class="font-weight-bold text-center h6" th:text="#{lang.member.information}"></span>
+                                <button type="button" class="btn btn-sm btn-secondary float-right" onclick="member.list();" th:text="#{lang.member.button.list}"/>
+                            </th>
+                        </tr>
+                        </tbody>
+                        <tbody>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.idx}"></th>
+                            <td class="p-0 pl-2" name="idx" id="idx"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.state}"></th>
+                            <td class="p-0 pl-2" name="state"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.id}"></th>
+                            <td class="p-0 pl-2" name="id" id="id"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.nick}"></th>
+                            <td class="p-0 pl-2">
+                                <input type="hidden" name="nick" value=""/>
+                                <input type="text" class="form-control form-control-sm" name="changeNick" id="changeNick" required="">
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.ott.site}"></th>
+                            <td class="p-0 pl-2" name="site" id="site"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.name}"></th>
+                            <td class="p-0 pl-2" name="name" id="name"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.phone}"></th>
+                            <td class="p-0 pl-2">
+                                <input type="text" class="form-control form-control-sm" name="phone" id="phone" maxlength="13">
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.email}"></th>
+                            <td class="p-0 pl-2" name="email" id="email"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.auth}"></th>
+                            <td class="p-0 pl-2" name="auth" id="auth"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.txseq}"></th>
+                            <td class="p-0 pl-2" name="txseq" id="txseq"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.adult}"></th>
+                            <td class="p-0 pl-2" name="adult" id="adult"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.loginDate}"></th>
+                            <td class="p-0 pl-2" name="loginDate" id="loginDate"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.join.ip}"></th>
+                            <td class="p-0 pl-2" name="joinIp" id="joinIp"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.birth}"></th>
+                            <td class="p-0 pl-2">
+                                <input type="date" class="form-control form-control-sm" name="birth" id="birth" required="" style="width:180px">
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.lang}"></th>
+                            <td class="p-0 pl-2">
+                                <select class="form-select form-select-sm" name="lang" id="lang">
+                                    <option value="ko" th:text="#{lang.member.lang.ko}"></option>
+                                    <option value="en" th:text="#{lang.member.lang.en}"></option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.gender}"></th>
+                            <td class="p-0 pl-2" name="gender" id="gender"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.ci}"></th>
+                            <td class="p-0 pl-2" name="ci" id="ci"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.di}"></th>
+                            <td class="p-0 pl-2" name="di" id="di"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.join.type}"></th>
+                            <td class="p-0 pl-2" name="joinType" id="joinType"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.join.device}"></th>
+                            <td class="p-0 pl-2" name="joinDevice" id="joinDevice"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.login.device}"></th>
+                            <td class="p-0 pl-2" name="loginDevice" id="loginDevice"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.marketing}"></th>
+                            <td class="p-0 pl-2" name="marketing" id="marketing"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.regdate}"></th>
+                            <td class="p-0 pl-2" name="regdate" id="regdate"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.member.modifyDate}"></th>
+                            <td class="p-0 pl-2" name="modifyDate" id="modifyDate"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="form-group row" id="btnGroup">
+                        <div class="col text-center">
+                            <button type="button" class="btn btn-sm btn-warning" onclick="member.modify(this);" th:text="#{lang.member.button.modify}"/>
+                            <span id="stateBtn"></span>
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="member.cancel(this);" th:text="#{lang.member.button.cancel}" style="display: none"/>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- 컨텐츠 영역 -->
+        <br>
+        <!-- 코인 정보 -->
+        <div class="card">
+            <div class="row mt-3">
+                <div class="col-lg-5">
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h6 class="m-0 font-weight-bold w-75 float-left" th:text="#{lang.coin.all}">
+                                <span class="small" th:text="#{lang.coin.title.info}"></span>
+                            </h6>
+                        </div>
+                        <div class="card-body overflow-auto" style="max-height: 600px;">
+                            <form id="coinFrm" accept-charset="utf-8">
+                                <table class="table table-bordered">
+                                    <colgroup>
+                                        <col style="width:140px;"/>
+                                        <col style="width:170px;"/>
+                                        <col style="width:140px;"/>
+                                        <col style="width:140px;"/>
+                                        <col style="width:90px;"/>
+                                        <col style="width:80px;"/>
+                                    </colgroup>
+                                    <thead class="bg-light">
+                                    <tr>
+                                        <th th:text="#{lang.coin.type}" class="text-center"></th>
+                                        <th th:text="#{lang.coin.all}" class="text-center"></th>
+                                        <th th:text="#{lang.coin.use}" class="text-center"></th>
+                                        <th th:text="#{lang.coin.available}" class="text-center"></th>
+                                        <th th:text="#{lang.coin.button}" class="text-center" colspan="2"></th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="text-center fw-bold" th:text="#{lang.coin.payCoin}"></td>
+                                            <td class="text-center" id="coin"></td>
+                                            <td class="text-center" id="usedCoin"></td>
+                                            <td class="text-center" id="restCoin"></td>
+                                            <td class="text-center btn-group-sm" rowspan="3" colspan="2">
+                                                <button type="button" class="btn btn-sm submit-no-btn btn-primary" id="coinPlusBtn" onclick="button.payAndSubtractBtn(this)"
+                                                        th:text="#{lang.coin.button.payment}"/>
+                                                <button tpye="button" class="btn btn-sm submit-no-btn" id="coinMinusBtn" onclick="button.payAndSubtractBtn(this)"
+                                                        th:text="#{lang.coin.button.subtraction}" style="background-color: #E8422F;color: white"/>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-center fw-bold" th:text="#{lang.coin.bonusCoin}"></td>
+                                            <td class="text-center" id="coinFree"></td>
+                                            <td class="text-center" id="usedCoinFree"></td>
+                                            <td class="text-center" id="restCoinFree"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-center fw-bold" th:text="#{lang.coin.mileage}"></td>
+                                            <td class="text-center" id="mileage"></td>
+                                            <td class="text-center" id="usedMileage"></td>
+                                            <td class="text-center" id="restMileage"></td>
+                                        </tr>
+                                    </tbody>
+
+                                    <!-- 관리자 코인 지급 & 차감 -->
+                                    <tbody id="payActionBody" style="display: none">
+                                            <input type="hidden" name="actionType"/>
+                                            <tr>
+                                                <td class="text-center fw-bold" colspan="6" id="coinTitle"></td>
+                                            </tr>
+                                            <tr>
+                                                <td class="text-center" th:text="#{lang.coin.payment.type}"></td>
+                                                <td class="text-center" th:text="#{lang.coin.payment.price}"></td>
+                                                <td class="text-center" th:text="#{lang.coin.payCoin}"></td>
+                                                <td class="text-center" th:text="#{lang.coin.bonusCoin}"></td>
+                                                <td class="text-center" th:text="#{lang.coin.mileage}"></td>
+                                                <td class="text-center" th:text="#{lang.coin.button}"></td>
+                                            </tr>
+                                            <tr>
+                                                <td class="text-center" id="payType"></td>
+                                                <td class="text-center" id="paymentPrice">
+                                                    <input type="text" name="paymentPrice" class="form-control form-control-sm" autocomplete="off"/>
+                                                </td>
+                                                <td class="text-center">
+                                                    <input type="text" name="coin" class="form-control form-control-sm" autocomplete="off"/>
+                                                </td>
+                                                <td class="text-center">
+                                                    <input type="text" name="coinFree" class="form-control form-control-sm" autocomplete="off"/>
+                                                </td>
+                                                <td class="text-center">
+                                                    <input type="text" name="mileage" class="form-control form-control-sm" autocomplete="off"/>
+                                                </td>
+                                                <td rowspan="3" class="text-center btn-group-sm">
+                                                    <button type="button" class="btn btn-sm mb-1 btn-primary" id="payOrSubtractBtn" onclick="pay.payOrSubtract();"/>
+                                                    <button tpye="button" class="btn btn-sm btn-secondary" id="cancelBtn" onclick="button.cancelBtn();" th:text="#{lang.coin.button.cancel}"/>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="5">
+                                                    <input type="text" name="reason" class="form-control form-control-sm"/>
+                                                </td>
+                                            </tr>
+                                    </tbody>
+                                </table>
+                            </form>
+                        </div> <!--end card body-->
+                    </div> <!-- end card-->
+                </div> <!-- end float-left -->
+
+                <!-- 구매 내역(코인 사용 내역)-->
+                <div class="col-lg-7">
+                    <div class="card mt-4 ">
+                        <div class="card-header">
+                            <h6 id="viewListTitle" class="m-0 font-weight-bold w-75 float-left"></h6>
+                            <div>
+                                <!-- 더보기 버튼 -->
+                                <button type="button" class="btn btn-sm btn-secondary float-right" onclick="member.purchaseList();" th:text="#{lang.common.button.view.plus}"/>
+                            </div>
+                        </div>
+
+                        <div class="card-body overflow-auto">
+                            <table class="table table-bordered" id="purchaseList">
+                                <thead class="bg-light">
+                                <tr>
+                                    <th rowspan="2"th:text="#{lang.contents.title}" class="text-center"></th>
+                                    <th rowspan="2" th:text="#{lang.contents.genre}" class="text-center"></th>
+                                    <th rowspan="2" th:text="#{lang.contents.episode}" class="text-center"></th>
+                                    <th rowspan="2" th:text="#{lang.contents.buy.type}" class="text-center"></th>
+                                    <th colspan="3" th:text="#{lang.coin.count}" class="text-center"></th>
+                                    <th rowspan="2" th:text="#{lang.common.startDate}" class="text-center"></th>
+                                    <th rowspan="2" th:text="#{lang.common.endDate}" class="text-center"></th>
+                                </tr>
+                                <tr>
+                                    <th th:text="#{lang.coin.payCoin}" class="text-center"></th>
+                                    <th th:text="#{lang.coin.mileage}" class="text-center"></th>
+                                    <th th:text="#{lang.coin.ticket}" class="text-center"></th>
+                                </tr>
+                                </thead>
+                                <tbody class="">
+                                </tbody>
+                            </table>
+                        </div> <!-- end card-body -->
+                    </div> <!-- end card -->
+                </div> <!-- end float-left -->
+
+                <!-- 회원 결제 내역 -->
+                <div class="col-lg-12">
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h6 id="paymentListTitle" class="m-0 font-weight-bold w-75 float-left" th:text="#{lang.payment.list}">
+                                <span class="small" th:text="#{lang.coin.title.info}"></span>
+                            </h6>
+                            <div>
+                                <!-- 더보기 버튼 -->
+                                <button type="button" class="btn btn-sm btn-secondary float-right" onclick="member.paymentList();" th:text="#{lang.common.button.view.plus}"/>
+                            </div>
+                        </div>
+                        <div class="card-body overflow-auto" style="max-height: 600px;">
+                            <form id="payFrm" accept-charset="utf-8">
+                                <table class="table table-bordered" id="paymentList">
+                                    <thead class="bg-light">
+                                    <tr class="text-center">
+                                        <th scope="col" rowspan="2" th:text="#{lang.payment.idx}" class="text-center"></th>
+                                        <th scope="col" rowspan="2" th:text="#{lang.payment.state}" class="text-center"></th>
+                                        <th scope="col" rowspan="2" th:text="#{lang.payment.payer}" class="text-center"></th>
+                                        <th scope="col" rowspan="2" th:text="#{lang.payment.payType}" class="text-center"></th>
+                                        <th scope="col" rowspan="2" th:text="#{lang.payment.pay}" class="text-center"></th>
+                                        <th scope="col" rowspan="2" th:text="#{lang.payment.payType}" class="text-center"></th>
+                                        <th scope="col" colspan="3" th:text="#{lang.payment.coin}" class="text-center"></th>
+                                        <th scope="col" colspan="3" th:text="#{lang.payment.bonus}" class="text-center"></th>
+                                        <th scope="col" colspan="3" th:text="#{lang.payment.mileage}" class="text-center"></th>
+                                        <th scope="col" rowspan="2" th:text="#{lang.payment.regdate}" class="text-center"></th>
+                                        <th scope="col" rowspan="2" th:text="#{lang.payment.moddate}" class="text-center"></th>
+                                        <th scope="col" rowspan="2" th:text="#{lang.payment.manage}" class="text-center"></th>
+                                    </tr>
+                                    <tr class="text-center">
+                                        <th scope="col" th:text="#{lang.payment.paid}" class="text-center"></th>
+                                        <th scope="col" th:text="#{lang.payment.used}" class="text-center"></th>
+                                        <th scope="col" th:text="#{lang.payment.rest}" class="text-center"></th>
+                                        <th scope="col" th:text="#{lang.payment.paid}" class="text-center"></th>
+                                        <th scope="col" th:text="#{lang.payment.used}" class="text-center"></th>
+                                        <th scope="col" th:text="#{lang.payment.rest}" class="text-center"></th>
+                                        <th scope="col" th:text="#{lang.payment.paid}" class="text-center"></th>
+                                        <th scope="col" th:text="#{lang.payment.used}" class="text-center"></th>
+                                        <th scope="col" th:text="#{lang.payment.rest}" class="text-center"></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </form>
+                        </div> <!--end card body-->
+                    </div> <!-- end card-->
+                </div> <!-- end float-left -->
+
+                <!-- 관리자 지급 리스트 -->
+                <div class="col-lg-6">
+                    <div class="card mt-4 ">
+                        <div class="card-header">
+                            <h6 id="coinSaveListTitle" class="m-0 font-weight-bold w-75 float-left"></h6>
+                            <div>
+                                <input type="hidden" id="isAdd" value=""/>
+                                <!-- 더보기 버튼 -->
+                                <button type="button" class="btn btn-sm btn-secondary float-right" onclick="member.adminCoinList('Y');" th:text="#{lang.common.button.view.plus}"/>
+                            </div>
+                        </div>
+
+                        <div class="card-body overflow-auto">
+                            <table class="table table-bordered" id="coinSaveList">
+                                <colgroup>
+                                    <col style="width:100px;"/>
+                                    <col style="width:50px;"/>
+                                    <col style="width:100px;"/>
+                                    <col style="width:250px;"/>
+                                    <col style="width:80px;"/>
+                                    <col style="width:70px;"/>
+                                    <col style="width:80px;"/>
+                                    <col style="width:140px;"/>
+                                </colgroup>
+                                <thead class="bg-light">
+                                <tr class="text-center">
+                                    <th scope="col" th:text="#{lang.coin.idx}" class="text-center" style="width:100px;"></th>
+                                    <th scope="col" th:text="#{lang.coin.state}" class="text-center" style="width:50px;"></th>
+                                    <th scope="col" th:text="#{lang.coin.admin.name}" class="text-center"></th>
+                                    <th scope="col" th:text="#{lang.coin.title}" class="text-center"></th>
+                                    <th scope="col" th:text="#{lang.coin.payCoin}" class="text-center" style="width:110px;"></th>
+                                    <th scope="col" th:text="#{lang.coin.bonusCoin}" class="text-center"></th>
+                                    <th scope="col" th:text="#{lang.coin.mileage}" class="text-center"></th>
+                                    <th scope="col" th:text="#{lang.coin.regdate}" class="text-center" style="width:145px;"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div> <!-- end card-body -->
+                    </div> <!-- end card -->
+                </div> <!-- end float-left -->
+
+                <!-- 관리자 차감 리스트 -->
+                <div class="col-lg-6">
+                    <div class="card mt-4 ">
+                        <div class="card-header">
+                            <h6 id="coinSubtractListTitle" class="m-0 font-weight-bold w-75 float-left"></h6>
+                            <div>
+                                <!-- 더보기 버튼 -->
+                                <button type="button" class="btn btn-sm btn-secondary float-right" onclick="member.adminCoinList('N');" th:text="#{lang.common.button.view.plus}"/>
+                            </div>
+                        </div>
+
+                        <div class="card-body overflow-auto">
+                            <table class="table table-bordered" id="coinSubtractList">
+                                <colgroup>
+                                    <col style="width:100px;"/>
+                                    <col style="width:50px;"/>
+                                    <col style="width:100px;"/>
+                                    <col style="width:250px;"/>
+                                    <col style="width:80px;"/>
+                                    <col style="width:70px;"/>
+                                    <col style="width:80px;"/>
+                                    <col style="width:140px;"/>
+                                </colgroup>
+                                <thead class="bg-light">
+                                <tr class="text-center">
+                                    <th scope="col" th:text="#{lang.coin.idx}" class="text-center" style="width:100px;"></th>
+                                    <th scope="col" th:text="#{lang.coin.state}" class="text-center" style="width:50px;"></th>
+                                    <th scope="col" th:text="#{lang.coin.admin.name}" class="text-center"></th>
+                                    <th scope="col" th:text="#{lang.coin.title}" class="text-center"></th>
+                                    <th scope="col" th:text="#{lang.coin.payCoin}" class="text-center" style="width:110px;"></th>
+                                    <th scope="col" th:text="#{lang.coin.bonusCoin}" class="text-center"></th>
+                                    <th scope="col" th:text="#{lang.coin.mileage}" class="text-center"></th>
+                                    <th scope="col" th:text="#{lang.coin.regdate}" class="text-center" style="width:145px;"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div> <!-- end card-body -->
+                    </div> <!-- end card -->
+                </div> <!-- end float-left -->
+
+            </div>
+        </div>
+    </div>
+</th:block>

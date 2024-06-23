@@ -1,0 +1,65 @@
+<th:block layout:decorate="~{common/layout_popup_nomenu}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="container-fluid">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" name="title" th:text="#{lang.notification.title.view}"></h5>
+            </div>
+            <div class="card-body row">
+                <form id="frm" accept-charset="utf-8">
+                    <table class="table">
+                        <thead></thead>
+                        <tbody>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.notification.idx}" style="width:20%;"></th>
+                            <td class="text-center" name="idx" id="idx"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.notification.state}" style="width:20%;"></th>
+                            <td class="text-center" name="state" id="state"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.notification.id}" style="width:20%;"></th>
+                            <td class="text-center" name="id" id="id"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.notification.nick}" style="width:20%;"></th>
+                            <td class="text-center" name="nick" id="nick"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.notification.category}" style="width:20%;"></th>
+                            <td class="text-center" name="category" id="category"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.notification.title}" style="width:20%;"></th>
+                            <td class="text-center" name="title" id="title"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.notification.url}" style="width:20%;"></th>
+                            <td class="text-center" name="url" id="url"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.notification.regdate}" style="width:20%;"></th>
+                            <td class="text-center" name="regdate" id="regdate"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.notification.checkDate}" style="width:20%;"></th>
+                            <td class="text-center" name="checkDate" id="checkDate"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.notification.delDate}" style="width:20%;"></th>
+                            <td class="text-center" name="delDate" id="delDate"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div class="form-group row">
+                        <div class="col text-center">
+                            <button type="button" name="close" class="btn btn-sm btn-secondary" th:onclick="|self.close()|" th:text="#{lang.notification.button.close}"></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- //컨텐츠 영역 -->
+    </div>
+</th:block>

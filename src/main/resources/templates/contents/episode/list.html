@@ -1,0 +1,74 @@
+<th:block layout:decorate="~{common/layout}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="col-lg-12 mt-3">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" th:text="#{lang.episode.title.list}"></h5>
+            </div>
+            <div class="card-body row">
+                <!-- 리스트 -->
+                <div class="col-12">
+                    <!-- 검색 폼 -->
+                    <form id="frm" class="d-flex bd-highlight gx-3" onsubmit="return false;" accept-charset="utf-8">
+                        <table class="table m-0">
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <div class="row p-0">
+                                            <div class="col-10 input-group input-group-sm m-1 p-0">
+                                                <!-- 현재 페이지 -->
+                                                <input type="hidden" id="page" name="page" th:value="${params.page}">
+                                            </div>
+
+                                            <div class="col btn-group btn-group-sm m-1 p-0 text-right">
+                                                <!-- 작품 목록 -->
+                                                <button type="button" id="contentsList" class="btn btn-primary m-2 rounded" th:text="#{lang.episode.button.list}" onclick="episode.contentsList();"></button>
+                                                <!-- 회차 추가 -->
+                                                <button type="button" id="registBtn" class="btn btn-primary m-2 rounded" th:text="#{lang.episode.button.add_episode}" onclick="episode.register();"></button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="d-inline p-0">
+                                            <div class="float-left form-control-sm">
+                                                <strong class="totalCount" th:text="#{lang.search.result} + ' : ' "></strong> <span></span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </form>
+                    <!-- //검색 폼 -->
+
+                    <!-- list -->
+                    <table class="table table-hover" id="lists">
+                        <thead class="table-dark">
+                            <tr class="text-center">
+                                <th scope="col" class="text-center" style="width:100px;"><input type="checkbox"></th>
+                                <th scope="col" th:text="#{lang.episode.id}" class="text-center" style="width:100px;"></th>
+                                <th scope="col" th:text="#{lang.episode.image}" class="text-center"></th>
+                                <th scope="col" th:text="#{lang.episode.title}" class="text-center"></th>
+                                <th scope="col" th:text="#{lang.episode.state}" class="text-center" style="width:200px;"></th>
+                                <th scope="col" th:text="#{lang.episode.coin_rent}" class="text-center" style="width:200px;"></th>
+                                <th scope="col" th:text="#{lang.episode.coin_purchase}" class="text-center" style="width:200px;"></th>
+                                <th scope="col" th:text="#{lang.episode.manage}" class="text-center" style="width:200px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                    <th:block layout:fragment="paging">
+                        <div class="col-md-12 d-flex flex-row-reverse my-3">
+                            <ul class="pagination" style="font-size: 12px;">
+                            </ul>
+                        </div>
+                    </th:block>
+                </div>
+            </div>
+        </div>
+        <!-- 컨텐츠 영역 -->
+    </div>
+</th:block>

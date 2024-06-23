@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.dao.payment.PaymentDao">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        결제 내역
+    =============================================================== -->
+
+    <!-- payment 테이블 insert(관리자 코인 지급)-->
+    <insert id="insertPaymentByAdmin" parameterType="CoinDto" useGeneratedKeys="true" keyProperty="paymentIdx">
+        INSERT INTO <include refid="database"/>`payment`
+        SET
+            `product_idx`       = 0,
+            `member_idx`        = #{memberIdx},
+            `admin_idx`         = #{adminIdx},
+            `coin`              = #{coin},
+            `coin_free`         = #{coinFree},
+            `mileage`           = #{mileage},
+            `pay`               = #{paymentPrice},
+            `pay_type`          = #{paymentType},
+            `state`             = 1,
+            `regdate`           = #{regdate},
+            `regdate_tz`        = '${convertTZ}'
+    </insert>
+
+    <!-- payment_info 테이블 insert -->
+    <insert id="insertPaymentInfo" parameterType="PaymentDto">
+        INSERT INTO <include refid="database"/>`payment_info`
+        SET
+            `payment_idx`       = #{idx},
+            `first`             = #{first},
+            `state`             = 1,
+            `regdate`           = #{regdate},
+            `regdate_tz`        = '${convertTZ}'
+    </insert>
+
+    <!-- payment_log -->
+    <insert id="insertPaymentLog" parameterType="paymentDto">
+        INSERT INTO <include refid="database" />`payment_log`
+        <set>
+            `payment_idx`            =  #{idx},
+            `product_idx`            =  #{productIdx},
+            `member_idx`             =  #{memberIdx},
+            `order_no`               =  #{orderIdx},
+            `transaction_no`         =  #{transactionNo},
+            `type`                   =  #{paymentType},
+            `pay`                    =  #{pay},
+            `currency`               =  #{currency},
+            `state`                  =  1,
+            `regdate`                =  #{regdate},
+            `regdate_tz`             =  '${convertTZ}'
+        </set>
+    </insert>
+
+    <!-- member_coin_save_log -->
+    <insert id="insertCoinSaveLog" parameterType="paymentDto">
+        INSERT INTO <include refid="database" />`member_coin_save_log`
+        <set>
+            `member_coin_save_idx`   =  #{coinSaveIdx},
+            `member_idx`             =  #{memberIdx},
+            `coin`                   =  #{coin},
+            `coin_free`              =  #{bonus},
+            `title`                  =  #{title},
+            `state`                  =  1,
+            `regdate`                =  #{regdate},
+            `regdate_tz`             =  '${convertTZ}'
+        </set>
+    </insert>
+
+    <!-- member_mileage_save_log -->
+    <insert id="insertMileageSaveLog" parameterType="paymentDto">
+        INSERT INTO <include refid="database" />`member_mileage_save_log`
+        <set>
+            `member_mileage_save_idx`   =  #{mileageSaveIdx},
+            `member_idx`                =  #{memberIdx},
+            `mileage`                   =  #{mileage},
+            `title`                     =  #{title},
+            `admin`                     =  #{admin},
+            `state`                     =  1,
+            `regdate`                   =  #{regdate},
+            `regdate_tz`                =  '${convertTZ}'
+        </set>
+    </insert>
+
+    <!-- member_coin_used_log(coin) -->
+    <insert id="insertCoinUsedLog" parameterType="PaymentDto">
+        INSERT INTO <include refid="database" />`member_coin_used_log`
+        <set>
+
+            `member_coin_used_idx`   =  #{coinUsedIdx},
+            `member_idx`             =  #{memberIdx},
+            <choose>
+                <when test="type == 1">
+                    `coin` = #{coin},
+                </when>
+                <when test="type == 2">
+                    `coin` = #{bonus},
+                </when>
+            </choose>
+            `type`                   =  #{type},
+            `title`                  =  #{title},
+            `state`                  =  1,
+            `regdate`                =  #{regdate},
+            `regdate_tz`             =  '${convertTZ}'
+        </set>
+    </insert>
+
+    <!-- member_mileage_used_log -->
+    <insert id="insertMileageUsedLog" parameterType="paymentDto">
+        INSERT INTO <include refid="database" />`member_mileage_used_log`
+        <set>
+            `member_mileage_used_idx`   =  #{mileageUsedIdx},
+            `member_idx`                =  #{memberIdx},
+            `mileage`                   =  #{mileage},
+            `title`                     =  #{title},
+            `state`                     =  1,
+            `regdate`                   =  #{regdate},
+            `regdate_tz`                =  '${convertTZ}'
+        </set>
+    </insert>
+
+    <!-- payment 상태값 변경 & 취소일 등록 -->
+    <update id="updatePayment" parameterType="PaymentDto">
+        UPDATE <include refid="database" />`payment`
+        <set>
+            `state`       = 0,
+            `moddate`     = #{moddate},
+            `moddate_tz`  =  '${convertTZ}'
+        </set>
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+    <!-- payment_info 상태값 변경 -->
+    <update id="updatePaymentInfo" parameterType="PaymentDto">
+        UPDATE <include refid="database" />`payment_info`
+        <set>
+            `state` = 0
+        </set>
+        WHERE
+            `payment_idx` = #{idx}
+    </update>
+
+    <!-- member_coin_save 상태값 변경 -->
+    <update id="updateCoinSave" parameterType="PaymentDto">
+        UPDATE <include refid="database" />`member_coin_save`
+        <set>
+            `state` = 0
+        </set>
+        WHERE
+            `payment_idx` = #{idx}
+    </update>
+
+    <!-- member_mileage_save 상태값 변경 -->
+    <update id="updateMileageSave" parameterType="PaymentDto">
+        UPDATE <include refid="database" />`member_mileage_save`
+        <set>
+            `state` = 0
+        </set>
+        WHERE
+            `payment_idx` = #{idx}
+    </update>
+
+    <!-- member_coin_used 상태값 변경 -->
+    <update id="updateCoinUsed" parameterType="PaymentDto">
+        UPDATE <include refid="database" />`member_coin_used`
+        <set>
+            `state` = 0
+        </set>
+        WHERE
+            `member_coin_save_idx` = #{coinSaveIdx}
+            AND `type` = #{type}
+    </update>
+
+    <!-- member_mileage_used 상태값 변경 -->
+    <update id="updateMileageUsed" parameterType="PaymentDto">
+        UPDATE <include refid="database" />`member_mileage_used`
+        <set>
+            `state` = 0
+        </set>
+        WHERE
+            `member_mileage_save_idx` = #{mileageSaveIdx}
+    </update>
+
+    <!-- member_coin 코인, 보너스, 마일리지 개수 변경 -->
+    <update id="updateMemberCoin" parameterType="PaymentDto">
+        UPDATE <include refid="database" />`member_coin`
+        <set>
+            `coin`      = #{coin},
+            `coin_free` = #{bonus},
+            `mileage`   = #{mileage}
+        </set>
+        WHERE
+            `member_idx` = #{memberIdx}
+    </update>
+
+    <!-- ==============================================================
+        결제 수단
+    =============================================================== -->
+
+    <!-- 결제 수단 등록 -->
+    <insert id="registerPaymentMethod" parameterType="PaymentMethodDto">
+        INSERT INTO <include refid="database" />`payment_method`
+        <set>
+            `pg_name`                   =  #{pgName},
+            `mcht_id`                   =  #{mchtId},
+            `license_key`               =  #{licenseKey},
+            `aes256_key`                =  #{aes256Key},
+            `method_type`               =  #{methodType},
+            `method`                    =  #{method},
+            `corp_pay_code`             =  #{corpPayCode},
+            `method_noti`               =  #{methodNoti},
+            `mcht_name`                 =  #{mchtName},
+            `mcht_e_name`               =  #{mchtEName},
+            `noti_url`                  =  #{notiUrl},
+            `payment_server`            =  #{paymentServer},
+            `cancel_server`             =  #{cancelServer},
+            `info`                      =  #{info},
+            `auto_pay`                  =  #{autoPay},
+            `state`                     =  #{state},
+            `regdate`                   =  #{regdate},
+            `regdate_tz`                =  '${convertTZ}'
+        </set>
+    </insert>
+
+    <!-- 결제 수단 삭제 -->
+    <update id="deletePaymentMethod" parameterType="Integer">
+        UPDATE <include refid="database" />`payment_method`
+        SET
+            `state` = 0
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+    <!-- 결제 수단 수정 -->
+    <update id="modifyPaymentMethod" parameterType="PaymentMethodDto">
+        UPDATE <include refid="database" />`payment_method`
+        <set>
+            `pg_name`                   =  #{pgName},
+            `mcht_id`                   =  #{mchtId},
+            `license_key`               =  #{licenseKey},
+            `aes256_key`                =  #{aes256Key},
+            `method_type`               =  #{methodType},
+            `method`                    =  #{method},
+            `corp_pay_code`             =  #{corpPayCode},
+            `method_noti`               =  #{methodNoti},
+            `mcht_name`                 =  #{mchtName},
+            `mcht_e_name`               =  #{mchtEName},
+            `noti_url`                  =  #{notiUrl},
+            `payment_server`            =  #{paymentServer},
+            `cancel_server`             =  #{cancelServer},
+            `info`                      =  #{info},
+            `auto_pay`                  =  #{autoPay},
+            `state`                     =  #{state},
+            `regdate`                   =  #{regdate},
+            `regdate_tz`                =  '${convertTZ}'
+        </set>
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+    <!-- ==============================================================
+        결제 상품
+    =============================================================== -->
+
+    <!-- 결제 상품 등록 -->
+    <insert id="registerPaymentProduct" parameterType="PaymentProductDto">
+        INSERT INTO <include refid="database" />`product`
+        <set>
+            `title`         =  #{title},
+            `type`          =  #{type},
+            `coin`          =  #{coin},
+            `coin_free`     =  #{coinFree},
+            `coin_free2`    =  #{coinFree2},
+            `mileage`       =  #{mileage},
+            `price`         =  #{price},
+            `sort`          =  #{sort},
+            `state`         =  #{state},
+            `regdate`       =  #{regdate},
+            `regdate_tz`    =  '${convertTZ}'
+        </set>
+    </insert>
+
+    <!-- 결제 상품 삭제 -->
+    <update id="deletePaymentProduct" parameterType="Integer">
+        UPDATE <include refid="database" />`product`
+        SET
+            `state` = 0
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+    <!-- 결제 상품 수정 -->
+    <update id="modifyPaymentProduct" parameterType="PaymentProductDto">
+        UPDATE <include refid="database" />`product`
+        <set>
+            `title`         =  #{title},
+            `type`          =  #{type},
+            `coin`          =  #{coin},
+            `coin_free`     =  #{coinFree},
+            `coin_free2`    =  #{coinFree2},
+            `mileage`       =  #{mileage},
+            `price`         =  #{price},
+            `sort`          =  #{sort},
+            `state`         =  #{state},
+            `regdate`       =  #{regdate},
+            `regdate_tz`    =  '${convertTZ}'
+        </set>
+        WHERE
+            `idx` = #{idx}
+    </update>
+</mapper>

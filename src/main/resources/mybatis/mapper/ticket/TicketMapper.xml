@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.dao.ticket.TicketDao">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        INSERT
+    =============================================================== -->
+
+    <!-- 이용권 상세 정보 등록 -->
+    <insert id="insertTicket" parameterType="TicketDto" useGeneratedKeys="true" keyProperty="insertedIdx">
+        INSERT INTO <include refid="database"/>`contents_ticket`
+        SET
+            `contents_idx`          = #{contentsIdx},
+            `except_episode_count`  = #{except},
+            `available_period`      = #{period},
+            `ticket_cnt`            = #{count},
+            `adult`                 = #{adult},
+            `state`                 = #{state},
+            `start_date`            = #{startDate},
+            `start_date_tz`         ='${convertTZ}',
+            `end_date`              = #{endDate},
+            `end_date_tz`           = '${convertTZ}',
+            `regdate`               = #{regdate},
+            `regdate_tz`            = '${convertTZ}'
+    </insert>
+
+    <!-- 이용권 지급 대상 그룹 매핑 정보 등록 -->
+    <insert id="insertTicketGroupList" parameterType="TicketDto">
+        INSERT INTO <include refid="database"/>`contents_ticket_group_mapping`
+        (
+            `contents_ticket_idx`,
+            `contents_ticket_group_idx`,
+            `state`,
+            `regdate`,
+            `regdate_tz`
+        )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.idx},
+                #{item.groupIdx},
+                #{item.state},
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+    <!-- ==============================================================
+        UPDATE
+    =============================================================== -->
+
+    <!-- 이용권 지급 대상 그룹 수정 -->
+    <update id="updateTicketGroup" parameterType="GroupDto">
+        UPDATE <include refid="database" />`contents_ticket_group`
+        SET
+            `code`        = #{code},
+            `name`        = #{name},
+            `description` = #{description},
+            `state`       = #{state},
+            `regdate`     = #{regdate}
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+    <!-- 이용권 지급 대상 그룹 매핑 정보 삭제 -->
+    <update id="deleteTicketGroupList" parameterType="Long">
+        UPDATE <include refid="database"/>`contents_ticket_group_mapping`
+        SET
+            `state` = 0
+        WHERE
+            `contents_ticket_idx` IN
+            <foreach collection="list" item="idx" open="(" close=")" separator=",">
+                #{idx}
+            </foreach>
+    </update>
+
+    <!-- 이용권 삭제 -->
+    <update id="deleteTicket" parameterType="Long">
+        UPDATE <include refid="database"/>`contents_ticket`
+        SET
+            `state` = 0
+        WHERE
+            `idx` IN
+            <foreach collection="list" item="idx" open="(" close=")" separator=",">
+                #{idx}
+            </foreach>
+    </update>
+
+    <!-- 이용권 수정 -->
+    <update id="updateTicket" parameterType="TicketDto">
+        UPDATE <include refid="database"/>`contents_ticket`
+        SET
+            `contents_idx`          = #{contentsIdx},
+            `except_episode_count`  = #{except},
+            `available_period`      = #{period},
+            `ticket_cnt`            = #{count},
+            `adult`                 = #{adult},
+            `start_date`            = #{startDate},
+            `start_date_tz`         ='${convertTZ}',
+            `end_date`              = #{endDate},
+            `end_date_tz`           = '${convertTZ}'
+        WHERE
+            `idx` = #{idx}
+    </update>
+</mapper>

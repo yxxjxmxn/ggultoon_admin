@@ -1,0 +1,578 @@
+<th:block layout:decorate="~{common/layout}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="col-lg-12 mt-3">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" th:text="#{lang.contents.title.register}"></h5>
+            </div>
+
+            <div class="card-body row">
+                <form id="frm" onsubmit="contents.register(); return false;" accept-charset="utf-8">
+
+                    <!-- 제휴사 정보 -->
+                    <div id="lay_cp_member">
+                        <table class="table">
+                            <colgroup>
+                                <col style="width: 20%;">
+                            </colgroup>
+                            <thead>
+                                <tr style="border:solid currentColor; border-width:2px 0px;">
+                                    <th class="table-primary border-bottom-0" colspan="2" th:text="#{lang.contents.title.sub.cp_member}"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.cp_member.company.name}"></th>
+                                    <td class="">
+                                        <div>
+                                            <input type="hidden" class="form-control form-control-sm" name="cpMemberIdx" id="cpMemberIdx">
+                                            <input type="text" class="col-4 d-inline-block form-control form-control-sm bg-white" name="companyName" id="companyName" onclick="cp.layer();" placeholder="CP 선택" readonly="readonly">
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- //제휴사 정보 -->
+
+                    <!-- 기본 정보 -->
+                    <div id="lay_information">
+                        <table class="table">
+                            <colgroup>
+                                <col style="width: 20%;">
+                            </colgroup>
+                            <thead>
+                                <tr style="border:solid currentColor; border-width:2px 0px;">
+                                    <th class="table-primary border-bottom-0" colspan="2" th:text="#{lang.contents.title.sub.information}"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.title}"></th>
+                                    <td class="">
+                                        <input type="text" class="form-control form-control-sm" name="title" id="title">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.category}"></th>
+                                    <td class="">
+                                        <select class="form-select form-select-sm col-3 d-inline-block" name="categoryIdx" id="category" onchange="categoryChange(this.value);"></select>
+
+                                        <select class="form-select form-select-sm col-3 d-inline-block" name="genreIdx" id="genre"></select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.age}"></th>
+                                    <td class="">
+                                        <div class="btn-group" role="group">
+                                            <input type="radio" class="btn-check" name="adult" id="all" value="0" autocomplete="off" checked="checked">
+                                            <label class="btn btn-sm btn-outline-primary" for="all" th:text="#{lang.contents.age.all}"></label>
+                                            <input type="radio" class="btn-check" name="adult" id="adult" value="1" autocomplete="off">
+                                            <label class="btn btn-sm btn-outline-danger" for="adult" th:text="#{lang.contents.age.adult}"></label>
+                                        </div>
+                                        <div class="d-inline-block ml-3">
+                                            <input type="checkbox" class="" name="adultPavilion" id="adultPavilion" autocomplete="off" value="1">
+                                            <label class="col-auto pl-0" for="adultPavilion" th:text="#{lang.contents.pavilion.adult}"></label>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.serialize}"></th>
+                                    <td class="">
+                                        <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                                            <input type="radio" class="btn-check" name="progress" id="serialized" value="1" autocomplete="off" checked="checked">
+                                            <label class="btn btn-sm btn-outline-primary" for="serialized" th:text="#{lang.contents.completed.serialized}"></label>
+                                            <input type="radio" class="btn-check" name="progress" id="pause" value="3" autocomplete="off">
+                                            <label class="btn btn-sm btn-outline-danger" for="pause" th:text="#{lang.contents.completed.pause}"></label>
+                                            <input type="radio" class="btn-check" name="progress" id="complete" value="2" autocomplete="off">
+                                            <label class="btn btn-sm btn-outline-primary" for="complete" th:text="#{lang.contents.completed.complete}"></label>
+                                            <input type="radio" class="btn-check" name="progress" id="end" value="0" autocomplete="off">
+                                            <label class="btn btn-sm btn-outline-danger" for="end" th:text="#{lang.contents.completed.end}"></label>
+                                        </div>
+                                        <div class="pt-2">
+                                            <input type="checkbox" class="" name="weekly[]" id="weekly_mon" autocomplete="off" value="1">
+                                            <label class="col-auto pl-0" for="weekly_mon" th:text="#{lang.contents.weekly.mon}"></label>
+                                            <input type="checkbox" class="" name="weekly[]" id="weekly_tue" autocomplete="off" value="2">
+                                            <label class="col-auto pl-0" for="weekly_tue" th:text="#{lang.contents.weekly.tue}"></label>
+                                            <input type="checkbox" class="" name="weekly[]" id="weekly_wed" autocomplete="off" value="3">
+                                            <label class="col-auto pl-0" for="weekly_wed" th:text="#{lang.contents.weekly.wed}"></label>
+                                            <input type="checkbox" class="" name="weekly[]" id="weekly_thu" autocomplete="off" value="4">
+                                            <label class="col-auto pl-0" for="weekly_thu" th:text="#{lang.contents.weekly.thu}"></label>
+                                            <input type="checkbox" class="" name="weekly[]" id="weekly_fri" autocomplete="off" value="5">
+                                            <label class="col-auto pl-0" for="weekly_fri" th:text="#{lang.contents.weekly.fri}"></label>
+                                            <input type="checkbox" class="" name="weekly[]" id="weekly_sat" autocomplete="off" value="6">
+                                            <label class="col-auto pl-0" for="weekly_sat" th:text="#{lang.contents.weekly.sat}"></label>
+                                            <input type="checkbox" class="" name="weekly[]" id="weekly_sun" autocomplete="off" value="7">
+                                            <label class="col-auto pl-0" for="weekly_sun" th:text="#{lang.contents.weekly.sun}"></label>
+
+                                            <input type="button" class="ml-5" th:value="#{lang.contents.not_applicable}" onclick="checkedReset('weekly[]');">
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.description}"></th>
+                                    <td class="">
+                                        <textarea class="w-100 p-1 rounded-1 mt-2 form-control" maxlength="1000" rows="6" name="description" id="description" style="resize:none;"></textarea>
+                                        <div class="text-right">
+                                            <span class="cut_info">
+                                                <span class="current_cnt">0</span> / 5000
+                                            </span>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.label}"></th>
+                                    <td class="">
+                                        <input type="text" class="form-control form-control-sm" name="label" id="label">
+                                    </td>
+                                </tr>
+                               <tr>
+                                    <th class="text-center" th:text="#{lang.contents.code}"></th>
+                                    <td class="">
+                                        <div>
+                                            <input type="hidden" class="form-control form-control-sm" name="code" id="code">
+                                            <input type="text" class="col-4 d-inline-block form-control form-control-sm bg-white" name="codeText" id="codeText" onclick="codes.layer();" placeholder="코드 선택" readonly="readonly">
+                                            <button type="button" class="btn btn-sm btn-secondary col-1 ml-2 d-inline-block" onclick="codes.cancel();" th:text="#{lang.contents.button.cancel.selected}"></button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.view.dummy}"></th>
+                                    <td class="">
+                                        <input type="number" class="form-control form-control-sm" name="viewDummy" id="viewDummy">
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- //기본 정보 -->
+
+                    <!-- 서비스 유형 -->
+                    <div id="lay_service_type">
+                        <table class="table">
+                            <colgroup>
+                                <col style="width: 20%;">
+                            </colgroup>
+                            <thead>
+                                <tr style="border:solid currentColor; border-width:2px 0px;">
+                                    <th class="table-primary border-bottom-0" colspan="2" th:text="#{lang.contents.title.sub.service_type}"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th rowspan="3" class="text-center" th:text="#{lang.contents.service_type}"></th>
+                                    <td class="">
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="exclusive" id="exclusive" value="1">
+                                            <label class="form-check-label" for="exclusive" th:text="#{lang.contents.exclusive}"></label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="exclusive" id="non_exclusive" value="0" checked="checked">
+                                            <label class="form-check-label" for="non_exclusive" th:text="#{lang.contents.not_applicable}"></label>
+                                        </div>
+                                        <div class="border px-2">
+                                            독점을 맺는 작품인 경우만 선택 해 주세요.<br>
+                                            독점 계약조건에 부합하지 않을 경우, 시리즈 승인이 반려될 수 있습니다.
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="">
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="publication" id="publication" value="1">
+                                            <label class="form-check-label" for="publication" th:text="#{lang.contents.publication}"></label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="publication" id="salami" value="2">
+                                            <label class="form-check-label" for="salami" th:text="#{lang.contents.salami}"></label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="publication" id="non_publication" value="0" checked="checked">
+                                            <label class="form-check-label" for="non_publication" th:text="#{lang.contents.not_applicable}"></label>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="">
+                                        <input type="checkbox" class="" name="revision" id="revision" autocomplete="off" value="1">
+                                        <label class="col-auto pl-0" for="revision" th:text="#{lang.contents.revision}"></label>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- //서비스 유형 -->
+
+                    <!-- 판매 종류 설정 -->
+                    <div id="lay_sell_type">
+                        <table class="table">
+                            <colgroup>
+                                <col style="width: 20%;">
+                            </colgroup>
+                            <thead>
+                                <tr style="border:solid currentColor; border-width:2px 0px;">
+                                    <th class="table-primary border-bottom-0" colspan="2" th:text="#{lang.contents.title.sub.sell_type}"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.sell_type}"></th>
+                                    <td>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="sellType" id="both" value="1" checked="checked">
+                                            <label class="form-check-label" for="both" th:text="#{lang.contents.sell_type.both}"></label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="sellType" id="purchase" value="2">
+                                            <label class="form-check-label" for="purchase" th:text="#{lang.contents.sell_type.purchase}"></label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="sellType" id="rental" value="3">
+                                            <label class="form-check-label" for="rental" th:text="#{lang.contents.sell_type.rental}"></label>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- //판매 종류 설정 -->
+
+                    <!-- 가격 설정 -->
+                    <div id="lay_free_count">
+                        <table class="table">
+                            <colgroup>
+                                <col style="width: 20%;">
+                            </colgroup>
+                            <thead>
+                                <tr style="border:solid currentColor; border-width:2px 0px;">
+                                    <th class="table-primary border-bottom-0" colspan="2" th:text="#{lang.contents.title.sub.free_cnt}"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.free.episode.cnt}"></th>
+                                    <td class="">
+                                        <input type="number" class="form-control form-control-sm col-1" name="freeEpisodeCnt" id="freeEpisodeCnt">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.event.free.episode.cnt}"></th>
+                                    <td class="">
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="eventFreeUsed" id="apply" value="1">
+                                            <label class="form-check-label" for="apply" th:text="#{lang.contents.apply}"></label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="eventFreeUsed" id="notApply" value="0" checked="checked">
+                                            <label class="form-check-label" for="notApply" th:text="#{lang.contents.not_apply}"></label>
+                                        </div>
+
+                                        <div>
+                                            <!-- TODO datepicker 시간은 어떻게 쓸지? -->
+                                            <input type="text" class="form-control form-control-sm col-1 d-inline-block" name="eventFreeEpisodeCnt" id="eventFreeEpisodeCnt" autocomplete="off">
+                                            <span class="d-inline-block ml-3 mr-1" th:text="#{lang.contents.event.date}"></span>
+                                            <div class="form-check form-check-inline">
+                                                <input type="text" class="form-check-input form-control form-control-sm ui-datepicker" name="eventStartDate" id="eventStartDate" autocomplete="off">
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input type="text" class="form-check-input form-control form-control-sm ui-datepicker" name="eventEndDate" id="eventEndDate" autocomplete="off">
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.buy_all}"></th>
+                                    <td class="">
+                                        <div>
+                                            <span class="d-inline-block mr-1" th:text="#{lang.contents.buy_all.minimum}"></span> <input type="number" class="form-control form-control-sm col-1 d-inline-block" name="minimumPurchase" id="minimumPurchase" maxlength="4" oninput="maxLengthCheck(this)" autocomplete="off">
+                                            <span class="d-inline-block ml-3 mr-1" th:text="#{lang.contents.buy_all.discount}"></span> <input type="number" class="form-control form-control-sm col-1 d-inline-block" name="discount" id="discount" maxlength="3" oninput="maxLengthCheck(this)" autocomplete="off"> %
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.rent_all}"></th>
+                                    <td class="">
+                                        <div>
+                                            <span class="d-inline-block mr-1" th:text="#{lang.contents.rent_all.minimum}"></span> <input type="number" class="form-control form-control-sm col-1 d-inline-block" name="minimumPurchaseRent" id="minimumPurchaseRent" maxlength="4" oninput="maxLengthCheck(this)" autocomplete="off">
+                                            <span class="d-inline-block ml-3 mr-1" th:text="#{lang.contents.rent_all.discount}"></span> <input type="number" class="form-control form-control-sm col-1 d-inline-block" name="discountRent" id="discountRent" maxlength="3" oninput="maxLengthCheck(this)" autocomplete="off"> %
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!--//가격 설정 -->
+
+                    <!-- 오픈 날짜 설정 -->
+                    <div id="lay_pub_date">
+                        <table class="table">
+                            <colgroup>
+                                <col style="width: 20%;">
+                            </colgroup>
+                            <thead>
+                                <tr style="border:solid currentColor; border-width:2px 0px;">
+                                    <th class="table-primary border-bottom-0" colspan="2" th:text="#{lang.contents.title.sub.pubdate}"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.pubdate}"></th>
+                                    <td class="">
+                                        <div class="form-check form-check-inline col-12">
+                                            <input type="text" class="form-check-input form-control form-control-sm col-3 ui-datepicker" name="pubdate" id="pubdate" autocomplete="off">
+                                            <select class="form-check-inline form-select form-select-sm col-1 text-center" name="pubTime" id="pubTime">
+                                                <option th:each="i : ${#numbers.sequence(0, 23)}" th:value="${i}" th:text="${i}"></option>
+                                            </select>
+                                            <span>시간</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- //오픈 날짜 설정 -->
+
+                    <!-- 작가 정보 -->
+                    <div id="lay_author">
+                        <table class="table">
+                            <colgroup>
+                                <col style="width: 20%;">
+                            </colgroup>
+                            <thead>
+                                <tr style="border:solid currentColor; border-width:2px 0px;">
+                                    <th class="table-primary border-bottom-0" colspan="2" th:text="#{lang.contents.title.sub.author}"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.author.writer}"></th>
+                                    <td class="">
+                                        <input type="text" class="form-control form-control-sm" name="writer" id="writer" autocomplete="off">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.author.illustrator}"></th>
+                                    <td class="">
+                                        <input type="text" class="form-control form-control-sm" name="illustrator" id="illustrator" autocomplete="off">
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- //작가 정보 -->
+
+                    <!-- 태그 -->
+                    <div id="lay_tag">
+                        <table class="table">
+                            <colgroup>
+                                <col style="width: 20%;">
+                            </colgroup>
+                            <thead>
+                                <tr style="border:solid currentColor; border-width:2px 0px;">
+                                    <th class="table-primary border-bottom-0" colspan="2" th:text="#{lang.contents.title.sub.tag}"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th rowspan="3" class="text-center" th:text="#{lang.contents.tag}"></th>
+                                    <td class="">
+                                        <div>
+                                            <input type="hidden" name="tagArr" id="tagArr">
+                                            <span class="col-1 d-inline-block p-0" th:text="#{lang.contents.tag} + '#'"></span>
+                                            <input type="text" class="col-4 d-inline-block form-control form-control-sm bg-white" name="tagText" id="tagText" onclick="tag.layer();" placeholder="태그 선택" readonly="readonly">
+                                        </div>
+                                        <div class="border px-2 mt-2">
+                                            작품 성격에 맞는 태그를 입력하시면 작품 검색에 활용됩니다.<br>
+                                            태그 불러오기는 최대 5개까지 입력 할 수 있습니다.
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                    </div>
+                    <!-- //태그 -->
+
+                    <!-- 대표 이미지 -->
+                    <div id="lay_image">
+                        <table class="table">
+                            <colgroup>
+                                <col style="width: 20%;">
+                            </colgroup>
+                            <thead>
+                                <tr style="border:solid currentColor; border-width:2px 0px;">
+                                    <th class="table-primary border-bottom-0" colspan="2" th:text="#{lang.contents.title.sub.image}"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.image.main}"></th>
+                                    <td>
+                                        <div class="preview" id="heightImage"></div>
+
+                                        <div class="col-md-8 col-sm-9 pt-1">
+                                            <label class="py-1 px-3 rounded-2">
+                                                <input type="file" name="fileDataHeight" multiple="" accept="image/*" onchange="image.add(this, 'height');" th:text="#{lang.contents.image.file}">
+                                            </label>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.image.width}"></th>
+                                    <td>
+                                        <div class="preview" id="widthImage"></div>
+
+                                        <div class="col-md-8 col-sm-9 pt-1">
+                                            <label class="py-1 px-3 rounded-2">
+                                                <input type="file" name="fileDataWidth" multiple="" accept="image/*" onchange="image.add(this, 'width');" th:text="#{lang.contents.image.file}">
+                                            </label>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- //대표 이미지 -->
+
+                    <!-- 가격 유형 -->
+                    <div id="lay_tax_type">
+                        <table class="table">
+                            <colgroup>
+                                <col style="width: 20%;">
+                            </colgroup>
+                            <thead>
+                                <tr style="border:solid currentColor; border-width:2px 0px;">
+                                    <th class="table-primary border-bottom-0" colspan="2" th:text="#{lang.contents.title.sub.tax_type}"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th rowspan="2" class="text-center" th:text="#{lang.contents.tax_type}"></th>
+                                    <td class="">
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="tax" id="tax_free" value="1" checked="checked">
+                                            <label class="form-check-label" for="tax_free" th:text="#{lang.contents.tax_type.free}" onchange="contents.tax.taxChange(this);"></label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="tax" id="tax" value="2">
+                                            <label class="form-check-label" for="tax" th:text="#{lang.contents.tax_type.tax}" onchange="contents.tax.taxChange(this);"></label>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <select class="form-select form-select-sm col-3 d-inline-block" name="taxType" id="taxType" onchange="contents.tax.selectedChange(this);">
+                                            <option value="1" selected="selected">ISBN</option>
+                                            <option value="2">UCI(KEPA)</option>
+                                            <option value="3">ISSN</option>
+                                        </select>
+                                        <input type="text" class="form-control form-control-sm col-3 d-inline-block" name="taxCode" id="taxCode">
+                                        <div class="text-danger" th:text="#{lang.contents.placeholder.tax.ISBN}"> * ISBN은 10자리 혹은 13자리의 숫자로 이루어져야 합니다.</div>
+
+                                        <!--<div class="pt-2">
+                                            <input type="checkbox" class="" name="codeAll" id="codeAll" autocomplete="off">
+                                            <label class="col-auto pl-0" for="codeAll">모든 회차에 해당 면세코드를 자동으로 적용합니다.</label>
+                                        </div>-->
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- //가격 유형 -->
+
+                    <!-- 정산 비율 -->
+                    <div id="lay_calculate">
+                        <table class="table">
+                            <colgroup>
+                                <col style="width: 20%;">
+                            </colgroup>
+                            <thead>
+                                <tr style="border:solid currentColor; border-width:2px 0px;">
+                                    <th class="table-primary border-bottom-0" colspan="2" th:text="#{lang.contents.title.sub.calculate}"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.contract}"></th>
+                                    <td class="">
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="contract" id="rs" value="1">
+                                            <label class="form-check-label" for="rs" th:text="#{lang.contents.contract.RS}"></label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="contract" id="episodeMg" value="2">
+                                            <label class="form-check-label" for="episodeMg" th:text="#{lang.contents.contract.MG.episode}"></label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="contract" id="contentsMg" value="3">
+                                            <label class="form-check-label" for="contentsMg" th:text="#{lang.contents.contract.MG.contents}"></label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="contract" id="cpMg" value="4">
+                                            <label class="form-check-label" for="cpMg" th:text="#{lang.contents.contract.MG.CP}"></label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="contract" id="mgRs" value="5">
+                                            <label class="form-check-label" for="mgRs" th:text="#{lang.contents.contract.MG.RS}"></label>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.calculate}"></th>
+                                    <td class="">
+                                        <div class="row">
+                                            <label for="calculate" class="col-sm-1 col-form-label" th:text="#{lang.contents.calculate.web}"></label>
+                                            <div class="col-sm-2">
+                                                <input type="number" class="form-control form-control-sm d-inline-block col-sm-5" name="calculate" id="calculate" autocomplete="off">
+                                                <span>%</span>
+                                            </div>
+                                            <label for="calculate" class="col-sm-1 col-form-label" th:text="#{lang.contents.calculate.app}"></label>
+                                            <div class="col-sm-2">
+                                                <input type="number" class="form-control form-control-sm d-inline-block col-sm-5" name="calculateApp" id="calculateApp" autocomplete="off">
+                                                <span>%</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.fee}"></th>
+                                    <td class="">
+                                        <div class="row">
+                                            <label for="webFee" class="col-sm-1 col-form-label" th:text="#{lang.contents.fee.web}"></label>
+                                            <div class="col-sm-2">
+                                                <input type="number" class="form-control form-control-sm d-inline-block col-sm-5" name="webFee" id="webFee" autocomplete="off">
+                                                <span>%</span>
+                                            </div>
+                                            <label for="appFee" class="col-sm-1 col-form-label" th:text="#{lang.contents.fee.app}"></label>
+                                            <div class="col-sm-2">
+                                                <input type="number" class="form-control form-control-sm d-inline-block col-sm-5" name="appFee" id="appFee" autocomplete="off">
+                                                <span>%</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.contents.guarantee}"></th>
+                                    <td class="">
+                                        <input type="number" class="form-control form-control-sm col-1 d-inline-block mr-1" name="guarantee" id="guarantee" autocomplete="off">
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- //정산비율 -->
+
+                    <div class="form-group row" id="btnGroup">
+                        <div class="col text-center">
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="contents.list();" th:text="#{lang.contents.button.list}"></button>
+                            <button type="submit" class="btn btn-sm btn-success" th:text="#{lang.contents.button.register}"></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- 컨텐츠 영역 -->
+    </div>
+</th:block>

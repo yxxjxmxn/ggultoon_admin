@@ -1,0 +1,191 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        let page = "[[${page}]]";
+        notice.list(page);
+    });
+
+    let form = $("#frm")[0];
+    let formData = new FormData(form);
+    let text = {
+        sendAlarmConfirmMessage : "[[#{lang.board.confirm.send.alarm}]]",    // 공지사항 알림을 전송하시겠습니까?
+        sendAlarmFailMessage : "[[#{lang.board.exception.send.data.empty}]]" // 알림을 전송할 공지사항이 없습니다.
+    }
+
+    let notice = {
+
+        // 공지사항 리스트 조회
+        list: function (page = 1) {
+            if (page != undefined) {
+                $("input[name=page]").val(page);
+            }
+
+            // 검색 조건을 선택하지 않고 검색어를 입력한 경우
+            if ($("select[name=searchType]").val() == "" && $("input[name=searchWord]").val() != "") {
+                let searchFailMessage = `[[#{lang.board.exception.search.type.empty}]]`; // 검색 조건을 설정해주세요.
+                toast.alert(searchFailMessage);
+            }
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/boards/notices',
+                cache : true,
+                method: 'GET',
+                data: $("#frm").serialize(),
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+
+                    if (res.result) {
+
+                        // 페이지 url 갱신 (검색 후 새로고침 시 검색값 유지 )
+                        if (window.location.search !== "?" + $("#frm").serialize()) {
+                            history.pushState(null, null, "?" + $("#frm").serialize());
+                        }
+
+                        if (res.data.list.length > 0) {
+
+                            // total count
+                            $(".totalCount").next().text(res.data.params.pagination.totalRecordCount + "건");
+
+                            // list
+                            let listTbody = "";
+                            $.each(res.data.list, function (index, el) {
+
+                                listTbody += `
+                                    <tr>
+                                        <td class="text-center"><input type="checkbox" name="checkRow"></td>
+                                        <td class="text-center">${el.idx || "-"}</td>
+                                        <td class="text-center"><span class="badge ${el.stateBg}">${el.stateText || "-"}</span></td>
+                                        <td class="text-center"><span class="badge ${el.mustReadBg}">${el.mustReadText || "-"}</span></td>
+                                        <td class="text-center">${el.typeText || "-"}</td>
+                                        <td class="text-center" onclick="notice.view(${el.idx});" style="cursor:pointer; color:dodgerblue;">${el.title || "-"}</td>
+                                        <td class="text-center">${el.regdate || "-"}</td>
+                                    </tr>
+                                `;
+                            });
+                            $("#lists tbody").html(listTbody);
+
+                            // paging - common.js
+                            pagination("notice", res.data.params.page, res.data.params.pagination);
+                            $.cookie("backUrl", $("#frm").serialize());
+
+                        } else {
+                            // total count
+                            $(".totalCount").next().text("0건");
+                            // 결과 없음
+                            let listTbody = `<tr><td colspan="7" class="text-center">${res.message}</td></tr>`;
+                            $("#lists tbody").html(listTbody);
+                            $(".pagination").html("");
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        },
+
+        // 알림 수동 전송
+        sendAlarm: function () {
+
+            if (confirm(text.sendAlarmConfirmMessage)) {
+
+                let rowData = {};
+                let rowArr = new Array();
+                let checkbox = $("input\[name=checkRow\]:checked");
+                // checkbox.parent().parent() -> checkbox의 부모(td)의 부모(tr)
+                if (checkbox.length < 1) {
+                    toast.alert(text.sendAlarmFailMessage);
+                    return false;
+                }
+                checkbox.each(function (i) {
+                    let tr = checkbox.parent().parent().eq(i);
+                    let td = tr.children();
+
+                    // eq(0)은 checkbox의 idx
+                    let idx = td.eq(1).text(); // 테이블 idx값
+                    rowData = {idx: idx};
+                    rowArr.push(rowData);
+                })
+                const jsonData = JSON.stringify(rowArr);
+                formData.set("json", jsonData);
+
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/boards/notices/send',
+                    method: 'POST',
+                    data: formData,
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            if (res.result) {
+                                // 알림 전송 성공
+                                toast.alert(res.message);
+                            } else {
+                                // 알림 전송 실패
+                                toast.alert(res.message);
+                            }
+                        } else {
+                            // ajax exception error
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+                return false;
+            }
+        },
+        // 엑셀
+        excel: function () {
+
+            // 엑셀로 다운로드할 데이터가 없습니다.
+            let excelDownloadFailMessage = `[[#{lang.board.exception.excel.data.empty}]]`;
+
+            if ($(".totalCount").next().text() == '0건') {
+                toast.alert(excelDownloadFailMessage);
+            } else {
+                location.href = '[[${SERVER.currentDomain}]]/v1/boards/notices/excel?'+$("#frm").serialize();
+            }
+        },
+        // 공지사항 상세 팝업
+        view: function (idx) {
+            js_popup('[[${SERVER.currentDomain}]]/boards/notices/' + idx, 'notice_details', '1300', '1100');
+        },
+        // 새로고침 버튼
+        reset: function () {
+            location.href = '[[${SERVER.currentDomain}]]/boards/notices';
+        },
+        // 공지사항 등록 팝업
+        registerPopUp: function () {
+            js_popup('[[${SERVER.currentDomain}]]/boards/notices/register', 'notice_register', '1300', '1000');
+        }
+    }
+
+    //뒤로가기 이벤트 시 실행
+    $(window).on('popstate', function(event) {
+        window.location = document.location.href;
+    });
+
+    // 그리드 전체 체크박스 이벤트
+    function checkAllRow(id) {
+        let targetNm = id.replace('All', '');
+        if ($('#' + id).is(':checked')) {
+            $('input[name=' + targetNm + ']').each(function() {
+                $(this).prop('checked', true);
+            });
+        } else {
+            $('input[name=' + targetNm + ']').each(function() {
+                $(this).prop('checked', false);
+            });
+        }
+    }
+</script>

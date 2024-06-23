@@ -1,0 +1,99 @@
+<script th:fragment="importJsFragment">
+    $(function () {
+        contents.list();
+    });
+
+    let text = {
+        btn : {
+            episode : "[[#{lang.contents.button.episode}]]"
+        }
+    }
+
+    let contents = {
+        // 컨텐츠 등록 form
+        register : function () {
+            location.href = "[[${SERVER.currentDomain}]]/contents/register";
+
+            return false;
+        },
+        // 컨텐츠 목록
+        list : function (page=1) {
+            $("input[name=page]").val(page);
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/cp-admin/bulk/contentsAll',
+                method: 'GET',
+                data : $("#frm").serialize(),
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        //페이지 url 갱신 ( 검색 후 새로고침 시 검색값 유지 )
+                        if( window.location.search !== "?"+ $("#frm").serialize() ){
+                            history.pushState(null, null, "?" + $("#frm").serialize());
+                        }
+
+                        if (res.data.list.length > 0) {
+                            // list
+                            let listTbody = "";
+                            $.each(res.data.list, function (idx, el) {
+
+                                // 대표 이미지
+                                let imgUrl = "";
+                                if (el.imageList.length > 0) {
+                                    imgUrl = el.imageList[0].url;
+                                }
+
+                                listTbody += `
+                                    <tr>
+                                        <td class="text-center">${el.idx}</td>
+                                        <td class="text-center"><span class="badge ${el.adultBg}">${el.adultText}</span></td>
+                                        <td class="text-center">${el.adultText}</td>
+                                        <td class="text-center">${el.categoryName}</td>
+                                        <td class="text-center">${el.genreName}</td>
+                                        <td class="text-center"><img src="${imgUrl}" style="max-height:100px; max-width:200px"></td>
+                                        <td class="text-left"><a href="javascript:void(0);" onclick="contents.view(${el.idx});">${el.title}</a></td>
+                                        <td class="text-center">${el.exclusiveText}</td>
+                                        <td class="text-center">CP명</td>
+                                        <td class="text-center"><span class="badge ${el.stateBg}">${el.stateText}</span></td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-primary p-1 rounded" onclick="contents.episodeList(${el.idx});">${text.btn.episode}</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+                            $("#lists tbody").html(listTbody);
+
+                        } else {
+                            // 결과 없음
+                            let listTbody = `<tr><td colspan="11" class="text-center">${res.message}</td></tr>`;
+                            $("#lists tbody").html(listTbody);
+                            $(".pagination").html("");
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        },
+        // 컨텐츠 상세
+        view : function (idx) {
+            location.href = "[[${SERVER.currentDomain}]]/contents/view/" + idx + "?" + $("#frm").serialize();
+            return false;
+        },
+        // 회차 목록
+        episodeList : function (contentsIdx) {
+            location.href = "[[${SERVER.currentDomain}]]/contents/"+contentsIdx+"/episode/list";
+            return false;
+        }
+    }
+
+
+</script>

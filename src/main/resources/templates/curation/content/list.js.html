@@ -1,0 +1,350 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        select.list();
+        let page = "[[${page}]]";
+        curation.list(page);
+    });
+
+    let text = {
+        genre : "[[#{lang.contents.genre}]]",
+        deleteConfirmMessage : "[[#{lang.curation.confirm.delete}]]", // 삭제하시겠습니까?
+        deleteFailMessage : "[[#{lang.curation.exception.content.delete.empty}]]" // 삭제할 작품을 선택해주세요.
+    }
+
+    let select = {
+        // 선택한 카테고리에 따른 장르 목록
+        list : function () {
+            let categoryIdx = 0;
+
+            /* 특정 카테고리 미선택 시 -> 전체 장르 노출(기본) */
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/cp-admin/contents/category/' + categoryIdx,
+                method: 'GET',
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        if (res.data.list.length > 0) {
+
+                            // 전체 옵션 초기화
+                            $("#selectLayer select[name=genreIdx]").empty();
+
+                            // 기본 옵션 설정
+                            $("#selectLayer select[name=genreIdx]").append("<option value=''>" + text.genre + "</option>");
+
+                            // list
+                            $.each(res.data.list, function (idx, el) {
+                                $("#selectLayer select[name=genreIdx]").append("<option value='" + el.genreIdx + "'>" + el.genreName + "</option>");
+                            });
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+
+            /* 특정 카테고리 선택 시 -> 선택한 카테고리에 따른 장르 노출 */
+            $("#selectLayer select[name=categoryIdx]").change(function() {
+
+                // 카테고리 idx String -> Integer 형변환
+                categoryIdx = Number($(this).val());
+
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/cp-admin/contents/category/' + categoryIdx,
+                    method: 'GET',
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            if (res.data.list.length > 0) {
+
+                                // 전체 옵션 초기화
+                                $("#selectLayer select[name=genreIdx]").empty();
+
+                                // 기본 옵션 설정
+                                $("#selectLayer select[name=genreIdx]").append("<option value=''>" + text.genre + "</option>");
+
+                                // list
+                                $.each(res.data.list, function (idx, el) {
+                                    $("#selectLayer select[name=genreIdx]").append("<option value='" + el.genreIdx + "'>" + el.genreName + "</option>");
+                                });
+                            }
+                        } else {
+                            // ajax exception error
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+            });
+        }
+    }
+
+    // 전역 변수(화면에 노출되는 리스트의 첫번째 순서값)
+    let firstSort;
+    let curation = {
+
+        // 조회
+        list: function (page = 1) {
+            if (page != undefined) {
+                $("input[name=page]").val(page);
+            }
+
+            // 검색 조건을 선택하지 않고 검색어를 입력한 경우
+            if ($("select[name=searchType]").val() == "" && $("input[name=searchWord]").val() != "") {
+                let searchFailMessage = `[[#{lang.curation.exception.search.type.empty}]]`; // 검색 조건을 설정해주세요.
+                toast.alert(searchFailMessage);
+            }
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/curations/[[${idx}]]/contents',
+                cache : true,
+                method: 'GET',
+                data: $("#frm").serialize(),
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+
+                        // 페이지 url 갱신 (검색 후 새로고침 시 검색값 유지 )
+                        if (window.location.search !== "?" + $("#frm").serialize()) {
+                            history.pushState(null, null, "?" + $("#frm").serialize());
+                        }
+
+                        // 큐레이션 제목 세팅
+                        $("#curationTitle").text("큐레이션 " + res.data.sort + " - " + res.data.title);
+
+                        // total count
+                        $(".totalCount").next().text(res.data.list.length + "건");
+                        $(".totalCount").next().val(res.data.list.length);
+
+                        if (res.data.list.length > 0) {
+
+                            // list
+                            let listTbody = "";
+                            $.each(res.data.list, function (index, el) {
+
+                                // select option
+                                let option = `onclick="curation.view(${el.idx});" style="cursor:pointer;"`;
+
+                                listTbody += `
+                                    <tr class="draggable">
+                                        <td class="text-center"><input type="checkbox" name="checkRow" value="${el.mappingIdx}"></td>
+                                        <td class="text-center" ${option}>${el.mappingSort || "-"}</td>
+                                        <td class="text-center" ${option}><span class="badge ${el.mappingStateBg}">${el.mappingStateText || "-"}</span></td>
+                                        <td class="text-center" ${option}>${el.idx || "-"}</td>
+                                        <td class="text-center"><a href="[[${SERVER.currentDomain}]]/contents/view/${el.idx}">${el.title||'-'}</a></td>
+                                        <td class="text-center" ${option}><span class="badge ${el.pavilionBg}">${el.pavilionText || "-"}</span></td>
+                                        <td class="text-center" ${option}><span class="badge ${el.adultBg}">${el.adultText || "-"}</span></td>
+                                        <td class="text-center" ${option}>${el.category || "-"}</td>
+                                        <td class="text-center" ${option}>${el.genre || "-"}</td>
+                                        <td class="text-center" ${option}>${el.episodeCnt || "-"}</td>
+                                        <td class="text-center" ${option}>${el.regdate || "-"}</td>
+                                        <td class="item" onmousedown="curation.dragAndDrop()" style="text-align: center;"><img src="/images/icon_move.png"></td>
+                                    </tr>
+                                `;
+                            });
+                            $("#lists tbody").html(listTbody);
+                            $.cookie("backUrl", $("#frm").serialize());
+
+                            // 전역 변수 세팅 : 드래그 & 드롭 후 순서 채번 시 사용
+                            firstSort = $("#lists tbody tr:eq(0)").find("td").eq(1).text();
+
+                        } else {
+                            // total count
+                            $(".totalCount").next().text("0건");
+                            // 결과 없음
+                            let listTbody = `<tr><td colspan="13" class="text-center">${res.message}</td></tr>`;
+                            $("#lists tbody").html(listTbody);
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        },
+        // 엑셀
+        excel: function () {
+            // 엑셀로 다운로드할 데이터가 없습니다.
+            let excelDownloadFailMessage = `[[#{lang.curation.exception.excel.data.empty}]]`;
+
+            if ($(".totalCount").next().text() == '0건') {
+                toast.alert(excelDownloadFailMessage);
+            } else {
+                location.href = '[[${SERVER.currentDomain}]]/v1/curations/[[${idx}]]/contents/excel?'+$("#frm").serialize();
+            }
+        },
+        // 새로고침 버튼
+        reset: function () {
+            location.href = '[[${SERVER.currentDomain}]]/curations/[[${idx}]]/contents';
+        },
+        // 작품 매핑 정보 상세 팝업
+        view: function (idx) {
+            js_popup('[[${SERVER.currentDomain}]]/curations/[[${idx}]]/contents/' + idx, 'curation_content_details', '1000', '1000');
+        },
+        // 작품 매핑 정보 등록 팝업
+        registerPopUp: function () {
+            js_popup('[[${SERVER.currentDomain}]]/curations/[[${idx}]]/contents/register', 'curation_content_register', '800', '1000');
+        },
+        // 드래그 & 드롭 실행
+        // 사용 라이브러리 : jQuery User Interface Library - Sortable
+        // 위치 : jquery-ui.js
+        dragAndDrop: function () {
+
+            // 텍스트 드래그 차단
+            $('.draggable').disableSelection();
+
+            // 드래그 & 드롭 설정
+            $("#lists").sortable({
+                items: $('.draggable'),
+                containment: '#container', // 영역 지정
+                cursor: 'move',            // 커서 모양 설정
+
+                // 드래그 시 지정 이벤트(미사용)
+                start: function(event, ui){
+
+                    // 드래그한 개체의 위치 조회
+                    let dragIndex = ui.item.index();
+
+                    // 위치 인덱스를 통해 드래그한 행의 순서 데이터 조회
+                    let sort = $("#lists tbody").find("tr").eq(dragIndex).find("td").eq(1).text();
+                },
+
+                // 드롭 시 지정 이벤트
+                stop: function(event, ui){
+
+                    /** 1. 드래그 & 드롭 후 순서 컬럼 다시 채번 **/
+                    $('.draggable').each(function(index, item) {
+                        let result = parseInt(index) + parseInt(firstSort);
+                        $(item).find("td").eq(1).text(result);
+                    });
+
+                    /** 2. 변경된 내용을 리스트로 세팅 : 각 데이터의 index & sort **/
+                    let array = new Array();
+                    $("#lists tbody tr").each(function() {
+                        let idx = $(this).find("td").eq(0).find("input").val(); // 인덱스
+                        let sort = $(this).find("td").eq(1).text(); // 순서
+                        let obj = {mappingIdx: idx, mappingSort: sort};
+
+                        // 배열 set
+                        array.push(obj);
+                    });
+
+                    /** 3. 전송할 객체 세팅 : Object to String 변환 **/
+                    let formData = new FormData();
+                    const data = JSON.stringify(array);
+                    formData.set("list", data);
+
+                    /** 4 변경된 사항 전송하여 DB 업데이트 **/
+                    $.ajax({
+                        url: '[[${SERVER.currentDomain}]]/v1/curations/[[${idx}]]/contents/reorder',
+                        method: "PUT",
+                        data: formData,
+                        dataType: 'json',
+                        processData: false,
+                        contentType: false,
+                        success: function (res) {
+                            if (res.result) {
+                                // 페이지 새로고침
+                                location.href = '[[${SERVER.currentDomain}]]/curations/[[${idx}]]/contents';
+                            } else {
+                                // 재정렬 실패
+                                toast.alert(res.message);
+                            }
+                        },
+                        error: function (request, status, error) {
+                            // filter error
+                            toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                        }
+                    });
+                    return false;
+                }
+            });
+        },
+        // 매핑 작품 선택 삭제
+        delete: function () {
+
+            let idxArr = new Array();
+            let checkedList = $("input\[name=checkRow\]:checked");
+
+            // 삭제할 작품이 없는 경우
+            if (checkedList.length < 1) {
+                toast.alert(text.deleteFailMessage);
+                return false;
+            }
+
+            if (confirm(text.deleteConfirmMessage)) {
+                checkedList.each(function () {
+                    let idx = $(this).val();
+                    idxArr.push(idx);
+                })
+
+                // 삭제할 큐레이션 매핑 idx 전송
+                let formData = new FormData();
+                const data = JSON.stringify(idxArr);
+                formData.set("list", data);
+
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/curations/[[${idx}]]/contents',
+                    method: "DELETE",
+                    data: formData,
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            // 삭제 성공
+                            toast.alert(res.message);
+                            location.href = '[[${SERVER.currentDomain}]]/curations/[[${idx}]]/contents';
+                        } else {
+                            // 삭제 실패
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+                return false;
+            }
+        }
+    }
+
+    // 그리드 전체 체크박스 이벤트
+    function checkAllRow(id) {
+        let targetNm = id.replace('All', '');
+        if ($('#' + id).is(':checked')) {
+            $('input[name=' + targetNm + ']').each(function() {
+                $(this).prop('checked', true);
+            });
+        } else {
+            $('input[name=' + targetNm + ']').each(function() {
+                $(this).prop('checked', false);
+            });
+        }
+    }
+
+    // 뒤로 가기 이벤트
+    $(window).on('popstate', function(event) {
+        window.location = document.location.href;
+    });
+
+</script>

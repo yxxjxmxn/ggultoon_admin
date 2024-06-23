@@ -1,0 +1,109 @@
+<th:block layout:decorate="~{common/layout}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="col-lg-12 mt-3">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" th:text="#{lang.contents.title.list}"></h5>
+            </div>
+            <div class="card-body row">
+                <!-- 리스트 -->
+                <div class="col-12">
+                    <!-- 검색 폼 -->
+                    <form id="frm" class="d-flex bd-highlight gx-3" onsubmit="contents.list(1); return false;" accept-charset="utf-8">
+                        <table class="table m-0">
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <div class="row p-0">
+                                            <div class="col-11 input-group input-group-sm m-1 p-0">
+
+                                                <!-- 현재 페이지 -->
+                                                <input type="hidden" id="page" name="page">
+
+                                                <select name="searchType" class="form-select form-select-sm col-2 ml-1">
+                                                    <option value="title" th:text="#{lang.contents.title}"></option>
+                                                    <option value="label" th:text="#{lang.contents.label}"></option>
+                                                </select>
+
+                                                <!-- 검색어 -->
+                                                <input type="text" name="searchWord" class="form-control text-center col-5 rounded-right" th:placeholder="#{lang.placeholder.search.word}" style="width:30%;">
+
+                                                <!-- 검색버튼 -->
+                                                <button type="button" id="searchBtn" class="btn btn-success ml-1 pr-3 pl-3" th:text="#{lang.button.search}" onclick="contents.list(1)"></button>
+                                                <button type="button" class="btn btn-outline-success" onclick="contents.reset();"><i class="fa-solid fa-rotate-left"></i></button>
+                                            </div>
+
+                                            <div class="col-auto input-group input-group-sm m-1 p-0">
+                                                <!-- 카테고리 -->
+                                                <div class ="form-control form-control-sm text-center col-1 border-0" th:text="#{lang.contents.category}"></div>
+                                                <select name="categoryIdx" class="form-select form-select-sm col-3">
+                                                    <option value="" th:text="#{lang.select.all}"></option>
+                                                    <option value="1" th:text="#{lang.contents.category.webtoon}"></option>
+                                                    <option value="2" th:text="#{lang.contents.category.comic}"></option>
+                                                    <option value="3" th:text="#{lang.contents.category.novel}"></option>
+                                                </select>
+                                                <div class="form-control-sm">
+
+                                                    <label class="col-auto pl-0" for="adultPavilion">
+                                                        <input type="checkbox" class="" name="adultPavilion" id="adultPavilion" autocomplete="off" value="1">
+                                                        성인관
+                                                    </label>
+                                                </div>
+
+                                                <!-- 완결 -->
+                                                <div class ="form-control form-control-sm text-center col-1 border-0 ml-1" th:text="#{lang.contents.state}"></div>
+                                                <select name="state" class="form-select form-select-sm col-3">
+                                                    <option value="" th:text="#{lang.select.all}"></option>
+                                                    <option value="1" th:text="#{lang.contents.state.normal}"></option>
+                                                    <option value="0" th:text="#{lang.contents.state.unsold}"></option>
+                                                    <option value="2" th:text="#{lang.contents.state.wait}"></option>
+                                                    <option value="3" th:text="#{lang.contents.state.refuse}"></option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="d-inline p-0">
+                                            <div class="float-left form-control-sm">
+                                                <strong class="totalCount" th:text="#{lang.search.result} + ' : ' "></strong> <span></span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </form>
+                    <!-- //검색 폼 -->
+
+                    <!-- list -->
+                    <table class="table table-hover" id="lists">
+                        <thead class="table-dark">
+                            <tr class="text-center">
+                                <th scope="col" th:text="#{lang.contents.id}" class="text-center"></th>
+                                <th scope="col" th:text="#{lang.contents.image.main}" class="text-center"></th>
+                                <th scope="col" th:text="#{lang.contents.title}" class="text-center"></th>
+                                <th scope="col" th:text="#{lang.contents.state}" class="text-center"></th>
+                                <th scope="col" th:text="#{lang.contents.pavilion}" class="text-center"></th>
+                                <th scope="col" th:text="#{lang.contents.age}" class="text-center"></th>
+                                <th scope="col" th:text="#{lang.contents.category}" class="text-center"></th>
+                                <th scope="col" th:text="#{lang.contents.genre}" class="text-center"></th>
+                                <th scope="col" colspan="2" th:text="#{lang.contents.comment.manage}" class="text-bg-success" style="width:20%;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                    <th:block layout:fragment="paging">
+                        <div class="col-md-12 d-flex flex-row-reverse my-3">
+                            <ul class="pagination" style="font-size: 12px;">
+                            </ul>
+                        </div>
+                    </th:block>
+                </div>
+            </div>
+        </div>
+        <!-- 컨텐츠 영역 -->
+    </div>
+</th:block>

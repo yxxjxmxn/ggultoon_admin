@@ -1,0 +1,121 @@
+<th:block layout:decorate="~{common/layout_popup_nomenu}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="container-fluid">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" th:text="#{lang.coupon.title.register}"></h5>
+            </div>
+            <div class="card-body row">
+                <form id="registerForm" onsubmit="coupon.register(); return false;"accept-charset="utf-8">
+                    <table class="table">
+                        <thead></thead>
+                        <colgroup>
+                            <col style="width: 25%;">
+                        </colgroup>
+                        <tbody>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.state}"></th>
+                            <td>
+                                <div class="form-check form-switch" style="padding: 0; margin: 0;">
+                                    <input class="form-check-input" id="state" name="state" type="checkbox" value="1" style="margin-left:0;" checked>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.title}"></th>
+                            <td class="text-center"><input type="text" name="title" id="title" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.code}"></th>
+                            <td class="text-center"><input type="text" name="code" id="code" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.duplication}"></th>
+                            <td>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="duplication" id="false" value="0" disabled>
+                                    <label class="form-check-label" for="false" th:text="#{lang.coupon.duplication.false}"></label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="duplication" id="true" value="1" checked>
+                                    <label class="form-check-label" for="true" th:text="#{lang.coupon.duplication.true}"></label>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.type}"></th>
+                            <td>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="type" id="korean" value="1" checked>
+                                    <label class="form-check-label" for="korean" th:text="#{lang.coupon.type.korean}"></label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="type" id="english" value="2">
+                                    <label class="form-check-label" for="english" th:text="#{lang.coupon.type.english}"></label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="type" id="random_korean" value="3" disabled>
+                                    <label class="form-check-label" for="random_korean" th:text="#{lang.coupon.type.random.number.korean}"></label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="type" id="random_english" value="4" disabled>
+                                    <label class="form-check-label" for="random_english" th:text="#{lang.coupon.type.random.number.english}"></label>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.give.mileage}"></th>
+                            <td class="text-center"><input type="number" name="mileage" id="mileage" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.mileage.period}"></th>
+                            <td class="text-center"><input type="number" name="period" id="period" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.count}"></th>
+                            <td class="text-center"><input type="number" name="couponCnt" id="couponCnt" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.store.info}"></th>
+                            <td class="text-center" name="storeInfo" id="storeInfo">
+                                <div class="input-group input-group-sm p-0">
+                                    <input type="number" name="storeIdx" id="storeIdx" class="form-control form-control-sm" th:placeholder="#{lang.coupon.placeholder.search.store.idx}">
+                                    <button type="button" id="searchBtn" th:text="#{lang.coupon.button.search}" onclick="coupon.viewStore();" class="btn btn-success"></button>
+                                    <button type="button" class="btn btn-outline-success" onclick="coupon.reset();"><i class="fa-solid fa-rotate-left"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.store.name}"></th>
+                            <td class="text-left" name="name" id="name"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.store.type}"></th>
+                            <td class="text-left" name="storeType" id="storeType"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.start.date}"></th>
+                            <td class="text-left" name="startDate" id="startDate">
+                                <input type="text" th:placeholder="YYYY-MM-DD" id="searchStartDate" name="searchStartDate" maxlength="10" class="dateTimePicker form-control form-control-sm text-center" autocomplete="off" readonly/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.end.date}"></th>
+                            <td class="text-left" name="endDate" id="endDate">
+                                <input type="text" th:placeholder="YYYY-MM-DD" id="searchEndDate" name="searchEndDate" maxlength="10" class="dateTimePicker form-control form-control-sm text-center" autocomplete="off" readonly/>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div class="form-group row">
+                        <div class="col text-center">
+                            <button type="button" class="btn btn-sm btn-primary" onclick="coupon.register();" th:text="#{lang.coupon.button.register}"></button>
+                            <button type="button" class="btn btn-sm btn-secondary" th:onclick="|self.close()|" th:text="#{lang.coupon.button.close}"></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- //컨텐츠 영역 -->
+    </div>
+</th:block>

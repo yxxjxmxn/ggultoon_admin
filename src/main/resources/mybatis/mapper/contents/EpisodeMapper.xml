@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.dao.contents.EpisodeDao">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        INSERT
+    =============================================================== -->
+
+    <!-- 회차 등록 -->
+    <insert id="register" parameterType="EpisodeDto" useGeneratedKeys="true" keyProperty="insertedId">
+        INSERT IGNORE INTO <include refid="database" />episode
+        <set>
+            `contents_idx`      = #{contentsIdx},
+            `coin`              = #{coin},
+            `coin_rent`         = #{coinRent},
+            `episode_number`    = #{episodeNumber},
+            `sort`              = #{sort},
+            `title`             = #{title},
+            `episode_type_idx`  = #{episodeTypeIdx},
+            `check_arrow`       = #{checkArrow},
+            `state`             = 1,
+            `pubdate`           = #{pubdate},
+            `pubdate_tz`        = '${convertTZ}',
+            `regdate`           = #{regdate},
+            `regdate_tz`        = '${convertTZ}'
+        </set>
+    </insert>
+
+    <!-- 회차 이벤트 코인 -->
+    <insert id="registerEventCoin" parameterType="EpisodeDto">
+        INSERT INTO <include refid="database" />episode_event_coin
+        <set>
+            `episode_idx`       = #{insertedId},
+            <if test="eventCoin != null and !eventCoin.equals('')">`event_coin`            = #{eventCoin},</if>
+            <if test="eventCoinRent != null and !eventCoinRent.equals('')">`event_coin_rent`   = #{eventCoinRent},</if>
+            <if test="eventStartDate != null and !eventStartDate.equals('')">`event_start_date`   = #{eventStartDate},</if>
+            <if test="eventStartDate != null and !eventStartDate.equals('')">`event_start_date_tz`   = '${convertTZ}',</if>
+            <if test="eventEndDate != null and !eventEndDate.equals('')">`event_end_date`       = #{eventEndDate},</if>
+            <if test="eventEndDate != null and !eventEndDate.equals('')">`event_end_date_tz`    = '${convertTZ}',</if>
+            `regdate`           = #{regdate},
+            `regdate_tz`        = '${convertTZ}'
+        </set>
+            AS item
+        <if test="eventCoin != null || eventCoinRent != null || eventStartDate != '' || eventEndDate != ''">
+            ON DUPLICATE KEY
+            UPDATE
+                <trim suffixOverrides=",">
+                    <if test="eventCoin != null and !eventCoin.equals('')">`event_coin`            = #{eventCoin},</if>
+                    <if test="eventCoinRent != null and !eventCoinRent.equals('')">`event_coin_rent`   = #{eventCoinRent},</if>
+                    <if test="eventStartDate != null and !eventStartDate.equals('')">`event_start_date`   = #{eventStartDate},</if>
+                    <if test="eventStartDate != null and !eventStartDate.equals('')">`event_start_date_tz`   = '${convertTZ}',</if>
+                    <if test="eventEndDate != null and !eventEndDate.equals('')">`event_end_date`       = #{eventEndDate},</if>
+                    <if test="eventEndDate != null and !eventEndDate.equals('')">`event_end_date_tz`    = '${convertTZ}',</if>
+                </trim>
+        </if>
+    </insert>
+
+    <!-- 회차 추가 정보 -->
+    <insert id="registerInfo" parameterType="EpisodeDto">
+        INSERT INTO <include refid="database" />episode_info
+        <set>
+            `episode_idx`	= #{insertedId},
+            `view`			= 0,
+            `rating`		= 10
+        </set>
+    </insert>
+
+
+    <!-- 회차 이미지 등록 -->
+    <insert id="registerImage" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="keyId">
+        INSERT INTO <include refid="database" />episode_img
+            (
+                `episode_idx`,
+                `parent`,
+                `path`,
+                `filename`,
+                `url`,
+                `width`,
+                `height`,
+                `type`,
+                `sort`,
+                `device`,
+                `lang`,
+                `state`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.idx},
+                #{item.parent},
+                #{item.path},
+                #{item.orgFileName},
+                #{item.fileUrl},
+                #{item.width},
+                #{item.height},
+                #{item.type},
+                #{item.sort},
+                #{item.device},
+                "ko",
+                1,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+    <!-- ==============================================================
+        UPDATE
+    =============================================================== -->
+
+    <!-- 회차 수정 -->
+    <update id="modify" parameterType="EpisodeDto">
+        UPDATE <include refid="database" />episode
+        <set>
+            `contents_idx`      = #{contentsIdx},
+            <if test="coin != null and !coin.equals('')">`coin`           = #{coin},</if>
+            <if test="coinRent != null and !coinRent.equals('')">`coin_rent`  = #{coinRent},</if>
+            <if test="episodeNumber != null and !episodeNumber.equals('')">`episode_number`       = #{episodeNumber},</if>
+            <if test="sort != null and !sort.equals('')">`sort`           = #{sort},</if>
+            <if test="title != null and !title.equals('')">`title`         = #{title},</if>
+            <if test="episodeTypeIdx != null and !episodeTypeIdx.equals('')">`episode_type_idx`    = #{episodeTypeIdx},</if>
+            <if test="checkArrow != null and !checkArrow.equals('')">`check_arrow`    = #{checkArrow},</if>
+            <if test="state != null and !state.equals('')">`state`         = #{state},</if>
+            <if test="pubdate != null and !pubdate.equals('')">`pubdate`           = #{pubdate},</if>
+            <if test="pubdate != null and !pubdate.equals('')">`pubdate_tz`        = '${convertTZ}',</if>
+        </set>
+        WHERE
+            idx = #{idx}
+    </update>
+
+
+    <!-- 회차 이벤트(할인) 수정 -->
+    <update id="modifyEventCoin" parameterType="EpisodeDto">
+        UPDATE <include refid="database" />episode_event_coin
+        <set>
+            <if test="eventCoin != null and !eventCoin.equals('')">`event_coin`            = #{eventCoin},</if>
+            <if test="eventCoinRent != null and !eventCoinRent.equals('')">`event_coin_rent`   = #{eventCoinRent},</if>
+            <if test="eventStartDate != null and !eventStartDate.equals('')">`event_start_date`   = #{eventStartDate},</if>
+            <if test="eventStartDate != null and !eventStartDate.equals('')">`event_start_date_tz`   = '${convertTZ}',</if>
+            <if test="eventEndDate != null and !eventEndDate.equals('')">`event_end_date`       = #{eventEndDate},</if>
+            <if test="eventEndDate != null and !eventEndDate.equals('')">`event_end_date_tz`    = '${convertTZ}',</if>
+        </set>
+        WHERE
+            episode_idx = #{idx}
+    </update>
+
+
+    <!-- 회차 이미지 삭제(origin) -->
+    <update id="deleteImage" parameterType="Integer">
+        UPDATE <include refid="database" />episode_img
+        <set>
+            `state` = 0
+        </set>
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+    <!-- 회차 이미지 sort 수정 -->
+    <update id="imageSort" parameterType="java.util.List">
+        <foreach collection="list" item="item" index="index" open="" close="" separator=";">
+            UPDATE <include refid="database" />episode_img
+            <set>
+                `sort` = #{item.sort}
+            </set>
+            WHERE
+                    `idx` = #{item.idx}
+                AND `episode_idx` = #{item.episodeIdx}
+        </foreach>
+    </update>
+
+</mapper>

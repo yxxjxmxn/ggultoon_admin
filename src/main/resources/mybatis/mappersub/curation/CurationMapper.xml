@@ -1,0 +1,515 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.curation.CurationDaoSub">
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        작품 큐레이션 리스트
+    =============================================================== -->
+
+    <!-- 작품 큐레이션 전체 개수 카운트 (state = 1,2만) -->
+    <select id="getCurationTotalCnt" parameterType="SearchDto" resultType="int">
+        SELECT
+            COUNT(DISTINCT(`cu`.`idx`)) AS totalCnt
+        FROM <include refid="database"/>`curation` AS `cu`
+        LEFT JOIN <include refid="database"/>`curation_area_mapping` AS `cuarma`
+            ON `cu`.`idx` = `cuarma`.`curation_idx` AND `cuarma`.`state` = 1
+        JOIN <include refid="database"/>`area` AS `ar`
+            ON `cuarma`.`area_idx` = `ar`.`idx` AND `ar`.`state` = 1
+        LEFT JOIN <include refid="database"/>`curation_mapping` AS `cuma`
+            ON `cu`.`idx` = `cuma`.`curation_idx` AND `cuma`.`state` IN (1,2)
+        LEFT JOIN <include refid="database"/>`contents` AS `co`
+            ON `cuma`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1
+       WHERE
+            `cu`.`state` IN (1,2)
+            AND `cu`.`idx` IN (
+                SELECT
+                    `cu`.`idx`
+                FROM  `webtoon`. `curation` AS `cu`
+                LEFT JOIN  `webtoon`. `curation_area_mapping` AS `cuarma`
+                    ON `cu`.`idx` = `cuarma`.`curation_idx` AND `cuarma`.`state` = 1
+                <where>
+                    <if test='state != null'>
+                        AND `cu`.`state` = #{state}
+                    </if>
+                    <if test="type != null">
+                        AND `cu`.`reservation` = #{type}
+                    </if>
+                    <if test="area != null">
+                        AND `cuarma`.`area_idx` = #{area}
+                    </if>
+                    <if test="searchWord != null and searchWord != ''">
+                        <bind name="val" value="'%' + searchWord + '%'" />
+                        AND `cu`.`title` LIKE #{val}
+                    </if>
+                </where>
+                GROUP BY `cu`.`idx`
+            )
+    </select>
+
+    <!-- 작품 큐레이션 리스트 조회 (state = 1,2만) -->
+    <select id="getCurationList" parameterType="SearchDto" resultType="CurationDto">
+        SELECT
+            `cu`.`idx`,
+            `cu`.`state`,
+            `cu`.`sort`,
+            `cu`.`title`,
+            IFNULL(COUNT(DISTINCT(`co`.`idx`)), 0) AS contentCnt,
+            GROUP_CONCAT(DISTINCT(`ar`.`code`)) AS code,
+            `cu`.`reservation`,
+            CONVERT_TZ(`cu`.`start_date`, 'UTC', '${convertTZ}') AS startDate,
+            CONVERT_TZ(`cu`.`end_date`, 'UTC', '${convertTZ}') AS endDate,
+            CONVERT_TZ(`cu`.`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database"/>`curation` AS `cu`
+        LEFT JOIN <include refid="database"/>`curation_area_mapping` AS `cuarma`
+            ON `cu`.`idx` = `cuarma`.`curation_idx` AND `cuarma`.`state` = 1
+        JOIN <include refid="database"/>`area` AS `ar`
+            ON `cuarma`.`area_idx` = `ar`.`idx` AND `ar`.`state` = 1
+        LEFT JOIN <include refid="database"/>`curation_mapping` AS `cuma`
+            ON `cu`.`idx` = `cuma`.`curation_idx` AND `cuma`.`state` IN (1,2)
+        LEFT JOIN <include refid="database"/>`contents` AS `co`
+            ON `cuma`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1
+        WHERE
+            `cu`.`state` IN (1,2)
+            AND `cu`.`idx` IN (
+                SELECT
+                    `cu`.`idx`
+                FROM  `webtoon`. `curation` AS `cu`
+                LEFT JOIN  `webtoon`. `curation_area_mapping` AS `cuarma`
+                    ON `cu`.`idx` = `cuarma`.`curation_idx` AND `cuarma`.`state` = 1
+                <where>
+                    <if test='state != null'>
+                        AND `cu`.`state` = #{state}
+                    </if>
+                    <if test="type != null">
+                        AND `cu`.`reservation` = #{type}
+                    </if>
+                    <if test="area != null">
+                        AND `cuarma`.`area_idx` = #{area}
+                    </if>
+                    <if test="searchWord != null and searchWord != ''">
+                        <bind name="val" value="'%' + searchWord + '%'" />
+                        AND `cu`.`title` LIKE #{val}
+                    </if>
+                </where>
+                GROUP BY `cu`.`idx`
+            )
+        GROUP BY `cu`.`idx`
+        ORDER BY `cu`.`sort` DESC
+    </select>
+
+    <!-- 작품 큐레이션 상세 조회 -->
+    <select id="getViewCuration" parameterType="Long" resultType="CurationDto">
+        SELECT
+            `cu`.`idx`,
+            `cu`.`state`,
+            `cu`.`sort`,
+            `cu`.`title`,
+            IFNULL(COUNT(DISTINCT(`co`.`idx`)), 0) AS contentCnt,
+            GROUP_CONCAT(DISTINCT(`ar`.`idx`)) AS area,
+            GROUP_CONCAT(DISTINCT(`ar`.`code`)) AS code,
+            `cu`.`reservation`,
+            CONVERT_TZ(`cu`.`start_date`, 'UTC', '${convertTZ}') AS startDate,
+            CONVERT_TZ(`cu`.`end_date`, 'UTC', '${convertTZ}') AS endDate,
+            CONVERT_TZ(`cu`.`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database"/>`curation` AS `cu`
+        LEFT JOIN <include refid="database"/>`curation_area_mapping` AS `cuarma`
+            ON `cu`.`idx` = `cuarma`.`curation_idx` AND `cuarma`.`state` = 1
+        JOIN <include refid="database"/>`area` AS `ar`
+            ON `cuarma`.`area_idx` = `ar`.`idx` AND `ar`.`state` = 1
+        LEFT JOIN <include refid="database"/>`curation_mapping` AS `cuma`
+            ON `cu`.`idx` = `cuma`.`curation_idx` AND `cuma`.`state` IN (1,2)
+        LEFT JOIN <include refid="database"/>`contents` AS `co`
+            ON `cuma`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1
+        WHERE
+            `cu`.`idx` = #{idx}
+            AND `cu`.`state` IN (1,2)
+        LIMIT 1
+    </select>
+
+    <!-- ==============================================================
+        작품 큐레이션 노출 영역 리스트
+    =============================================================== -->
+
+    <!-- 작품 큐레이션 노출 영역 전체 개수 카운트 -->
+    <select id="getCurationAreaTotalCnt" parameterType="SearchDto" resultType="int">
+        SELECT
+            COUNT(DISTINCT(`idx`)) AS totalCnt
+        FROM <include refid="database"/>`area`
+        <where>
+            <choose>
+                <when test="state != null">
+                    `state` = #{state}
+                </when>
+                <otherwise>
+                    `state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'code'">
+                        AND `code` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'name'">
+                        AND `name` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 작품 큐레이션 노출 영역 리스트 조회 -->
+    <select id="getCurationAreaList" parameterType="SearchDto" resultType="CurationDto">
+        SELECT
+            `idx`,
+            `code`,
+            `name`,
+            `description`,
+            `state`,
+            `regdate`
+        FROM <include refid="database"/>`area`
+        <where>
+            <choose>
+                <when test="state != null">
+                    `state` = #{state}
+                </when>
+                <otherwise>
+                    `state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'code'">
+                        AND `code` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'name'">
+                        AND `name` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 작품 큐레이션 노출 영역 상세 -->
+    <select id="getViewCurationArea" parameterType="Long" resultType="CurationDto">
+        SELECT
+            `idx`,
+            `code`,
+            `name`,
+            `description`,
+            `state`,
+            `regdate`
+        FROM <include refid="database"/>`area`
+        WHERE
+            `idx` = #{idx}
+            AND `state` IN (1,2)
+        LIMIT 1
+    </select>
+
+    <!-- ==============================================================
+        큐레이션 매핑 작품 리스트
+    =============================================================== -->
+
+    <!-- 큐레이션 매핑 작품 전체 개수 카운트 -->
+    <select id="getCurationContentTotalCnt" parameterType="SearchDto" resultType="int">
+        SELECT
+            COUNT(DISTINCT(`co`.`idx`)) AS totalCnt
+        FROM <include refid="database"/>`curation_mapping` AS `cuma`
+        JOIN <include refid="database"/>`curation` AS `cu`
+            ON `cuma`.`curation_idx` = `cu`.`idx` AND `cu`.`state` IN (1,2)
+        JOIN <include refid="database"/>`contents` AS `co`
+            ON `cuma`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1
+        JOIN <include refid="database" />`category` AS `ca`
+            ON `co`.`category_idx` = `ca`.`idx`
+        JOIN <include refid="database" />`genre` AS `ge`
+            ON `co`.`genre_idx` = `ge`.`idx`
+        <where>
+            `cu`.`idx` = #{idx}
+            <choose>
+                <when test="state != null">
+                    AND `cuma`.`state` = #{state}
+                </when>
+                <otherwise>
+                    AND `cuma`.`state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'title'">
+                        AND `co`.`title` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'idx'">
+                        AND `co`.`idx` = #{searchWord}
+                    </when>
+                </choose>
+            </if>
+            <if test="adultPavilion != null">
+                AND co.adult_pavilion = #{adultPavilion}
+            </if>
+            <if test="categoryIdx != null">
+                AND co.`category_idx` = #{categoryIdx}
+            </if>
+            <if test="genreIdx != null">
+                AND co.`genre_idx` = #{genreIdx}
+            </if>
+        </where>
+    </select>
+
+    <!-- 큐레이션 매핑 작품 리스트 조회 -->
+    <select id="getCurationContentList" parameterType="SearchDto" resultType="CurationContentDto">
+        SELECT
+            `cuma`.`idx` AS `mappingIdx`,
+            `cuma`.`sort` AS `mappingSort`,
+            `cuma`.`state` AS `mappingState`,
+            `cuma`.`regdate`,
+            `co`.`idx`,
+            `co`.`title`,
+            `co`.`adult_pavilion` AS `pavilion`,
+            `co`.`adult`,
+            `co`.`state`,
+            `ca`.`name` AS `category`,
+            `ge`.`name` AS `genre`,
+            IFNULL(COUNT(DISTINCT(`ep`.`idx`)), 0) AS `episodeCnt`
+        FROM <include refid="database"/>`curation_mapping` AS `cuma`
+        JOIN <include refid="database"/>`curation` AS `cu`
+            ON `cuma`.`curation_idx` = `cu`.`idx` AND `cu`.`state` IN (1,2)
+        JOIN <include refid="database"/>`contents` AS `co`
+            ON `cuma`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1
+        JOIN <include refid="database" />`category` AS `ca`
+            ON `co`.`category_idx` = `ca`.`idx`
+        JOIN <include refid="database" />`genre` AS `ge`
+            ON `co`.`genre_idx` = `ge`.`idx`
+        LEFT JOIN <include refid="database" />`episode` AS `ep`
+            ON `co`.`idx` = `ep`.`contents_idx` AND `ep`.`state` = 1
+        <where>
+            `cu`.`idx` = #{idx}
+            <choose>
+                <when test="state != null">
+                    AND `cuma`.`state` = #{state}
+                </when>
+                <otherwise>
+                    AND `cuma`.`state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'title'">
+                        AND `co`.`title` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'idx'">
+                        AND `co`.`idx` = #{searchWord}
+                    </when>
+                </choose>
+            </if>
+            <if test="adultPavilion != null">
+                AND `co`.`adult_pavilion` = #{adultPavilion}
+            </if>
+            <if test="categoryIdx != null">
+                AND `co`.`category_idx` = #{categoryIdx}
+            </if>
+            <if test="genreIdx != null">
+                AND `co`.`genre_idx` = #{genreIdx}
+            </if>
+        </where>
+        GROUP BY `cuma`.`idx`
+        ORDER BY `cuma`.`sort`
+    </select>
+
+    <!-- 큐레이션 매핑 작품 상세 조회 -->
+    <select id="getViewCurationContent" parameterType="CurationContentDto" resultType="CurationContentDto">
+        SELECT
+            `cuma`.`idx` AS `mappingIdx`,
+            `cuma`.`sort` AS `mappingSort`,
+            `cuma`.`state` AS `mappingState`,
+            `cuma`.`regdate`,
+            `co`.`idx`,
+            `co`.`title`,
+            `co`.`adult_pavilion` AS `pavilion`,
+            `co`.`adult`,
+            `co`.`description`,
+            `co`.`state`,
+            `ca`.`name` AS `category`,
+            `ge`.`name` AS `genre`,
+            IFNULL(COUNT(DISTINCT(`ep`.`idx`)), 0) AS `episodeCnt`,
+            GROUP_CONCAT(DISTINCT(IF(`auma`.`type` = 1, `au`.`name`, NULL))) AS `writer`,
+            GROUP_CONCAT(DISTINCT(IF(`auma`.`type` = 2, `au`.`name`, NULL))) AS `painter`,
+            GROUP_CONCAT(DISTINCT(`ta`.`name`)) AS `tag`,
+            `coim`.`url`,
+            `coim`.`width`,
+            `coim`.`height`,
+            `coim`.`type`
+        FROM <include refid="database"/>`curation_mapping` AS `cuma`
+        JOIN <include refid="database"/>`curation` AS `cu`
+            ON `cuma`.`curation_idx` = `cu`.`idx` AND `cu`.`state` IN (1,2)
+        JOIN <include refid="database"/>`contents` AS `co`
+            ON `cuma`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1
+        JOIN <include refid="database" />`category` AS `ca`
+            ON `co`.`category_idx` = `ca`.`idx`
+        JOIN <include refid="database" />`genre` AS `ge`
+            ON `co`.`genre_idx` = `ge`.`idx`
+        LEFT JOIN <include refid="database" />`author_mapping` AS `auma`
+            ON `auma`.`contents_idx` = `co`.`idx` AND `auma`.`state` = 1
+        LEFT JOIN <include refid="database" />`author` AS `au`
+            ON `auma`.`author_idx` = `au`.`idx` AND `au`.`state` = 1
+        LEFT JOIN <include refid="database" />`tag_mapping` AS `tama`
+            ON `tama`.`contents_idx` = `co`.`idx` AND `tama`.`state` = 1
+        LEFT JOIN <include refid="database" />`tag` AS `ta`
+            ON `tama`.`tag_idx` = `ta`.`idx` AND `ta`.`state` = 1
+        LEFT JOIN <include refid="database" />`contents_img` AS `coim`
+            ON `co`.`idx` = `coim`.`contents_idx` AND `coim`.`state` = 1 AND `coim`.`type` = 'height' AND `coim`.`device` = 'origin'
+        LEFT JOIN <include refid="database" />`episode` AS `ep`
+            ON `co`.`idx` = `ep`.`contents_idx` AND `ep`.`state` = 1
+        WHERE
+            `cu`.`idx` = #{curationIdx}
+            AND `co`.`idx` = #{contentsIdx}
+        GROUP BY `cuma`.`idx`
+        LIMIT 1
+    </select>
+
+    <!-- 큐레이션 매핑 작품 검색 결과 개수 카운트 -->
+    <select id="getSearchContentTotalCnt" parameterType="SearchDto" resultType="int">
+        SELECT
+            COUNT(`co`.`idx`) AS totalCnt
+        FROM <include refid="database"/>`contents` AS `co`
+        JOIN <include refid="database" />`category` AS `ca`
+            ON `co`.`category_idx` = `ca`.`idx`
+        JOIN <include refid="database" />`genre` AS `ge`
+            ON `co`.`genre_idx` = `ge`.`idx`
+        LEFT JOIN <include refid="database" />`author_mapping` AS `auma`
+            ON `auma`.`contents_idx` = `co`.`idx` AND `auma`.`state` = 1
+        LEFT JOIN <include refid="database" />`author` AS `au`
+            ON `auma`.`author_idx` = `au`.`idx` AND `au`.`state` = 1
+        LEFT JOIN <include refid="database" />`tag_mapping` AS `tama`
+            ON `tama`.`contents_idx` = `co`.`idx` AND `tama`.`state` = 1
+        LEFT JOIN <include refid="database" />`tag` AS `ta`
+            ON `tama`.`tag_idx` = `ta`.`idx` AND `ta`.`state` = 1
+        LEFT JOIN <include refid="database" />`contents_img` AS `coim`
+            ON `co`.`idx` = `coim`.`contents_idx` AND `coim`.`state` = 1 AND `coim`.`type` = 'height' AND `coim`.`device` = 'origin'
+        <where>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'title'">
+                        AND `co`.`title` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'idx'">
+                        AND `co`.`idx` = #{searchWord}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 큐레이션 매핑 작품 검색 결과 리스트 조회 -->
+    <select id="getSearchContentList" parameterType="SearchDto" resultType="CurationContentDto">
+        SELECT
+            `co`.`idx`,
+            `co`.`title`,
+            `co`.`adult_pavilion` AS `pavilion`,
+            `co`.`adult`,
+            `co`.`description`,
+            `co`.`state`,
+            `ca`.`name` AS `category`,
+            `ge`.`name` AS `genre`,
+            IFNULL(COUNT(DISTINCT(`ep`.`idx`)), 0) AS `episodeCnt`,
+            GROUP_CONCAT(DISTINCT(IF(`auma`.`type` = 1, `au`.`name`, NULL))) AS `writer`,
+            GROUP_CONCAT(DISTINCT(IF(`auma`.`type` = 2, `au`.`name`, NULL))) AS `painter`,
+            GROUP_CONCAT(DISTINCT(`ta`.`name`)) AS `tag`,
+            `coim`.`url`,
+            `coim`.`width`,
+            `coim`.`height`,
+            `coim`.`type`
+        FROM <include refid="database"/>`contents` AS `co`
+        JOIN <include refid="database" />`category` AS `ca`
+            ON `co`.`category_idx` = `ca`.`idx`
+        JOIN <include refid="database" />`genre` AS `ge`
+            ON `co`.`genre_idx` = `ge`.`idx`
+        LEFT JOIN <include refid="database" />`author_mapping` AS `auma`
+            ON `auma`.`contents_idx` = `co`.`idx` AND `auma`.`state` = 1
+        LEFT JOIN <include refid="database" />`author` AS `au`
+            ON `auma`.`author_idx` = `au`.`idx` AND `au`.`state` = 1
+        LEFT JOIN <include refid="database" />`tag_mapping` AS `tama`
+            ON `tama`.`contents_idx` = `co`.`idx` AND `tama`.`state` = 1
+        LEFT JOIN <include refid="database" />`tag` AS `ta`
+            ON `tama`.`tag_idx` = `ta`.`idx` AND `ta`.`state` = 1
+        LEFT JOIN <include refid="database" />`contents_img` AS `coim`
+            ON `co`.`idx` = `coim`.`contents_idx` AND `coim`.`state` = 1 AND `coim`.`type` = 'height' AND `coim`.`device` = 'origin'
+        LEFT JOIN <include refid="database" />`episode` AS `ep`
+            ON `co`.`idx` = `ep`.`contents_idx` AND `ep`.`state` = 1
+        <where>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'title'">
+                        AND `co`.`title` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'idx'">
+                        AND `co`.`idx` = #{searchWord}
+                    </when>
+                </choose>
+            </if>
+        </where>
+        GROUP BY `co`.`idx`
+        ORDER BY `co`.`idx`
+    </select>
+
+    <!-- 큐레이션 매핑 작품 중복 여부 체크 -->
+    <select id="getContentTotalCnt" parameterType="CurationContentDto" resultType="int">
+        SELECT
+            COUNT(`cuma`.`idx`) AS totalCnt
+        FROM <include refid="database"/>`curation_mapping` AS `cuma`
+        WHERE
+            `cuma`.`curation_idx` = #{curationIdx}
+            AND `cuma`.`contents_idx` = #{contentsIdx}
+            AND `cuma`.`state` IN (1,2)
+    </select>
+
+    <!-- 변경할 작품 정보 조회 -->
+    <select id="getContentInfo" parameterType="Long" resultType="CurationContentDto">
+        SELECT
+            `co`.`idx`,
+            `co`.`title`,
+            `co`.`adult_pavilion` AS `pavilion`,
+            `co`.`adult`,
+            `co`.`description`,
+            `co`.`state`,
+            `ca`.`name` AS `category`,
+            `ge`.`name` AS `genre`,
+            IFNULL(COUNT(DISTINCT(`ep`.`idx`)), 0) AS `episodeCnt`,
+            GROUP_CONCAT(DISTINCT(IF(`auma`.`type` = 1, `au`.`name`, NULL))) AS `writer`,
+            GROUP_CONCAT(DISTINCT(IF(`auma`.`type` = 2, `au`.`name`, NULL))) AS `painter`,
+            GROUP_CONCAT(DISTINCT(`ta`.`name`)) AS `tag`,
+            `coim`.`url`,
+            `coim`.`width`,
+            `coim`.`height`,
+            `coim`.`type`
+        FROM <include refid="database"/>`contents` AS `co`
+        JOIN <include refid="database" />`category` AS `ca`
+            ON `co`.`category_idx` = `ca`.`idx`
+        JOIN <include refid="database" />`genre` AS `ge`
+            ON `co`.`genre_idx` = `ge`.`idx`
+        LEFT JOIN <include refid="database" />`author_mapping` AS `auma`
+            ON `auma`.`contents_idx` = `co`.`idx` AND `auma`.`state` = 1
+        LEFT JOIN <include refid="database" />`author` AS `au`
+            ON `auma`.`author_idx` = `au`.`idx` AND `au`.`state` = 1
+        LEFT JOIN <include refid="database" />`tag_mapping` AS `tama`
+            ON `tama`.`contents_idx` = `co`.`idx` AND `tama`.`state` = 1
+        LEFT JOIN <include refid="database" />`tag` AS `ta`
+            ON `tama`.`tag_idx` = `ta`.`idx` AND `ta`.`state` = 1
+        LEFT JOIN <include refid="database" />`contents_img` AS `coim`
+            ON `co`.`idx` = `coim`.`contents_idx` AND `coim`.`state` = 1 AND `coim`.`type` = 'height' AND `coim`.`device` = 'origin'
+        LEFT JOIN <include refid="database" />`episode` AS `ep`
+            ON `co`.`idx` = `ep`.`contents_idx` AND `ep`.`state` = 1
+        WHERE
+            `co`.`idx` = #{idx}
+            AND `co`.`state` = 1
+        LIMIT 1
+    </select>
+</mapper>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.contents.CategoryDaoSub">
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+
+    <!-- 카테고리 목록 -->
+    <select id="getCategory" resultMap="getCategory_rm">
+        SELECT
+            ca.`idx`,
+            ca.`name`,
+            ca.`state`,
+            CONVERT_TZ(ca.`regdate`, 'UTC', '${convertTZ}') AS `regdate`
+        FROM <include refid="database" />category AS ca
+    </select>
+
+    <!-- 카테고리 result map -->
+    <resultMap id="getCategory_rm" type="CategoryDto">
+        <id property="idx" column="idx" />
+
+        <result property="name" column="name" />
+        <result property="state" column="state" />
+        <result property="regdate" column="regdate" />
+
+        <!-- Genre query 호출 -->
+        <collection property="genreList" column="idx" javaType="java.util.ArrayList" ofType="" select="getGenre" />
+    </resultMap>
+
+    <!-- 장르 목록 -->
+    <select id="getGenre" resultType="GenreDto">
+        SELECT
+            gema.`category_idx`,
+            gema.`sort`,
+            gema.`state`,
+            CONVERT_TZ(gema.`regdate`, 'UTC', '${convertTZ}') AS `regdate`,
+            ge.`idx`,
+            ge.`name`
+        FROM <include refid="database" />category_mapping AS gema
+        JOIN <include refid="database" />genre AS ge
+            ON gema.`genre_idx` = ge.idx
+        WHERE
+                gema.`category_idx` = #{idx}
+            AND ge.state = 1
+        ORDER BY gema.`sort` ASC
+    </select>
+
+</mapper>

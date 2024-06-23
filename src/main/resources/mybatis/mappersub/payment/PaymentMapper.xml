@@ -1,0 +1,725 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.payment.PaymentDaoSub">
+    <!-- ==============================================================
+           SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- 공통으로 사용할 field -->
+    <sql id="PaymentColumns">
+        `payment`.`idx`,
+        `payment`.`product_idx` AS productIdx,
+        `payment`.`pg_idx` AS pgIdx,
+        `payment`.`admin_idx` AS adminIdx,
+        `payment`.`member_idx` AS memberIdx,
+        `payment`.`order_no` AS orderIdx,
+        `payment`.`pay`,
+        `payment`.`currency`,
+        `payment`.`country`,
+        `payment`.`pay_method` AS payMethod,
+        `payment`.`pay_type` AS payType,
+        `payment`.`tid`,
+        `payment`.`provider`,
+        `payment`.`pay_type_number` AS payTypeNumber,
+        `payment`.`cp_id` AS cpID,
+        `payment`.`otp`,
+        `payment`.`member_ip` AS memberIP,
+        `payment`.`state`,
+        CONVERT_TZ(`payment`.`regdate`, 'UTC', '${convertTZ}') AS regdate,
+        CONVERT_TZ(`payment`.`moddate`, 'UTC', '${convertTZ}') AS moddate
+    </sql>
+
+    <!-- ==============================================================
+        결제 내역
+    =============================================================== -->
+
+    <!-- 회원 payment 개수 조회 -->
+    <select id="getPaymentCnt" parameterType="Long" resultType="int">
+        SELECT
+            COUNT(`idx`) AS `paymentInfoCnt`
+        FROM <include refid="database"/> `payment`
+        WHERE
+                `member_idx` = #{memberIdx}
+            AND `state` = 1
+    </select>
+
+    <!-- 결제 내역 전체 카운트 -->
+    <select id="getPaymentTotalCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(DISTINCT `payment`.`idx`) AS paymentCnt
+        FROM <include refid="database" />`payment`
+        LEFT JOIN <include refid="database" />`product`
+            ON `payment`.`product_idx` = `product`.`idx`
+        LEFT JOIN <include refid="database" />`pg`
+            ON `payment`.`pg_idx` = `pg`.`idx`
+        LEFT JOIN <include refid="database" />`member`
+            ON `payment`.`member_idx` = `member`.`idx`
+        LEFT JOIN <include refid="database" />`payment_info`AS pain
+            ON `payment`.`idx` = `pain`.`payment_idx`
+        LEFT JOIN <include refid="database" />`admin`
+            ON `payment`.`admin_idx` = `admin`.`idx`
+        LEFT JOIN <include refid="database" />`member_mileage_save` AS memisa
+            ON `payment`.`idx` = `memisa`.`payment_idx`
+        LEFT JOIN <include refid="database" />`member_mileage_used` AS memius
+            ON `memisa`.`idx` = `memius`.`member_mileage_save_idx`
+        LEFT JOIN <include refid="database" />`member_coin_save` AS mecosa
+            ON `payment`.`idx` = `mecosa`.`payment_idx`
+        LEFT JOIN <include refid="database" />`member_coin_used` AS mecous
+            ON `mecosa`.`idx` = `mecous`.`member_coin_save_idx`
+        <where>
+            <if test="idx != null">
+                AND `payment`.`member_idx` = #{idx}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `member`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `member`.`nick` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="state != null and !state.equals('')">
+                AND `payment`.state = #{state}
+            </if>
+            <if test="searchStartDate != null and searchStartDate != '' and searchEndDate != null and searchEndDate != ''">
+                <choose>
+                    <when test="searchDateType  == 'regdate'">
+                        AND `payment`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `payment`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                    <when test="searchDateType == 'moddate'">
+                        AND `payment`.`moddate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `payment`.`moddate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 결제 내역 전체 조회 -->
+    <select id="getPaymentList" parameterType="SearchDto" resultType="PaymentDto">
+        SELECT
+            <include refid="PaymentColumns"/>
+            , `admin`.`name` AS payer
+            , `member`.`idx` AS memberIdx
+            , `member`.`id`
+            , `member`.`nick`
+            , IF(`paap`.`payment_idx` IS NOT NULL,'O','' ) AS app
+            , IFNULL(`pain`.`first`, 0) AS first
+            , IFNULL(`memius`.`mileage`, 0) AS mileage
+            , IFNULL(`memius`.`rest_mileage`, 0) AS restMileage
+            , `memius`.`state` AS mileageState
+            , CONVERT_TZ(`memius`.`expiredate`, 'UTC', '${convertTZ}') AS mileageExp
+            , IFNULL(MAX(CASE WHEN `mecous`.`type` = 1 THEN `mecous`.`coin` END), 0) AS coin
+            , IFNULL(MAX(CASE WHEN `mecous`.`type` = 2 THEN `mecous`.`coin` END), 0) AS bonus
+            , IFNULL(MAX(CASE WHEN `mecous`.`type` = 1 THEN `mecous`.`rest_coin` END), 0) AS restCoin
+            , IFNULL(MAX(CASE WHEN `mecous`.`type` = 2 THEN `mecous`.`rest_coin` END), 0) AS restBonus
+            , IFNULL(MAX(CASE WHEN `mecous`.`type` = 1 THEN `mecous`.`state` END), 0) AS coinState
+            , IFNULL(MAX(CASE WHEN `mecous`.`type` = 2 THEN `mecous`.`state` END), 0) AS bonusState
+            , CONVERT_TZ(IFNULL(MAX(CASE WHEN `mecous`.`type` = 1 THEN `mecous`.`expiredate` END),''), 'UTC', '${convertTZ}') AS coinExp
+            , CONVERT_TZ(IFNULL(MAX(CASE WHEN `mecous`.`type` = 2 THEN `mecous`.`expiredate` END),''), 'UTC', '${convertTZ}') AS bonusExp
+        FROM <include refid="database" />`payment`
+        LEFT JOIN <include refid="database" />`product`
+            ON `payment`.`product_idx` = `product`.`idx`
+        LEFT JOIN <include refid="database" />`pg`
+            ON `payment`.`pg_idx` = `pg`.`idx`
+        LEFT JOIN <include refid="database" />`member`
+            ON `payment`.`member_idx` = `member`.`idx`
+        LEFT JOIN <include refid="database" />`payment_info` AS pain
+            ON `payment`.`idx` = `pain`.`payment_idx`
+        LEFT JOIN <include refid="database" />`admin`
+            ON `payment`.`admin_idx` = `admin`.`idx`
+        LEFT JOIN <include refid="database" />`member_mileage_save` AS memisa
+            ON `payment`.`idx` = `memisa`.`payment_idx`
+        LEFT JOIN <include refid="database" />`member_mileage_used` AS memius
+            ON `memisa`.`idx` = `memius`.`member_mileage_save_idx`
+        LEFT JOIN <include refid="database" />`member_coin_save` AS mecosa
+            ON `payment`.`idx` = `mecosa`.`payment_idx`
+        LEFT JOIN <include refid="database" />`member_coin_used` AS mecous
+            ON `mecosa`.`idx` = `mecous`.`member_coin_save_idx`
+        LEFT JOIN <include refid="database" />`payment_app` AS paap
+            ON `payment`.`idx` = `paap`.`payment_idx`
+        <where>
+            <if test="idx != null">
+                AND `payment`.`member_idx` = #{idx}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `member`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `member`.`nick` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="state != null and !state.equals('')">
+                AND `payment`.state = #{state}
+            </if>
+            <if test="searchStartDate != null and searchStartDate != '' and searchEndDate != null and searchEndDate != ''">
+                <choose>
+                    <when test="searchDateType  == 'regdate'">
+                        AND `payment`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `payment`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                    <when test="searchDateType == 'moddate'">
+                        AND `payment`.`moddate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `payment`.`moddate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                </choose>
+            </if>
+        </where>
+        GROUP BY `payment`.`idx`
+        ORDER BY `payment`.`idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 결제 내역 상세 -->
+    <select id="getViewPayment" parameterType="_long" resultType="PaymentDto">
+        SELECT
+            <include refid="PaymentColumns"/>
+            , `payment`.`order_no`
+            , `admin`.`name` AS payer
+            , `member`.`id`
+            , `member`.`nick`
+            , IFNULL(`pain`.`first`, 0) AS `first`
+            , `memisa`.`idx` AS mileageSaveIdx
+            , `memius`.`idx` AS mileageUsedIdx
+            , `mecosa`.`idx` AS coinSaveIdx
+            , IFNULL(`memius`.`mileage`, 0) AS mileage
+            , IFNULL(`memius`.`rest_mileage`, 0) AS restMileage
+            , `memius`.`state` AS mileageState
+            , CONVERT_TZ(`memius`.`expiredate`, 'UTC', '${convertTZ}') AS mileageExp
+            , MAX(CASE WHEN `mecous`.`type` = 1 THEN `mecous`.`idx` END) AS coinUsedIdx
+            , MAX(CASE WHEN `mecous`.`type` = 2 THEN `mecous`.`idx` END) AS bonusUsedIdx
+            , IFNULL(MAX(CASE WHEN `mecous`.`type` = 1 THEN `mecous`.`coin` END), 0) AS coin
+            , IFNULL(MAX(CASE WHEN `mecous`.`type` = 2 THEN `mecous`.`coin` END), 0) AS bonus
+            , IFNULL(MAX(CASE WHEN `mecous`.`type` = 1 THEN `mecous`.`rest_coin` END), 0) AS restCoin
+            , IFNULL(MAX(CASE WHEN `mecous`.`type` = 2 THEN `mecous`.`rest_coin` END), 0) AS restBonus
+            , IFNULL(MAX(CASE WHEN `mecous`.`type` = 1 THEN `mecous`.`state` END), 0) AS coinState
+            , IFNULL(MAX(CASE WHEN `mecous`.`type` = 2 THEN `mecous`.`state` END), 0) AS bonusState
+            , CONVERT_TZ(IFNULL(MAX(CASE WHEN `mecous`.`type` = 1 THEN `mecous`.`expiredate` END),''), 'UTC', '${convertTZ}') AS coinExp
+            , CONVERT_TZ(IFNULL(MAX(CASE WHEN `mecous`.`type` = 2 THEN `mecous`.`expiredate` END),''), 'UTC', '${convertTZ}') AS bonusExp
+        FROM <include refid="database" />`payment`
+        LEFT JOIN <include refid="database" />`product`
+            ON `payment`.`product_idx` = `product`.`idx`
+        LEFT JOIN <include refid="database" />`pg`
+            ON `payment`.`pg_idx` = `pg`.`idx`
+        LEFT JOIN <include refid="database" />`member`
+            ON `payment`.`member_idx` = `member`.`idx`
+        LEFT JOIN <include refid="database" />`payment_info` AS pain
+            ON `payment`.`idx` = `pain`.`payment_idx`
+        LEFT JOIN <include refid="database" />`admin`
+            ON `payment`.`admin_idx` = `admin`.`idx`
+        LEFT JOIN <include refid="database" />`member_mileage_save` AS memisa
+            ON `payment`.`idx` = `memisa`.`payment_idx`
+        LEFT JOIN <include refid="database" />`member_mileage_used` AS memius
+            ON `memisa`.`idx` = `memius`.`member_mileage_save_idx`
+        LEFT JOIN <include refid="database" />`member_coin_save` AS mecosa
+            ON `payment`.`idx` = `mecosa`.`payment_idx`
+        LEFT JOIN <include refid="database" />`member_coin_used` AS mecous
+            ON `mecosa`.`idx` = `mecous`.`member_coin_save_idx`
+        WHERE
+            `payment`.`idx` = #{idx}
+    </select>
+
+    <!-- member_coin_save_log 로그 조회 -->
+    <select id="getCoinSaveLog" parameterType="PaymentDto" resultType="PaymentDto">
+        SELECT
+            `mecosalo`.`member_coin_save_idx` AS coinSaveIdx,
+            `mecosalo`.`member_idx`,
+            `mecosalo`.`coin`,
+            `mecosalo`.`coin_free` AS bonus,
+            `mecosalo`.`title`,
+            `mecosalo`.`state`,
+            CONVERT_TZ(`mecosalo`.`regdate`, 'UTC', '${convertTZ}') AS `regdate`
+        FROM <include refid="database" />`member_coin_save_log` AS `mecosalo`
+        WHERE
+            `mecosalo`.`member_coin_save_idx` = #{coinSaveIdx}
+    </select>
+
+    <!-- member_mileage_save_log 로그 조회 -->
+    <select id="getMileageSaveLog" parameterType="PaymentDto" resultType="PaymentDto">
+        SELECT
+            `memisalo`.`member_mileage_save_idx` AS mileageSaveIdx,
+            `memisalo`.`member_idx`,
+            `memisalo`.`mileage`,
+            `memisalo`.`title`,
+            `memisalo`.`admin`,
+            `memisalo`.`state`,
+            CONVERT_TZ(`memisalo`.`regdate`, 'UTC', '${convertTZ}') AS `regdate`
+        FROM <include refid="database" />`member_mileage_save_log` AS `memisalo`
+        WHERE
+            `memisalo`.`member_mileage_save_idx` = #{mileageSaveIdx}
+    </select>
+
+    <!-- member_coin_used_log 로그 조회 -->
+    <select id="getCoinUsedLog" parameterType="PaymentDto" resultType="PaymentDto">
+        SELECT
+            CASE WHEN `mecouslo`.`type` = 1 THEN `mecouslo`.`member_coin_used_idx` END AS coinUsedIdx,
+            CASE WHEN `mecouslo`.`type` = 2 THEN `mecouslo`.`member_coin_used_idx` END AS bonusUsedIdx,
+            `mecouslo`.`member_idx`,
+            `mecouslo`.`coin`,
+            `mecouslo`.`type`,
+            `mecouslo`.`title`,
+            `mecouslo`.`state`,
+            CONVERT_TZ(`mecouslo`.`regdate`, 'UTC', '${convertTZ}') AS `regdate`
+        FROM <include refid="database" />`member_coin_used_log` AS `mecouslo`
+        WHERE
+            <choose>
+                <when test="type == 1">
+                    `mecouslo`.`member_coin_used_idx` = #{coinUsedIdx}
+                    AND `mecouslo`.`type` = #{type}
+                </when>
+                <when test="type == 2">
+                    `mecouslo`.`member_coin_used_idx` = #{bonusUsedIdx}
+                    AND `mecouslo`.`type` = #{type}
+                </when>
+            </choose>
+    </select>
+
+    <!-- member_mileage_used_log 로그 조회 -->
+    <select id="getMileageUsedLog" parameterType="PaymentDto" resultType="PaymentDto">
+        SELECT
+            `memiuslo`.`member_mileage_used_idx` AS mileageUsedIdx,
+            `memiuslo`.`member_idx`,
+            `memiuslo`.`mileage`,
+            `memiuslo`.`title`,
+            `memiuslo`.`state`,
+            CONVERT_TZ(`memiuslo`.`regdate`, 'UTC', '${convertTZ}') AS `regdate`
+        FROM <include refid="database" />`member_mileage_used_log` AS `memiuslo`
+        WHERE
+            `memiuslo`.`member_mileage_used_idx` = #{mileageUsedIdx}
+    </select>
+
+    <!-- member_coin 상세 조회 -->
+    <select id="getMemberCoin" parameterType="PaymentDto" resultType="PaymentDto">
+        SELECT
+            `meco`.`member_idx` AS memberIdx,
+            `meco`.`coin`,
+            `meco`.`coin_free` AS bonus,
+            `meco`.`mileage`,
+            `meco`.`ticket_count`,
+            CONVERT_TZ(`meco`.`regdate`, 'UTC', '${convertTZ}') AS `regdate`
+        FROM <include refid="database" />`member_coin` AS `meco`
+        WHERE
+            `meco`.`member_idx` = #{memberIdx}
+    </select>
+
+    <!-- ==============================================================
+        결제 수단
+    =============================================================== -->
+
+    <!-- 결제수단 전체 개수 카운트 -->
+    <select id="getPaymentMethodTotalCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(`idx`) AS paymentMethodCnt
+        FROM <include refid="database"/>`payment_method`
+        <where>
+            <choose>
+                <when test="state != null">
+                    AND `state` = #{state}
+                </when>
+                <otherwise>
+                    AND `state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test='type != null'>
+                AND `auto_pay` = #{type}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'name'">
+                        AND `pg_name` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'id'">
+                        AND `mcht_id` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 결제수단 리스트 조회 -->
+    <select id="getPaymentMethodList" parameterType="SearchDto" resultType="PaymentMethodDto">
+        SELECT
+            `idx`,
+            `pg_name`,
+            `mcht_id`,
+            `license_key`,
+            `aes256_key`,
+            `method_type`,
+            `method`,
+            `corp_pay_code`,
+            `method_noti`,
+            `mcht_name`,
+            `mcht_e_name`,
+            `noti_url`,
+            `payment_server`,
+            `cancel_server`,
+            `info`,
+            `auto_pay`,
+            `state`,
+            CONVERT_TZ(`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database"/>`payment_method`
+        <where>
+            <choose>
+                <when test="state != null">
+                    AND `state` = #{state}
+                </when>
+                <otherwise>
+                    AND `state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test='type != null'>
+                AND `auto_pay` = #{type}
+            </if>
+            <if test="searchWord != '' and searchWord != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'name'">
+                        AND `pg_name` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'id'">
+                        AND `mcht_id` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+        ORDER BY `idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 유효한 결제 수단 idx인지 조회 -->
+    <select id="getPaymentMethodIdxCnt" parameterType="Integer" resultType="_int">
+        SELECT
+            COUNT(`idx`) AS paymentMethodIdxCnt
+        FROM <include refid="database"/>`payment_method`
+        WHERE
+            `idx` = #{idx}
+            AND `state` IN (1,2)
+    </select>
+
+    <!-- 결제 수단 상세 조회 -->
+    <select id="getViewPaymentMethod" parameterType="Integer" resultType="PaymentMethodDto">
+        SELECT
+            `idx`,
+            `pg_name`,
+            `mcht_id`,
+            `license_key`,
+            `aes256_key`,
+            `method_type`,
+            `method`,
+            `corp_pay_code`,
+            `method_noti`,
+            `mcht_name`,
+            `mcht_e_name`,
+            `noti_url`,
+            `payment_server`,
+            `cancel_server`,
+            `info`,
+            `auto_pay`,
+            `state`,
+            CONVERT_TZ(`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database"/>`payment_method`
+        WHERE
+            `idx` = #{idx}
+            AND `state` IN (1,2)
+        LIMIT 1
+    </select>
+
+    <!-- ==============================================================
+        결제 상품
+    =============================================================== -->
+
+    <!-- 결제 상품 전체 개수 카운트 -->
+    <select id="getPaymentProductTotalCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(`idx`) AS paymentProductCnt
+        FROM <include refid="database"/>`product`
+        <where>
+            <if test='state != null'>
+                AND `state` = #{state}
+            </if>
+            <if test="type != null">
+                AND `type` = #{type}
+            </if>
+            <if test="searchWord != '' and searchWord != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                AND `title` LIKE #{val}
+            </if>
+        </where>
+    </select>
+
+    <!-- 결제 상품 리스트 조회 -->
+    <select id="getPaymentProductList" parameterType="SearchDto" resultType="PaymentProductDto">
+        SELECT
+            `idx`,
+            `title`,
+            `type`,
+            `coin`,
+            `coin_free`,
+            `coin_free2`,
+            `mileage`,
+            `price`,
+            `sort`,
+            `state`,
+            CONVERT_TZ(`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database"/>`product`
+        <where>
+            <choose>
+                <when test="state != null">
+                    AND `state` = #{state}
+                </when>
+                <otherwise>
+                    AND `state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test="type != null">
+                AND `type` = #{type}
+            </if>
+            <if test="searchWord != '' and searchWord != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                AND `title` LIKE #{val}
+            </if>
+        </where>
+        ORDER BY `idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 유효한 결제 상품 idx인지 조회 -->
+    <select id="getPaymentProductIdxCnt" parameterType="Integer" resultType="_int">
+        SELECT
+            COUNT(`idx`) AS paymentProductIdxCnt
+        FROM <include refid="database"/>`product`
+        WHERE
+            `idx` = #{idx}
+            AND `state` IN (1,2)
+    </select>
+
+    <!-- 결제 상품 상세 조회 -->
+    <select id="getViewPaymentProduct" parameterType="Integer" resultType="PaymentProductDto">
+        SELECT
+            `idx`,
+            `title`,
+            `type`,
+            `coin`,
+            `coin_free`,
+            `coin_free2`,
+            `mileage`,
+            `price`,
+            `sort`,
+            `state`,
+            CONVERT_TZ(`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database"/>`product`
+        WHERE
+            `idx` = #{idx}
+            AND `state` IN (1,2)
+        LIMIT 1
+    </select>
+
+    <!-- ==============================================================
+        회원 회차 구매 내역
+    =============================================================== -->
+
+    <!-- 전체 회원 회차 구매 개수 -->
+    <select id="getPurchaseTotalCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(`mepu`.`idx`) AS purchaseCnt
+        FROM <include refid="database"/>`member_purchase` AS `mepu`
+        JOIN <include refid="database"/>`member` AS `me`
+            ON `mepu`.`member_idx` = `me`.`idx`
+        <where>
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                <choose>
+                    <when test="searchDateType  == 'regdate'">
+                        AND `mepu`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `mepu`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                    <when test="searchDateType == 'expiredate'">
+                        AND `mepu`.`expiredate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `mepu`.`expiredate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                </choose>
+            </if>
+            <if test="searchWord != null and searchWord != '' and searchType != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="idx != null">
+                AND `mepu`.`member_idx` = #{idx}
+            </if>
+            <if test="type != ''">
+                <choose>
+                    <when test="type  == 1">
+                        AND `mepu`.`coin` <![CDATA[ > ]]> 0
+                    </when>
+                    <when test="type == 2">
+                        AND `mepu`.`mileage` <![CDATA[ > ]]> 0
+                    </when>
+                    <when test="type == 3">
+                        AND `mepu`.`used_ticket` <![CDATA[ > ]]> 0
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 전체 회원 회차 구매 리스트 -->
+    <select id="getPurchaseList" parameterType="SearchDto" resultType="MemberPurchaseDto">
+        SELECT
+            `me`.`idx` AS `memberIdx`,
+            `me`.`nick`,
+            `me`.`id`,
+            `co`.`idx` AS `contentsIdx`,
+            `co`.`title`,
+            `ct`.`name` AS `category`,
+            `gr`.`name` AS `genre`,
+            `ep`.`idx` AS `episodeIdx`,
+            `ep`.`episode_number`,
+            `ep`.`title` AS `episodeTitle`,
+            IFNULL(`mepu`.`buy_all_idx`, 0) AS `buyAllIdx`,
+            `mepu`.`idx`,
+            `mepu`.`type`,
+            `mepu`.`coin`,
+            `mepu`.`coin_free`,
+            `mepu`.`mileage`,
+            IFNULL(`mepu`.`used_ticket`, 0) AS `ticket`,
+            CONVERT_TZ(`mepu`.`regdate`,'UTC','${convertTZ}') AS `regdate`,
+            IFNULL(CONVERT_TZ(`mepu`.`expiredate`,'UTC','${convertTZ}'),'') AS `expiredate`
+        FROM <include refid="database"/>`member_purchase` AS `mepu`
+        JOIN <include refid="database"/>`member` AS `me`
+            ON `mepu`.`member_idx` = `me`.`idx`
+        JOIN <include refid="database"/>`contents` AS `co`
+            ON `mepu`.`contents_idx` = `co`.`idx`
+        JOIN <include refid="database"/>`episode` AS `ep`
+            ON `ep`.`idx` = `mepu`.`episode_idx`
+        JOIN <include refid="database"/>`category` AS `ct`
+            ON `co`.`category_idx` = `ct`.`idx`
+        JOIN <include refid="database"/>`genre` AS `gr`
+            ON `co`.`genre_idx` = `gr`.`idx`
+        <where>
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                <choose>
+                    <when test="searchDateType  == 'regdate'">
+                        AND `mepu`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `mepu`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                    <when test="searchDateType == 'expiredate'">
+                        AND `mepu`.`expiredate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `mepu`.`expiredate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                </choose>
+            </if>
+            <if test="searchWord != null and searchWord != '' and searchWord != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="idx != null">
+                AND `mepu`.`member_idx` = #{idx}
+            </if>
+            <if test="type != ''">
+                <choose>
+                    <when test="type  == 1">
+                        AND `mepu`.`coin` <![CDATA[ > ]]> 0
+                    </when>
+                    <when test="type == 2">
+                        AND `mepu`.`mileage` <![CDATA[ > ]]> 0
+                    </when>
+                    <when test="type == 3">
+                        AND `mepu`.`used_ticket` <![CDATA[ > ]]> 0
+                    </when>
+                </choose>
+            </if>
+        </where>
+        ORDER BY `mepu`.`idx` DESC,
+                `ep`.`episode_number` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 회원 회차 구매 내역 개수 -->
+    <select id="getMemberPurchaseTotalCnt" parameterType="_long" resultType="_int">
+        SELECT
+            COUNT(`mepu`.`idx`) AS `memberPurchaseTotalCount`
+        FROM <include refid="database"/>`member_purchase` AS `mepu`
+        JOIN <include refid="database"/>`contents` AS `co`
+            ON `mepu`.`contents_idx` = `co`.`idx`
+        JOIN <include refid="database"/>`episode` AS `ep`
+            ON `ep`.`idx` = `mepu`.`episode_idx`
+        JOIN <include refid="database"/>`category` AS `ct`
+            ON `co`.`category_idx` = `ct`.`idx`
+        JOIN <include refid="database"/>`genre` AS `gr`
+            ON `co`.`genre_idx` = `gr`.`idx`
+        WHERE
+            `member_idx` = #{memberIdx}
+    </select>
+
+    <!-- 회원 회차 구매내역 (회원 상세페이지 최근 10건만 보이도록) -->
+    <select id="getMemberPurchaseInfo" parameterType="_long" resultType="MemberPurchaseDto">
+        SELECT
+            `co`.`idx` AS `contentsIdx`,
+            `co`.`title`,
+            `ct`.`name` AS `category`,
+            `gr`.`name` AS `genre`,
+            `ep`.`idx` AS `episodeIdx`,
+            `ep`.`episode_number`,
+            `ep`.`title` AS `episodeTitle`,
+            IFNULL(`mepu`.`buy_all_idx`, 0) AS `buyAllIdx`,
+            `mepu`.`type`,
+            `mepu`.`coin`,
+            `mepu`.`coin_free`,
+            `mepu`.`mileage`,
+            IFNULL(`mepu`.`used_ticket`, 0) AS `ticket`,
+            CONVERT_TZ(`mepu`.`regdate`,'UTC','${convertTZ}') AS `regdate`,
+            IFNULL(CONVERT_TZ(`mepu`.`expiredate`,'UTC','${convertTZ}'), '') AS `expiredate`
+        FROM <include refid="database"/>`member_purchase` AS `mepu`
+        JOIN <include refid="database"/>`contents` AS `co`
+            ON `mepu`.`contents_idx` = `co`.`idx`
+        JOIN <include refid="database"/>`episode` AS `ep`
+            ON `ep`.`idx` = `mepu`.`episode_idx`
+        JOIN <include refid="database"/>`category` AS `ct`
+            ON `co`.`category_idx` = `ct`.`idx`
+        JOIN <include refid="database"/>`genre` AS `gr`
+            ON `co`.`genre_idx` = `gr`.`idx`
+        WHERE
+            `member_idx` = #{memberIdx}
+        ORDER BY `mepu`.`idx` DESC
+        LIMIT 10
+    </select>
+
+</mapper>

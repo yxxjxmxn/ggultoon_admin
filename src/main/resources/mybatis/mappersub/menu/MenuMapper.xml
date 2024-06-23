@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.menu.MenuDaoSub">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- 공통으로 사용할 field -->
+    <sql id="menuColumns">
+        `adme`.*,
+	    `admena`.`name`,
+	    `admena`.`lang`
+    </sql>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+    <!-- 리스트 전체 가져오기 -->
+    <select id="getList" parameterType="MenuDto" resultType="MenuDto">
+        SELECT
+            <include refid="menuColumns"/>
+        FROM <include refid="database"/>`admin_menu` AS `adme`
+        INNER JOIN <include refid="database"/>`admin_menu_name` AS `admena`
+            ON (    `adme`.`idx` = `admena`.`menu_idx`
+                AND `admena`.`lang` = 'ko' )
+        <where>
+            <if test='level != null'>
+                AND `adme`.`level` <![CDATA[ <= ]]> #{level}
+            </if>
+            <if test='lang != null and lang != ""' >
+                AND `admena`.`lang` = #{lang}
+            </if>
+        </where>
+        ORDER BY
+            `adme`.`parent` ASC,
+            `adme`.`sort` ASC,
+            `adme`.`idx` ASC
+        LIMIT 100 OFFSET 0
+    </select>
+
+    <!-- 회원 등급 별 left 메뉴 가져오기 -->
+    <select id="getLeftList" parameterType="MenuDto" resultType="MenuDto">
+        SELECT
+            <include refid="menuColumns"/>
+        FROM <include refid="database"/>`admin_menu` AS `adme`
+        INNER JOIN <include refid="database"/>`admin_menu_name` AS `admena`
+            ON (    `adme`.`idx` = `admena`.`menu_idx`
+                AND `admena`.`lang` = 'ko' )
+        <where>
+            <if test='level != null'>
+                AND `adme`.`level` <![CDATA[ <= ]]> #{level}
+            </if>
+                AND `admena`.`lang` = 'ko'
+                AND `adme`.state = 1
+        </where>
+        ORDER BY
+            `adme`.`parent` ASC,
+            `adme`.`sort` ASC
+        LIMIT 100 OFFSET 0
+    </select>
+
+    <!-- 메뉴(카테고리)별 정렬 마지막값 -->
+    <select id="getLastSort" parameterType="MenuDto" resultType="int">
+        SELECT
+            MAX(`adme`.`sort`)
+        FROM <include refid="database"/>`admin_menu` AS `adme`
+        <where>
+            `parent` = #{parent}
+        </where>
+    </select>
+
+    <!-- row 1개 가져오기 -->
+    <select id="getCateInfo" parameterType="Integer" resultType="MenuDto">
+        SELECT
+            <include refid="menuColumns" />
+        FROM  <include refid="database" />`admin_menu` AS `adme`
+        INNER JOIN <include refid="database"/>`admin_menu_name` AS `admena`
+            ON (    `adme`.`idx` = `admena`.`menu_idx`
+                AND `admena`.`lang` = 'ko' )
+        WHERE
+            `adme`.`idx` = #{idx}
+        LIMIT 1
+    </select>
+
+    <!-- 현 메뉴의 다음 순서 메뉴 정보 조회 -->
+    <select id="getNextMenu" parameterType="MenuDto" resultType="MenuDto">
+        SELECT
+            <include refid="menuColumns" />
+        FROM <include refid="database" />`admin_menu` AS `adme`
+        INNER JOIN <include refid="database"/>`admin_menu_name` AS `admena`
+            ON (    `adme`.`idx` = `admena`.`menu_idx`
+            AND `admena`.`lang` = 'ko' )
+        WHERE
+                `adme`.`parent` = 0
+            AND `adme`.`sort` <![CDATA[ > ]]> #{sort}
+        ORDER BY `adme`.`sort` ASC
+        LIMIT  1
+    </select>
+
+    <!-- 현 메뉴의 이전 순서 메뉴 정보 조회 -->
+    <select id="getPrevMenu" parameterType="MenuDto" resultType="MenuDto">
+        SELECT
+            <include refid="menuColumns" />
+        FROM <include refid="database" />`admin_menu` AS `adme`
+        INNER JOIN <include refid="database"/>`admin_menu_name` AS `admena`
+            ON (    `adme`.`idx` = `admena`.`menu_idx`
+            AND `admena`.`lang` = 'ko' )
+        WHERE
+                `adme`.`parent` = 0
+            AND `adme`.`sort` <![CDATA[ < ]]> #{sort}
+        ORDER BY `adme`.`sort` DESC
+        LIMIT  1
+    </select>
+
+    <!-- 메뉴 접근 레벨 가져오기 -->
+    <select id="getMenuLevel" parameterType="MenuDto" resultType="int">
+        SELECT
+            `adme`.`level`
+        FROM <include refid="database" />`admin_menu` AS `adme`
+        WHERE
+            `adme`.`idx` = #{idx}
+        LIMIT  1
+    </select>
+
+    <!-- 현재까지 생성된 메뉴의 정렬 최대값 조회 -->
+    <select id="getMaxSort" resultType="int">
+        SELECT
+            MAX(`adme`.`sort`) AS `sort`
+        FROM <include refid="database"/>`admin_menu`  AS `adme`
+        INNER JOIN <include refid="database"/>`admin_menu_name` AS `admena`
+            ON (    `adme`.`idx` = `admena`.`menu_idx`
+            AND `admena`.`lang` = 'ko' )
+        WHERE
+            `adme`.`parent` = 0
+            AND `adme`.`state` = 1
+    </select>
+</mapper>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.notification.NotificationDaoSub">
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+
+    <!-- 알림 전체 개수 카운트 -->
+    <select id="getNotificationTotalCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(DISTINCT(`meno`.`idx`)) AS `notificationTotalCnt`
+        FROM <include refid="database" /> `member_notification` AS `meno`
+        JOIN <include refid="database" /> `member` AS `me`
+            ON `meno`.`member_idx` = `me`.`idx`
+        <where>
+            <if test='state != null'>
+                AND `state` = #{state}
+            </if>
+            <if test="searchType != null and searchType != ''">
+                AND `category` = #{searchType}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                AND `title` LIKE #{val}
+            </if>
+        </where>
+    </select>
+
+    <!-- 회원 알림 리스트 조회 -->
+    <select id="getNotificationList" parameterType="SearchDto" resultType="NotificationDto">
+        SELECT
+            `meno`.`idx`,
+            `meno`.`member_idx`,
+            `meno`.`category`,
+            `meno`.`type`,
+            `meno`.`type_idx`,
+            `meno`.`title`,
+            `meno`.`state`,
+            IFNULL(CONVERT_TZ(`meno`.`regdate`, 'UTC', '${convertTZ}'), '') AS `regdate`,
+            IFNULL(CONVERT_TZ(`meno`.`checkdate`, 'UTC', '${convertTZ}'), '') AS `checkDate`,
+            IFNULL(CONVERT_TZ(`meno`.`deldate`, 'UTC', '${convertTZ}'), '') AS `delDate`,
+            `me`.`id`,
+            `me`.`nick`
+        FROM <include refid="database" /> `member_notification` AS `meno`
+        JOIN <include refid="database" /> `member` AS `me`
+            ON `meno`.`member_idx` = `me`.`idx`
+        <where>
+            <if test='state != null'>
+                AND `state` = #{state}
+            </if>
+            <if test="searchType != null and searchType != ''">
+                AND `category` = #{searchType}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                AND `title` LIKE #{val}
+            </if>
+        </where>
+        ORDER BY `idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 알림 상세 -->
+    <select id="getViewNotification" parameterType="Long" resultType="NotificationDto">
+        SELECT
+            `meno`.`idx`,
+            `meno`.`member_idx`,
+            `meno`.`category`,
+            `meno`.`type`,
+            `meno`.`type_idx`,
+            `meno`.`title`,
+            `meno`.`state`,
+            IFNULL(CONVERT_TZ(`meno`.`regdate`, 'UTC', '${convertTZ}'), '') AS `regdate`,
+            IFNULL(CONVERT_TZ(`meno`.`checkdate`, 'UTC', '${convertTZ}'), '') AS `checkDate`,
+            IFNULL(CONVERT_TZ(`meno`.`deldate`, 'UTC', '${convertTZ}'), '') AS `delDate`,
+            `me`.`id`,
+            `me`.`nick`
+        FROM <include refid="database" /> `member_notification` AS `meno`
+        JOIN <include refid="database" /> `member` AS `me`
+            ON `meno`.`member_idx` = `me`.`idx`
+        WHERE
+            `meno`.`idx` = #{idx}
+        LIMIT 1
+    </select>
+
+    <!-- 회원에게 전송된 공지사항 알림 idx 리스트 조회 -->
+    <select id="getNoticeAlarmIdxList" parameterType="SearchDto" resultType="Long">
+        SELECT
+            DISTINCT(`type_idx`)
+        FROM <include refid="database"/>`member_notification`
+        WHERE
+            `category` = 'notice'
+            AND `type` = 'notice'
+    </select>
+</mapper>

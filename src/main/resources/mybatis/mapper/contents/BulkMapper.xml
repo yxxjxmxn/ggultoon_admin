@@ -1,0 +1,587 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.dao.contents.BulkDao">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        INSERT
+    =============================================================== -->
+
+    <!-- 작품 대량 등록 -->
+    <insert id="registerBulkContents" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="insertedId">
+        INSERT INTO <include refid="database" />contents
+            (
+                `idx`,
+                `category_idx`,
+                `genre_idx`,
+                `title`,
+                `description`,
+                `adult`,
+                `adult_pavilion`,
+                `progress`,
+                `label`,
+                `exclusive`,
+                `publication`,
+                `revision`,
+                `sell_type`,
+                `state`,
+                `regdate`,
+                `regdate_tz`,
+                `pubdate`,
+                `pubdate_tz`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.idx},
+                #{item.categoryIdx},
+                #{item.genreIdx},
+                #{item.title},
+                #{item.description},
+                #{item.adult},
+                #{item.adultPavilion},
+                #{item.progress},
+                #{item.label},
+                #{item.exclusive},
+                #{item.publication},
+                #{item.revision},
+                #{item.sellType},
+                2,
+                #{item.regdate},
+                '${convertTZ}',
+                #{item.pubdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+    <!-- 작품 추가 정보 대량 등록 -->
+    <insert id="registerBulkInfo" parameterType="java.util.List">
+        INSERT INTO <include refid="database" />contents_info
+            (
+                `contents_idx`,
+                `view`,
+                `view_dummy`,
+                `favorite`,
+                `rating`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.idx},
+                0,
+                #{item.viewDummy},
+                0,
+                10
+            )
+        </foreach>
+    </insert>
+
+    <!-- 코드 등록 -->
+    <insert id="registerBulkCode" parameterType="java.util.List">
+        INSERT INTO <include refid="database" />code_mapping
+        (
+            `contents_idx`,
+            `code_idx`,
+            `state`,
+            `regdate`,
+            `regdate_tz`
+        )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.contentsIdx},
+                #{item.codeIdx},
+                1,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+    <!-- 연재 요일 등록 -->
+    <insert id="registerBulkWeekly" parameterType="java.util.List">
+        INSERT INTO <include refid="database" />weekly_mapping
+            (
+                `contents_idx`,
+                `weekly_idx`,
+                `state`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.contentsIdx},
+                #{item.weeklyIdx},
+                1,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+
+    <!-- 태그 등록 -->
+    <insert id="registerBulkTag" parameterType="java.util.List">
+        INSERT INTO <include refid="database" />tag_mapping
+            (
+                `contents_idx`,
+                `tag_idx`,
+                `state`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.contentsIdx},
+                #{item.tagIdx},
+                1,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+
+    <!-- 무료 회차 등록 -->
+    <insert id="registerBulkEventFree" parameterType="java.util.List">
+        INSERT INTO <include refid="database" />contents_event_free
+            (
+                `contents_idx`,
+                `free_episode_cnt`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.idx},
+                <choose>
+                    <when test='item.freeEpisodeCnt != null and item.freeEpisodeCnt != ""'>
+                        #{item.freeEpisodeCnt}
+                    </when>
+                    <otherwise>
+                        0
+                    </otherwise>
+                </choose>
+            )
+        </foreach>
+    </insert>
+
+
+    <!-- 작가 등록 -->
+    <insert id="registerAuthor" parameterType="AuthorDto" useGeneratedKeys="true" keyProperty="idx">
+        INSERT IGNORE INTO <include refid="database" />`author`
+        <set>
+            `name`          = #{name},
+            `state`         = 1,
+            `regdate`       = #{regdate},
+            `regdate_tz`    = '${convertTZ}'
+        </set>
+    </insert>
+
+
+    <!-- 작가 매핑 대량 등록 -->
+    <insert id="registerBulkAuthor" parameterType="java.util.List">
+        INSERT INTO <include refid="database" />`author_mapping`
+            (
+                `contents_idx`,
+                `author_idx`,
+                `type`,
+                `state`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.contentsIdx},
+                #{item.idx},
+                #{item.type},
+                1,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+
+    <insert id="registerBulkContentsCp" parameterType="java.util.List">
+        INSERT INTO <include refid="database" />contents_cp
+            (
+                `contents_idx`,
+                `cp_member_idx`,
+                `tax`,
+                `tax_type`,
+                `tax_code`,
+                `contract`,
+                `calculate`,
+                `calculate_app`,
+                `guarantee`,
+                `state`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.idx},
+                #{item.cpMemberIdx},
+                #{item.tax},
+                #{item.taxType},
+                #{item.taxCode},
+                #{item.contract},
+                #{item.calculate},
+                #{item.calculate},
+                #{item.guarantee},
+                1,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+    <!-- 작품 이미지 등록 -->
+    <insert id="registerBulkContentsImage" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="keyId">
+        INSERT INTO <include refid="database" />contents_img
+            (
+                `contents_idx`,
+                `parent`,
+                `path`,
+                `filename`,
+                `url`,
+                `width`,
+                `height`,
+                `type`,
+                `sort`,
+                `device`,
+                `lang`,
+                `state`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.idx},
+                #{item.parent},
+                #{item.path},
+                #{item.orgFileName},
+                #{item.fileUrl},
+                #{item.width},
+                #{item.height},
+                #{item.type},
+                #{item.sort},
+                #{item.device},
+                "ko",
+                1,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+
+    <!-- 회차 대량 등록 -->
+    <insert id="registerBulkEpisode" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="insertedId">
+        INSERT INTO <include refid="database" />episode
+            (
+                `idx`,
+                `contents_idx`,
+                `coin`,
+                `coin_rent`,
+                `episode_number`,
+                `sort`,
+                `title`,
+                `episode_type_idx`,
+                `state`,
+                `pubdate`,
+                `pubdate_tz`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.idx},
+                #{item.contentsIdx},
+                #{item.coin},
+                #{item.coinRent},
+                #{item.episodeNumber},
+                #{item.sort},
+                #{item.title},
+                #{item.episodeTypeIdx},
+                1,
+                #{item.pubdate},
+                '${convertTZ}',
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+    <!-- 회차 이벤트(할인) 등록 -->
+    <insert id="registerBulkEpisodeEventCoin" parameterType="java.util.List">
+        INSERT INTO <include refid="database" />episode_event_coin
+            (
+                `episode_idx`,
+                `event_coin`,
+                `event_coin_rent`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.idx},
+                0,
+                0,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+    <!-- 회차 추가 정보 대량 등록 -->
+    <insert id="registerBulkEpisodeInfo" parameterType="java.util.List">
+        INSERT INTO <include refid="database" />episode_info
+            (
+                `episode_idx`,
+                `view`,
+                `rating`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.idx},
+                0,
+                10
+            )
+        </foreach>
+    </insert>
+
+    <!-- 회차 썸네일 등록 -->
+    <insert id="registerBulkEpisodeImage" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="keyId">
+        INSERT INTO <include refid="database" />episode_img
+            (
+                `episode_idx`,
+                `parent`,
+                `path`,
+                `filename`,
+                `url`,
+                `width`,
+                `height`,
+                `type`,
+                `sort`,
+                `device`,
+                `lang`,
+                `state`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.idx},
+                #{item.parent},
+                #{item.path},
+                #{item.orgFileName},
+                #{item.fileUrl},
+                #{item.width},
+                #{item.height},
+                #{item.type},
+                #{item.sort},
+                #{item.device},
+                "ko",
+                1,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+
+    <!-- 뷰어 웹툰 이미지 -->
+    <insert id="registerBulkWebtoonImage" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="keyId">
+        INSERT INTO <include refid="database" />viewer_webtoon
+            (
+                `episode_idx`,
+                `parent`,
+                `path`,
+                `filename`,
+                `url`,
+                `width`,
+                `height`,
+                `sort`,
+                `device`,
+                `lang`,
+                `state`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.idx},
+                #{item.parent},
+                #{item.path},
+                #{item.orgFileName},
+                #{item.fileUrl},
+                #{item.width},
+                #{item.height},
+                #{item.sort},
+                #{item.device},
+                "ko",
+                1,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+    <!-- 뷰어 만화 이미지 -->
+    <insert id="registerBulkComicImage" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="keyId">
+        INSERT INTO <include refid="database" />viewer_comic
+            (
+                `episode_idx`,
+                `parent`,
+                `path`,
+                `filename`,
+                `url`,
+                `width`,
+                `height`,
+                `sort`,
+                `device`,
+                `lang`,
+                `state`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.idx},
+                #{item.parent},
+                #{item.path},
+                #{item.orgFileName},
+                #{item.fileUrl},
+                #{item.width},
+                #{item.height},
+                #{item.sort},
+                #{item.device},
+                "ko",
+                1,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+    <!-- 뷰어 소설 이미지 -->
+    <insert id="registerBulkNovelImage" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="keyId">
+        INSERT INTO <include refid="database" />viewer_novel_img
+            (
+                `episode_idx`,
+                `parent`,
+                `path`,
+                `filename`,
+                `url`,
+                `width`,
+                `height`,
+                `sort`,
+                `device`,
+                `lang`,
+                `state`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.idx},
+                #{item.parent},
+                #{item.path},
+                #{item.orgFileName},
+                #{item.fileUrl},
+                #{item.width},
+                #{item.height},
+                #{item.sort},
+                #{item.device},
+                "ko",
+                1,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+    <!-- 뷰어 소설 내용 등록 -->
+    <insert id="registerBulkViewerNovel" parameterType="java.util.List">
+        INSERT INTO <include refid="database" />viewer_novel
+            (
+                `episode_idx`,
+                `detail`,
+                `sort`,
+                `lang`,
+                `state`,
+                `regdate`,
+                `regdate_tz`
+            )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.episodeIdx},
+                #{item.detail},
+                #{item.sort},
+                'ko',
+                1,
+                #{item.regdate},
+                '${convertTZ}'
+            )
+        </foreach>
+    </insert>
+
+    <!-- ==============================================================
+        UPDATE
+    =============================================================== -->
+
+    <!-- 작품 마지막 회차 정보 등록 -->
+    <update id="modifyLastEpisode" parameterType="java.util.List">
+        <foreach collection="list" item="item" index="index" open="" close="" separator=";">
+            UPDATE <include refid="database" />contents
+            <set>
+                `last_episode_idx`      = #{item.idx},
+                `last_episode_title`    = #{item.lastEpisodeTitle},
+                `episode_pubdate`       = #{item.pubdate},
+                `episode_pubdate_tz`    = '${convertTZ}'
+            </set>
+            WHERE
+                `idx` = #{item.contentsIdx}
+        </foreach>
+    </update>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+    <!--
+        - 작가 등록후 조회하는 경우가 생겨 main 에서 조회
+        - 작가 관리페이지 추가 되면 이동
+    -->
+    <select id="getAuthor" parameterType="String" resultType="Integer">
+        SELECT
+            au.idx
+        FROM <include refid="database" />author AS au
+        <where>
+                au.`name` = #{name}
+            AND au.`state` = 1
+        </where>
+    </select>
+
+
+</mapper>

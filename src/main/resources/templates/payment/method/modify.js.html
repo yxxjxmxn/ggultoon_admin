@@ -1,0 +1,106 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        paymentMethod.modifyView();
+    });
+
+    let paymentMethod = {
+
+        // 수정할 결제 수단 정보 조회
+        modifyView: function () {
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/payments/methods/[[${idx}]]',
+                method: 'GET',
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        if (res.data != undefined) {
+
+                            // 사용 상태 세팅
+                            if (res.data.state == 1) {
+                                $("input:checkbox[id='state']").prop("checked", true);
+                            }
+
+                            // 결제 방식 세팅
+                            if (res.data.autoPay == 0) {
+                                $("input:radio[name ='autoPay']:input[value='0']").attr("checked", true);
+                            } else if (res.data.autoPay == 1) {
+                                $("input:radio[name ='autoPay']:input[value='1']").attr("checked", true);
+                            }
+
+                            // 결제 수단 상세 정보 폼
+                            $("td[name=idx]").text(res.data.idx||"");
+                            $("td[name=pgName]").html(`<input type="text" name="pgName" id="pgName" class="form-control form-control-sm" value="${res.data.pgName||""}">`);
+                            $("td[name=mchtId]").html(`<input type="text" name="mchtId" id="mchtId" class="form-control form-control-sm" value="${res.data.mchtId||""}">`);
+                            $("td[name=licenseKey]").html(`<input type="text" name="licenseKey" id="licenseKey" class="form-control form-control-sm" value="${res.data.licenseKey||""}">`);
+                            $("td[name=aes256Key]").html(`<input type="text" name="aes256Key" id="aes256Key" class="form-control form-control-sm" value="${res.data.aes256Key||""}">`);
+                            $("td[name=method]").html(`<input type="text" name="method" id="method" class="form-control form-control-sm" value="${res.data.method||"-"}">`);
+                            $("td[name=methodType]").html(`<input type="text" name="methodType" id="methodType" class="form-control form-control-sm" value="${res.data.methodType||"-"}">`);
+                            $("td[name=corpPayCode]").html(`<input type="text" name="corpPayCode" id="corpPayCode" class="form-control form-control-sm" value="${res.data.corpPayCode||""}">`);
+                            $("td[name=methodNoti]").html(`<input type="text" name="methodNoti" id="methodNoti" class="form-control form-control-sm" value="${res.data.methodNoti||""}">`);
+                            $("td[name=mchtName]").html(`<input type="text" name="mchtName" id="mchtName" class="form-control form-control-sm" value="${res.data.mchtName||""}">`);
+                            $("td[name=mchtEName]").html(`<input type="text" name="mchtEName" id="mchtEName" class="form-control form-control-sm" value="${res.data.mchtEName||""}">`);
+                            $("td[name=notiUrl]").html(`<textarea name="notiUrl" id="notiUrl" class="form-control form-control-sm">${res.data.notiUrl||""}`);
+                            $("td[name=paymentServer]").html(`<textarea name="paymentServer" id="paymentServer" class="form-control form-control-sm">${res.data.paymentServer||""}`);
+                            $("td[name=cancelServer]").html(`<textarea name="cancelServer" id="cancelServer" class="form-control form-control-sm">${res.data.cancelServer||""}`);
+                            $("td[name=info]").html(`<input type="text" name="info" id="info" class="form-control form-control-sm" value="${res.data.info||""}">`);
+                            $("td[name=regdate]").text(res.data.regdate||"");
+
+                        } else {
+                            // 결과 없음
+                            toast.alert(res.message);
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        },
+        // 결제 수단 수정
+        modify: function () {
+
+            let modifyConfirmMessage = `[[#{lang.payment.method.confirm.modify}]]`;
+
+            if (confirm(modifyConfirmMessage)) {
+
+                let form = $("#modifyForm")[0];
+                let formData = new FormData(form);
+                if($("input:checkbox[name='state']:checked").val() == null) {
+                    formData.append("state", 2);
+                }
+
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/payments/methods/[[${idx}]]',
+                    method: "PUT",
+                    data: formData,
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            toast.alert(res.message);
+                            opener.location.reload();
+                            self.close();
+                        } else {
+                            // 수정 실패
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+                return false;
+            }
+        }
+    }
+</script>

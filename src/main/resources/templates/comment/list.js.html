@@ -1,0 +1,122 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        let page = "[[${page}]]";
+        contents.list(page);
+    });
+
+    let text = {
+        btn : {
+            content : "[[#{lang.contents.button.content.comment}]]",
+            episode : "[[#{lang.contents.button.episode.comment}]]"
+        }
+    }
+
+    let contents = {
+
+        // 작품 목록
+        list : function (page = 1) {
+            if (page != undefined) {
+                $("input[name=page]").val(page);
+            }
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/comments/contents',
+                method: 'GET',
+                data : $("#frm").serialize(),
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+
+                        //페이지 url 갱신 ( 검색 후 새로고침 시 검색값 유지 )
+                        if( window.location.search !== "?"+ $("#frm").serialize() ){
+                            history.pushState(null, null, "?" + $("#frm").serialize());
+                        }
+
+                        // total count
+                        $(".totalCount").next().text(res.data.params.pagination.totalRecordCount + "건");
+
+                        if (res.data.list.length > 0) {
+
+                            // list
+                            let listTbody = "";
+                            $.each(res.data.list, function (idx, el) {
+
+                                // 대표 이미지
+                                let imgUrl = "";
+                                if (el.imageList.length > 0) {
+                                    let imageIdx = (el.imageList).findIndex(function(key) {return key["type"] =="height"});
+                                    if (imageIdx >= 0) {
+                                        imgUrl = el.imageList[imageIdx].url;
+                                    }
+                                }
+
+                                listTbody += `
+                                    <tr>
+                                        <td class="text-center">${el.idx}</td>
+                                        <td class="text-center"><img src="${imgUrl}" style="max-height:100px; max-width:200px"></td>
+                                        <td class="text-center"><a href="[[${SERVER.currentDomain}]]/contents/view/${el.idx}">${el.title}</a></td>
+                                        <td class="text-center"><span class="badge ${el.stateBg}">${el.stateText}</span></td>
+                                        <td class="text-center"><span class="badge ${el.adultBg}">${el.adultText}</span></td>
+                                        <td class="text-center"><span class="badge ${el.adultPavilionBg}">${el.adultPavilionText}</span></td>
+                                        <td class="text-center">${el.categoryName}</td>
+                                        <td class="text-center">${el.genreName}</td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-success p-1 rounded" onclick="contents.view(${el.idx}, ${el.commentCnt});">${text.btn.content}(${el.commentCnt + "개"})</button>
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-success p-1 rounded" onclick="contents.episodeList(${el.idx});">${text.btn.episode}</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+                            $("#lists tbody").html(listTbody);
+
+                            // paging - common.js
+                            pagination("contents", res.data.params.page, res.data.params.pagination);
+                        } else {
+                            // 결과 없음
+                            let listTbody = `<tr><td colspan="11" class="text-center">${res.message}</td></tr>`;
+                            $("#lists tbody").html(listTbody);
+                            $(".pagination").html("");
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        },
+        // 작품 댓글 목록
+        view : function (idx, commentCnt) {
+
+            if (commentCnt > 0) { // 댓글이 있는 경우
+                location.href = '[[${SERVER.currentDomain}]]/comments/contents/' + idx;
+
+            } else {
+                let searchFailMessage = `[[#{lang.comment.exception.search.comment.empty}]]`; // 조회할 댓글이 없습니다.
+                toast.alert(searchFailMessage);
+            }
+        },
+        // 새로고침 버튼
+        reset: function () {
+            location.href = '[[${SERVER.currentDomain}]]/comments/contents';
+        },
+        // 회차 목록
+        episodeList : function (idx) {
+            location.href = '[[${SERVER.currentDomain}]]/comments/contents/' + idx + '/episodes';
+            return false;
+        }
+    }
+
+    // 뒤로가기 이벤트 시 실행
+    $(window).on('popstate', function(event) {
+        window.location = document.location.href;
+    });
+</script>

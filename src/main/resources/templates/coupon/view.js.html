@@ -1,0 +1,310 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        coupon.view();
+        date.dateTimePicker();
+    });
+
+    let text = {
+        idx : "[[#{lang.coupon.store.idx}]]", // 번호
+        title : "[[#{lang.coupon.store.name}]]", // 업체명
+        type : "[[#{lang.coupon.store.type}]]", // 업체 유형
+        placeholder : "[[#{lang.coupon.placeholder.search.store.idx}]]", // 업체 IDX 입력
+        btn : {
+            search : "[[#{lang.coupon.button.search}]]" // 검색
+        },
+        searchFail : "[[#{lang.coupon.exception.search.fail}]]" // 검색 결과가 없습니다.
+    }
+
+    let coupon = {
+        // 쿠폰 상세
+        view: function () {
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/coupons/[[${idx}]]',
+                method: 'GET',
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        if (res.data != undefined && !jQuery.isEmptyObject(res.data)) {
+
+                            // 쿠폰 상태 세팅
+                            if (res.data.state == 1) {
+                                $("input:checkbox[id='state']").prop("checked", true);
+                            }
+
+                            // 쿠폰 업체 정보 세팅
+                            let storeBody = `
+                                <div class="input-group input-group-sm p-0">
+                                    <input type="number" name="storeIdx" id="storeIdx" class="form-control form-control-sm" value="${res.data.storeIdx||"-"}">
+                                    <button type="button" id="searchBtn" onclick="coupon.viewStore();" class="btn btn-success">` + text.btn.search + `</button>
+                                    <button type="button" class="btn btn-outline-success" onclick="coupon.reset();"><i class="fa-solid fa-rotate-left"></i></button>
+                                </div>
+                            `;
+
+                            // 쿠폰 상세 정보 폼
+                            $("td[name=idx]").text(res.data.idx||"-");
+                            $("td[name=progress]").html(`<span class="badge ${res.data.progressBg}">${res.data.progressText}</span>`);
+                            $("td[name=title]").html(`<input type="text" name="title" id="title" class="form-control form-control-sm" value="${res.data.title||"-"}">`);
+                            $("td[name=code]").html(`<input type="text" name="code" id="code" class="form-control form-control-sm" value="${res.data.code||"-"}">`);
+                            $("input:radio[name=duplication]:radio[value='"+res.data.duplication+"']").prop("checked", true);
+                            $("input:radio[name=type]:radio[value='"+res.data.type+"']").prop("checked", true);
+                            $("td[name=couponCnt]").html(`<input type="number" name="couponCnt" id="couponCnt" class="form-control form-control-sm" value="${res.data.couponCnt}">`);
+                            $("td[name=mileage]").html(`<input type="number" name="mileage" id="mileage" class="form-control form-control-sm" value="${res.data.mileage}">`);
+                            $("td[name=period]").html(`<input type="number" name="period" id="period" class="form-control form-control-sm" value="${res.data.period}">`);
+                            $("td[name=totalCoupon]").text(res.data.totalCoupon);
+                            $("td[name=totalMileage]").text(res.data.totalMileage);
+                            $("td[name=storeInfo]").html(storeBody);
+                            $("td[name=name]").text(res.data.name||"-");
+                            $("td[name=storeType]").html(`<span class="badge ${res.data.storeTypeBg}">${res.data.storeTypeText}</span>`);
+                            $("input[name=searchStartDate]").val(res.data.startDate||"-");
+                            $("input[name=searchEndDate]").val(res.data.endDate||"-");
+                            $("td[name=regdate]").text(res.data.regdate||"-");
+
+                        } else {
+                            // 결과 없음
+                            toast.alert(res.message);
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+
+            return false;
+        },
+        // 검색한 쿠폰 업체 상세
+        viewStore: function () {
+
+            // 쿠폰 업체 idx set
+            let storeIdx = $("input[name=storeIdx]").val();
+            if (storeIdx != "") {
+
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/coupons/stores/' + storeIdx,
+                    method: 'GET',
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            if (res.data != undefined && !jQuery.isEmptyObject(res.data)) {
+
+                                // 검색한 쿠폰 업체 상세 정보 세팅
+                                $("td[name=name]").text(res.data.name||"-");
+                                $("td[name=storeType]").html(`<span class="badge ${res.data.typeBg}">${res.data.typeText}</span>`);
+
+                            } else {
+                                toast.alert(res.message);
+                                coupon.reset();
+                            }
+                        } else {
+                            // ajax exception error
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+                return false;
+            }
+        },
+        // 검색어 초기화
+        reset: function () {
+            $("input[name=storeIdx]").val("");
+            $("td[name=name]").text("");
+            $("td[name=storeType]").html("");
+        },
+        // 쿠폰 삭제
+        delete: function () {
+
+            let deleteConfirmMessage = `[[#{lang.coupon.confirm.delete}]]`;
+            if (confirm(deleteConfirmMessage)) {
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/coupons/[[${idx}]]',
+                    method: "DELETE",
+                    data: '',
+                    dataType: 'json',
+                    processData: false,
+                    contentType: "application/json",
+                    success: function (res) {
+                        if (res.result) {
+                            // 삭제 성공
+                            toast.alert(res.message);
+                            opener.location.reload();
+                            self.close();
+                        } else {
+                            // 삭제 실패
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+                return false;
+            }
+        },
+        // 쿠폰 수정
+        modify: function () {
+
+            let modifyConfirmMessage = `[[#{lang.coupon.confirm.modify}]]`;
+            if (confirm(modifyConfirmMessage)) {
+
+                let form = $("#frm")[0];
+                let formData = new FormData(form);
+
+                // 쿠폰 상태 선택값 세팅
+                let state = $("input:checkbox[name='state']:checked").val();
+                if (state == null || state == undefined) {
+                    formData.set("state", 2);
+                }
+
+                // 쿠폰 중복 여부 세팅(기본값 : 중복)
+                if ($("input:radio[name='duplication']:checked").val() == null) {
+                    formData.set("type", 1);
+                }
+
+                // 쿠폰 종류 세팅
+                if ($("input:radio[name='type']:checked").val() == null) {
+                    formData.set("type", 1);
+                }
+
+                // 쿠폰 사용 기간 세팅
+                formData.set("startDate", $("#searchStartDate").val());
+                formData.set("endDate", $("#searchEndDate").val());
+
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/coupons/[[${idx}]]',
+                    method: "PUT",
+                    data: formData,
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            // 수정 성공
+                            toast.alert(res.message);
+                            opener.location.reload();
+                            self.close();
+                        } else {
+                            // 수정 실패
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+                return false;
+            }
+        }
+    }
+
+    /** 날짜 관련 객체 **/
+    let date = {
+        // YYYY-MM-DD 형태로 변환
+        getFormatDate: (input) => {
+            let formatDate = "";
+            if (input != null) {
+                const year = input.slice(0, 4);
+                const month = input.slice(5, 7);
+                const day = input.slice(8, 10);
+                let dateArr = new Array();
+                dateArr.push(year);
+                dateArr.push(month);
+                dateArr.push(day);
+                formatDate = dateArr.join("-");
+            }
+            return formatDate;
+        },
+        dateTimePicker : () => {
+            // 언어 설정 : 한국어
+            jQuery.datetimepicker.setLocale('kr');
+
+            // 시작일 datetimepicker 생성
+            $("#searchStartDate").datetimepicker({
+                // 언어 설정 : 한국어
+                i18n:{
+                    kr:{
+                        months:[
+                            '1월','2월','3월','4월',
+                            '5월','6월','7월','8월',
+                            '9월','10월','11월','12월',
+                        ],
+                        dayOfWeek:[
+                            "일", "월", "화", "수",
+                            "목", "금", "토",
+                        ]
+                    }
+                },
+                format: "Y-m-d H:00:00",
+                autocomplete: "off",
+                minDate: 0, // 오늘 이후 날짜부터 선택 가능
+                onSelect: function() {
+                    let startDate = $("#searchStartDate").val();
+                    $("#searchStartDate").val(startDate);
+                },
+                beforeShow: function() {
+                    setTimeout(function(){
+                        $('.ui-datepicker').css('z-index', 99999999999999);
+                    }, 0);
+                },
+                onShow: function (ct) {
+                    this.setOptions({
+                        // 종료일의 선택할 수 있는 최소 날짜(minDate)를 선택한 시작일로 지정
+                        maxDate: $("#searchEndDate").val() ? $("#searchEndDate").val() : false
+                    })
+                }
+            }).on('changeDate', function(e){
+                $(this).datetimepicker('hide');
+            });
+
+            // 종료일 datetimepicker 생성
+            $("#searchEndDate").datetimepicker({
+                // 언어 설정 : 한국어
+                i18n:{
+                    kr:{
+                        months:[
+                            '1월','2월','3월','4월',
+                            '5월','6월','7월','8월',
+                            '9월','10월','11월','12월',
+                        ],
+                        dayOfWeek:[
+                            "일", "월", "화", "수",
+                            "목", "금", "토",
+                        ]
+                    }
+                },
+                format: "Y-m-d H:00:00",
+                autocomplete: "off",
+                onSelect: function() {
+                    let endDate = $("#searchEndDate").val();
+                    $("#searchEndDate").val(endDate);
+                },
+                beforeShow: function() {
+                    setTimeout(function(){
+                        $('.ui-datepicker').css('z-index', 99999999999999);
+                    }, 0);
+                },
+                onShow: function (ct) {
+                    this.setOptions({
+                        // 시작일의 선택할 수 있는 최대 날짜(maxDate)를 선택한 종료일로 지정
+                        minDate: $("#searchStartDate").val() ? $("#searchStartDate").val() : false
+                    })
+                }
+            }).on('changeDate', function(e){
+                $(this).datetimepicker('hide');
+            });
+        }
+    }
+</script>

@@ -1,0 +1,54 @@
+<th:block layout:decorate="~{common/layout_popup_nomenu}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="container-fluid">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" th:text="#{lang.curation.title.content.modify}"></h5>
+            </div>
+            <div class="card-body row">
+                <form id="modifyForm" onsubmit="curation.list(1); return false;" accept-charset="utf-8">
+                    <table class="table">
+                        <thead></thead>
+                        <tbody>
+                        <tr>
+                            <td>
+                                <div class="row p-0">
+                                    <div class="col-auto input-group input-group-sm p-0">
+
+                                        <!-- 검색 조건 -->
+                                        <select name="searchType" class="form-select form-select-sm col-3">
+                                            <option value="" th:text="#{lang.curation.search}"></option>
+                                            <option value="idx" th:text="#{lang.curation.idx}"></option>
+                                            <option value="title" th:text="#{lang.curation.title}"></option>
+                                        </select>
+
+                                        <!-- 검색어 -->
+                                        <input type="text" name="searchWord" class="form-control text-center col-8 rounded-right" th:placeholder="#{lang.curation.placeholder.search.word}">
+
+                                        <!-- 검색버튼 -->
+                                        <button type="button" id="searchBtn" class="btn btn-success ml-1 pr-3 pl-3" th:text="#{lang.curation.button.search}" onclick="curation.list(1)"></button>
+                                        <button type="button" class="btn btn-outline-success" onclick="curation.reset();"><i class="fa-solid fa-rotate-left"></i></button>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </form>
+
+                <!-- list -->
+                <table class="table table-hover" id="lists">
+                    <div class="text-left" id="totalCount"></div>
+                    <tbody></tbody>
+                </table>
+                <th:block layout:fragment="paging">
+                    <div class="col-md-12 d-flex flex-row-reverse my-3">
+                        <ul class="pagination" style="font-size: 12px;">
+                        </ul>
+                    </div>
+                </th:block>
+            </div>
+        </div>
+        <!-- //컨텐츠 영역 -->
+    </div>
+</th:block>

@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.report.ReportDaoSub">
+    <!-- ==============================================================
+           SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        작품 신고 내역
+    =============================================================== -->
+
+    <!-- 작품 신고 내역 전체 개수 카운트 -->
+    <select id="getReportContentTotalCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(DISTINCT(`core`.`idx`)) AS reportContentCnt
+        FROM <include refid="database"/>`contents_report` AS `core`
+        JOIN <include refid="database" />`member` AS `me`
+            ON `core`.`member_idx` = `me`.`idx`
+        JOIN <include refid="database" />`contents` AS `co`
+            ON `core`.`contents_idx` = `co`.`idx`
+        <where>
+            <choose>
+                <when test="state != null">
+                    AND `core`.`state` = #{state}
+                </when>
+                <otherwise>
+                    AND `core`.`state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test="searchWord != '' and searchWord != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'title'">
+                        AND `co`.`title` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 작품 신고 내역 조회 -->
+    <select id="getReportContentList" parameterType="SearchDto" resultType="ReportContentDto">
+        SELECT
+            `core`.`idx`,
+            `me`.`idx` AS `memberIdx`,
+            `me`.`id`,
+            `me`.`nick`,
+            `co`.`idx` AS `contentsIdx`,
+            `co`.`title`,
+            `co`.`state` AS `status`,
+            `core`.`state`,
+            CONVERT_TZ(`core`.`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database"/>`contents_report` AS `core`
+        JOIN <include refid="database" />`member` AS `me`
+            ON `core`.`member_idx` = `me`.`idx`
+        JOIN <include refid="database" />`contents` AS `co`
+            ON `core`.`contents_idx` = `co`.`idx`
+        <where>
+            <choose>
+                <when test="state != null">
+                    AND `core`.`state` = #{state}
+                </when>
+                <otherwise>
+                    AND `core`.`state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test="searchWord != '' and searchWord != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'title'">
+                        AND `co`.`title` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+        ORDER BY `core`.`idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 유효한 작품 신고 내역 idx인지 조회 -->
+    <select id="getReportContentIdxCnt" parameterType="Integer" resultType="_int">
+        SELECT
+            COUNT(`idx`) AS reportContentIdxCnt
+        FROM <include refid="database"/>`contents_report`
+        WHERE
+            `idx` = #{idx}
+            AND `state` IN (1,2)
+    </select>
+
+    <!-- ==============================================================
+        작품 댓글 신고 내역
+    =============================================================== -->
+
+    <!-- 작품 댓글 신고 내역 전체 개수 카운트 -->
+    <select id="getReportContentCommentTotalCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(DISTINCT(`cocore`.`idx`)) AS reportContentCommentCnt
+        FROM <include refid="database"/>`contents_comment_report` AS `cocore`
+        JOIN <include refid="database" />`contents_comment` AS `coco`
+            ON `cocore`.`comment_idx` = `coco`.`idx`
+        JOIN <include refid="database" />`member` AS `member`
+            ON `cocore`.`member_idx` = `member`.`idx`
+        JOIN <include refid="database" />`member` AS `me`
+            ON `coco`.`member_idx` = `me`.`idx`
+        <where>
+            <choose>
+                <when test="state != null">
+                    AND `cocore`.`state` = #{state}
+                </when>
+                <otherwise>
+                    AND `cocore`.`state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test="searchWord != '' and searchWord != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'content'">
+                        AND `coco`.`content` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 작품 댓글 신고 내역 조회 -->
+    <select id="getReportContentCommentList" parameterType="SearchDto" resultType="ReportContentCommentDto">
+        SELECT
+            `cocore`.`idx`,
+            `cocore`.`member_idx` AS `reporterIdx`,
+            `member`.`id` AS `reporterId`,
+            IFNULL(`member`.`nick`,'-') AS `reporterNick`,
+            `coco`.`parent_idx` AS `type`,
+            `coco`.`member_idx` AS `writerIdx`,
+            `me`.`id` AS `writerId`,
+            IFNULL(`me`.`nick`,'-') AS `writerNick`,
+            `coco`.`content`,
+            `coco`.`state` AS `status`,
+            `coco`.`view`,
+            `cocore`.`state`,
+            CONVERT_TZ(`cocore`.`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database"/>`contents_comment_report` AS `cocore`
+        JOIN <include refid="database" />`contents_comment` AS `coco`
+            ON `cocore`.`comment_idx` = `coco`.`idx`
+        JOIN <include refid="database" />`member` AS `member`
+            ON `cocore`.`member_idx` = `member`.`idx`
+        JOIN <include refid="database" />`member` AS `me`
+            ON `coco`.`member_idx` = `me`.`idx`
+        <where>
+            <choose>
+                <when test="state != null">
+                    AND `cocore`.`state` = #{state}
+                </when>
+                <otherwise>
+                    AND `cocore`.`state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test="searchWord != '' and searchWord != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'content'">
+                        AND `coco`.`content` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+        ORDER BY `cocore`.`idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 유효한 작품 댓글 신고 내역 idx인지 조회 -->
+    <select id="getReportContentCommentIdxCnt" parameterType="Integer" resultType="_int">
+        SELECT
+            COUNT(`idx`) AS reportContentCommentIdxCnt
+        FROM <include refid="database"/>`contents_comment_report`
+        WHERE
+            `idx` = #{idx}
+            AND `state` IN (1,2)
+    </select>
+
+    <!-- ==============================================================
+        회차 댓글 신고 내역
+    =============================================================== -->
+
+    <!-- 회차 댓글 신고 내역 전체 개수 카운트 -->
+    <select id="getReportEpisodeCommentTotalCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(DISTINCT(`epcore`.`idx`)) AS reportEpisodeCommentCnt
+        FROM <include refid="database"/>`episode_comment_report` AS `epcore`
+        JOIN <include refid="database" />`episode_comment` AS `epco`
+            ON `epcore`.`comment_idx` = `epco`.`idx`
+        JOIN <include refid="database" />`member` AS `member`
+            ON `epcore`.`member_idx` = `member`.`idx`
+        JOIN <include refid="database" />`member` AS `me`
+            ON `epco`.`member_idx` = `me`.`idx`
+        <where>
+            <choose>
+                <when test="state != null">
+                    AND `epcore`.`state` = #{state}
+                </when>
+                <otherwise>
+                    AND `epcore`.`state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test="searchWord != '' and searchWord != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'content'">
+                        AND `epco`.`content` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 회차 댓글 신고 내역 조회 -->
+    <select id="getReportEpisodeCommentList" parameterType="SearchDto" resultType="ReportEpisodeCommentDto">
+        SELECT
+            `epcore`.`idx`,
+            `epcore`.`member_idx` AS `reporterIdx`,
+            `member`.`id` AS `reporterId`,
+            IFNULL(`member`.`nick`,'-') AS `reporterNick`,
+            `epco`.`parent_idx` AS `type`,
+            `epco`.`member_idx` AS `writerIdx`,
+            `me`.`id` AS `writerId`,
+            IFNULL(`me`.`nick`,'-') AS `writerNick`,
+            `epco`.`state` AS `status`,
+            `epco`.`view`,
+            `epco`.`content`,
+            `epcore`.`state`,
+            CONVERT_TZ(`epcore`.`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database"/>`episode_comment_report` AS `epcore`
+        JOIN <include refid="database" />`episode_comment` AS `epco`
+            ON `epcore`.`comment_idx` = `epco`.`idx`
+        JOIN <include refid="database" />`member` AS `member`
+            ON `epcore`.`member_idx` = `member`.`idx`
+        JOIN <include refid="database" />`member` AS `me`
+            ON `epco`.`member_idx` = `me`.`idx`
+        <where>
+            <choose>
+                <when test="state != null">
+                    AND `epcore`.`state` = #{state}
+                </when>
+                <otherwise>
+                    AND `epcore`.`state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test="searchWord != '' and searchWord != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'content'">
+                        AND `epco`.`content` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+        ORDER BY `epcore`.`idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 유효한 회차 댓글 신고 내역 idx인지 조회 -->
+    <select id="getReportEpisodeCommentIdxCnt" parameterType="Integer" resultType="_int">
+        SELECT
+            COUNT(`idx`) AS reportEpisodeCommentIdxCnt
+        FROM <include refid="database"/>`episode_comment_report`
+        WHERE
+            `idx` = #{idx}
+            AND `state` IN (1,2)
+    </select>
+
+</mapper>

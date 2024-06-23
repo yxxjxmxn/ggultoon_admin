@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.dao.banner.BannerDao">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        INSERT
+    =============================================================== -->
+
+    <!-- 배너 등록 -->
+    <insert id="register" parameterType="BannerDto" useGeneratedKeys="true" keyProperty="insertedId">
+        INSERT INTO <include refid="database" />`banner`
+        <set>
+            `title`         = #{title},
+            `code`          = #{code},
+            `adult_pavilion`= #{adultPavilion},
+            `link`          = #{link},
+            `sort`          = #{sort},
+            `state`         = #{state},
+            `start_date`    = #{startDate},
+            `start_date_tz` = '${convertTZ}',
+            `end_date`      = #{endDate},
+            `end_date_tz`   = '${convertTZ}',
+            `regdate`       = #{regdate},
+            `regdate_tz`    = '${convertTZ}'
+        </set>
+    </insert>
+
+    <!-- 배너 위치 등록 -->
+    <insert id="registerTypeMapping" parameterType="BannerDto">
+        INSERT INTO <include refid="database" />banner_mapping
+        (
+            `banner_idx`,
+            `type`,
+            `state`,
+            `regdate`,
+            `regdate_tz`
+        )
+        VALUES
+        <foreach collection="type" item="item" separator=",">
+        (
+            #{bannerIdx},
+            #{item},
+            1,
+            #{regdate},
+            '${convertTZ}'
+        )
+        </foreach>
+    </insert>
+
+    <!-- 배너 위치 등록(장르) -->
+    <insert id="registerGenreMapping" parameterType="BannerDto">
+        INSERT INTO <include refid="database" />banner_mapping
+        (
+            `banner_idx`,
+            `category_idx`,
+            `genre_idx`,
+            `state`,
+            `regdate`,
+            `regdate_tz`
+        )
+        VALUES
+        <foreach collection="genre" item="item" separator=",">
+        (
+            #{bannerIdx},
+            #{categoryIdx},
+            #{item},
+            1,
+            #{regdate},
+            '${convertTZ}'
+        )
+        </foreach>
+    </insert>
+
+    <!-- 배너 위치 삭제 -->
+    <update id="deleteTypeMapping" parameterType="java.util.List">
+        <foreach collection="list" item="item" index="index" open="" close="" separator=";">
+            UPDATE <include refid="database" />`banner_mapping`
+            <set>
+                `state` = #{item.state}
+            </set>
+            WHERE
+                    `banner_idx` = #{item.bannerIdx}
+                AND `type` = #{item.type}
+        </foreach>
+    </update>
+
+    <!-- 배너 위치 삭제 - 장르 -->
+    <update id="deleteGenreMapping" parameterType="java.util.List">
+        <foreach collection="list" item="item" index="index" open="" close="" separator=";">
+            UPDATE <include refid="database" />`banner_mapping`
+            <set>
+                `state` = #{item.state}
+            </set>
+            WHERE
+                    `banner_idx` = #{item.bannerIdx}
+                AND `category_idx` = #{item.categoryIdx}
+                AND `genre_idx` = #{item.genreIdx}
+        </foreach>
+    </update>
+
+    <!-- 배너 이미지 등록 -->
+    <insert id="registerImage" parameterType="java.util.List">
+        INSERT INTO <include refid="database" />banner_img
+        (
+            `banner_idx`,
+            `img_type`,
+            `path`,
+            `filename`,
+            `url`,
+            `lang`,
+            `state`,
+            `regdate`,
+            `regdate_tz`
+        )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+        (
+            #{item.idx},
+            #{item.type},
+            #{item.path},
+            #{item.orgFileName},
+            #{item.fileUrl},
+            "ko",
+            1,
+            #{item.regdate},
+            '${convertTZ}'
+        )
+        </foreach>
+    </insert>
+
+    <!-- 배너 수정 -->
+    <update id="modify" parameterType="BannerDto">
+        UPDATE <include refid="database" />`banner`
+        <set>
+            `title`         = #{title},
+            `code`          = #{code},
+            `adult_pavilion`= #{adultPavilion},
+            `link`          = #{link},
+            `sort`          = #{sort},
+            `state`         = #{state},
+            `start_date`    = #{startDate},
+            `start_date_tz` = '${convertTZ}',
+            `end_date`      = #{endDate},
+            `end_date_tz`   = '${convertTZ}',
+        </set>
+        WHERE
+            idx = #{idx}
+    </update>
+
+    <!-- 배너 이미지 삭제 -->
+    <update id="deleteImage" parameterType="hashmap">
+        UPDATE <include refid="database" />banner_img
+        <set>
+            `state` = 0
+        </set>
+        WHERE
+            <choose>
+                <when test="idx != null">
+                    `idx` = #{idx}
+                </when>
+                <otherwise>
+                    `banner_idx` = #{bannerIdx}
+                AND `img_type` = #{imgType}
+                </otherwise>
+            </choose>
+    </update>
+
+</mapper>

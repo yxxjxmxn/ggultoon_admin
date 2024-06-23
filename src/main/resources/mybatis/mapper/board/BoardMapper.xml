@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.dao.board.BoardDao">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        INSERT
+    =============================================================== -->
+
+    <!-- 공지사항 상세 정보 등록 -->
+    <insert id="registerNoticeInfo" parameterType="NoticeDto" useGeneratedKeys="true" keyProperty="insertedIdx">
+        INSERT INTO <include refid="database" /> notice
+        SET
+            `title`         = #{title},
+            `must_read`     = #{mustRead},
+            `state`         = #{state},
+            `regdate`       = #{regdate},
+            `regdate_tz`    = '${convertTZ}'
+    </insert>
+
+    <!-- 공지사항 내용 등록 -->
+    <update id="registerNoticeContent" parameterType="NoticeDto">
+        UPDATE <include refid="database" /> notice
+        SET
+            `type`    = #{type},
+            `content` = #{content}
+        WHERE
+            `idx` = #{insertedIdx}
+    </update>
+
+    <!-- ==============================================================
+        UPDATE
+    =============================================================== -->
+
+    <!-- 공지사항 수정 -->
+    <update id="modifyNotice" parameterType="NoticeDto">
+        UPDATE <include refid="database" /> notice
+        <set>
+            `type`          = #{type},
+            `title`         = #{title},
+            `content`       = #{content},
+            `must_read`     = #{mustRead},
+            `state`         = #{state},
+            `regdate`       = #{regdate},
+            `regdate_tz`    = '${convertTZ}'
+        </set>
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+
+    <!-- ==============================================================
+        DELETE
+    =============================================================== -->
+
+    <!-- 공지사항 삭제 -->
+    <update id="deleteNotice" parameterType="Long">
+        UPDATE <include refid="database" /> notice
+        SET
+            `state` = 0
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+</mapper>

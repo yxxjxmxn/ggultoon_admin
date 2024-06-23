@@ -1,0 +1,63 @@
+<th:block layout:decorate="~{common/layout_popup_nomenu}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="container-fluid">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" name="title" th:text="#{lang.board.notice.title.view}"></h5>
+            </div>
+            <div class="card-body row">
+                <form id="frm" accept-charset="utf-8">
+                    <table class="table">
+                        <thead></thead>
+                        <tbody>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.board.notice.idx}" style="width: 20%;"></th>
+                            <td class="text-left" name="idx" id="idx"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.board.notice.state}"></th>
+                            <td>
+                                <div class="form-check form-switch" style="padding: 0; margin: 0;">
+                                    <input class="form-check-input" id="state" name="state" type="checkbox" value="1" style="margin-left:0;">
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.board.notice.mustRead}"></th>
+                            <td>
+                                <div class="form-check form-switch" style="padding: 0; margin: 0;">
+                                    <input class="form-check-input" id="mustRead" name="mustRead" type="checkbox" value="1" style="margin-left:0;">
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.board.notice.type}" style="width: 20%;"></th>
+                            <td class="text-left" name="type" id="type"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.board.notice.title}"></th>
+                            <td class="text-center" name="title" id="title"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.board.notice.content}"></th>
+                            <td class="text-center"><textarea class="w-100 p-1 rounded-1 mt-2" maxlength="1000" rows="6" name="content" id="content"></textarea></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.board.notice.regdate}"></th>
+                            <td class="text-left" name="regdate" id="regdate"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div class="form-group row">
+                        <div class="col text-center">
+                            <button type="button" name="delete" class="btn btn-sm btn-danger" onclick="notice.delete();" th:text="#{lang.board.button.delete}"></button>
+                            <button type="button" name="modify" class="btn btn-sm btn-warning" onclick="notice.modify();" th:text="#{lang.board.button.modify}"></button>
+                            <button type="button" name="close" class="btn btn-sm btn-secondary" th:onclick="|self.close()|" th:text="#{lang.board.button.close}"></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- //컨텐츠 영역 -->
+    </div>
+</th:block>

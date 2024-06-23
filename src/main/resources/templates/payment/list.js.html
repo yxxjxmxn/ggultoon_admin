@@ -1,0 +1,231 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        let page = "[[${page}]]";
+        payment.list(page);
+        date.datePicker();
+    });
+
+    let payment = {
+        // 조회
+        list: function (page = 1) {
+            if (page != undefined) {
+                $("input[name=page]").val(page);
+            }
+
+            // 검색 조건을 선택하지 않고 검색어를 입력한 경우
+            if ($("select[name=searchType]").val() == "" && $("input[name=searchWord]").val() != "") {
+                let searchFailMessage = `[[#{lang.contents.exception.search.type.empty}]]`; // 검색 조건을 설정해주세요.
+                toast.alert(searchFailMessage);
+            }
+
+            // 회원 상세페이지에서 팝업으로 열었을 경우
+            if(opener != null){
+                let memberIdx = opener.$('#idx').text();
+                $('#idx').val(memberIdx);
+            }
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/payments',
+                cache : true,
+                method: 'GET',
+                data: $("#frm").serialize(),
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+
+                    if (res.result) {
+                        // 페이지 url 갱신 ( 검색 후 새로고침 시 검색값 유지 )
+                        if( window.location.search !== "?"+ $("#frm").serialize() ){
+                            history.pushState(null, null, "?" + $("#frm").serialize());
+                        }
+
+                        if (res.data.list.length > 0) {
+
+                            // total count
+                            $(".totalCount").next().text(res.data.params.pagination.totalRecordCount + "건");
+                            // list
+                            let listTbody = "";
+                            $.each(res.data.list, function (index, el) {
+
+                                // 결제 취소 버튼 노출 여부 판단
+                                let buttonState = el.buttonState;
+
+                                listTbody +=`
+                                    <tr>
+                                        <td class="text-right">${el.idx||"-"}</td>
+                                        <td class="text-center"><span class="badge ${el.stateBg}">${el.stateText||"-"}</span></td>
+                                        <td class="text-left"><a href="[[${SERVER.currentDomain}]]/members/${el.memberIdx}">${el.id||"-"}(${el.nick||"-"})</a></td>
+                                        <td class="text-left">${el.payer||"-"}</td>
+                                        <td class="text-center"><span class="badge ${el.firstBg}">${el.firstText||"-"}</span></td>
+                                        <td class="text-center">${el.app||"-"}</td>
+                                        <td class="text-right">${payment.comma(Math.floor(el.pay))}</td>
+                                        <td class="text-center">${el.payTypeText||"-"}</td>
+                                        <td class="text-right">${payment.comma(Math.floor(el.coin))}</td>
+                                        <td class="text-right">${payment.comma(Math.floor(el.usedCoin))}</td>
+                                        <td class="text-right">${payment.comma(Math.floor(el.restCoin))}</td>
+                                        <td class="text-right">${payment.comma(Math.floor(el.bonus))}</td>
+                                        <td class="text-right">${payment.comma(Math.floor(el.usedBonus))}</td>
+                                        <td class="text-right">${payment.comma(Math.floor(el.restBonus))}</td>
+                                        <td class="text-right">${payment.comma(Math.floor(el.mileage))}</td>
+                                        <td class="text-right">${payment.comma(Math.floor(el.usedMileage))}</td>
+                                        <td class="text-right">${payment.comma(Math.floor(el.restMileage))}</td>
+                                        <td class="text-center">${el.regdate||"-"}</td>
+                                        <td class="text-center">${el.moddate||"-"}</td>
+                                        <td class="text-center"><input type=${buttonState} id="cancelBtn" value="[[#{lang.payment.button.cancel}]]" class="btn btn-sm btn-warning" onclick="payment.delete(${el.idx})"></td>
+                                    </tr>
+                                `;
+                            });
+                            $("#lists tbody").html(listTbody);
+
+                            // paging - common.js
+                            pagination("payment", res.data.params.page, res.data.params.pagination);
+                            $.cookie("backUrl", $("#frm").serialize());
+                        } else {
+                            // total count
+                            $(".totalCount").next().text("0건");
+                            // 결과 없음
+                            let listTbody = `<tr><td colspan="19" class="text-center">${res.message}</td></tr>`;
+                            $("#lists tbody").html(listTbody);
+                            $(".pagination").html("");
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        },
+        // 엑셀
+        excel: function () {
+
+            // 엑셀로 다운로드할 데이터가 없습니다.
+            let excelDownloadFailMessage = `[[#{lang.payment.exception.excel.data.empty}]]`;
+
+            if ($(".totalCount").next().text() == '0건') {
+                toast.alert(excelDownloadFailMessage);
+            } else {
+                location.href = '[[${SERVER.currentDomain}]]/v1/payments/excel?'+$("#frm").serialize();
+            }
+        },
+        // 새로고침 버튼
+        reset: function () {
+            location.href = '[[${SERVER.currentDomain}]]/payments';
+        },
+        // 결제취소 버튼
+        delete: function (idx) {
+
+            let deleteConfirmMessage = `[[#{lang.payment.confirm.delete}]]`;
+
+            if (confirm(deleteConfirmMessage)) {
+
+                let formData = new FormData();
+                formData.set("json", idx);
+
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/payments/' + idx,
+                    method: "DELETE",
+                    data: formData,
+                    dataType: 'json',
+                    processData: false,
+                    contentType: "application/json",
+                    success: function (res) {
+                        if (res.result) {
+                            toast.alert(res.message);
+                            payment.list();
+                        } else {
+                            // 결제 취소 실패
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+
+                return false;
+            }
+        },
+        // 숫자 콤마 표시
+        comma: function (num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+    }
+
+    /** 날짜 관련 객체 **/
+    let date = {
+        // input 날짜 하이픈(-) 자동 입력
+        forMatter : (date) => {
+            $(".datePicker").on("input", () => {
+                let dateValue = date.value.replace(/[^0-9]/g, '')
+                    .replace(/^(\d{0,4})(\d{0,2})(\d{0,2})$/g, "$1-$2-$3")
+                    .replace(/(\-{1,2})$/g, "");
+                date.value = dateValue;
+            })
+        },
+        datePicker : () => {
+            // 시작일 date picker 생성
+            $("#searchStartDate").datepicker({
+                onSelect: function() {
+                    let startDate = $.datepicker.formatDate("yy-mm-dd", $(this).datepicker('getDate'));
+                    $("#searchStartDate").val(startDate);
+                },
+                onClose: function(selectedDate) {
+                    // 시작일 datepicker가 닫힐 때
+                    // 종료일의 선택할 수 있는 최소 날짜(minDate)를 선택한 시작일로 지정
+                    $("#searchEndDate").datepicker( "option", "minDate", selectedDate);
+                },
+                beforeShow: function() {
+                    setTimeout(function(){
+                        $('.ui-datepicker').css('z-index', 99999999999999);
+                    }, 0);
+                }
+            }).on('changeDate', function(e){
+                $(this).datepicker('hide');
+            });
+
+            // 종료일 date picker 생성
+            $("#searchEndDate").datepicker({
+                onSelect: function() {
+                    let endDate = $.datepicker.formatDate("yy-mm-dd", $(this).datepicker('getDate'));
+                    $("#searchEndDate").val(endDate);
+                },
+                onClose: function(selectedDate) {
+                    // 종료일 datepicker가 닫힐 때
+                    // 시작일의 선택할 수 있는 최대 날짜(maxDate)를 선택한 종료일로 지정
+                    $("#searchStartDate").datepicker( "option", "maxDate", selectedDate);
+                },
+                beforeShow: function() {
+                    setTimeout(function(){
+                        $('.ui-datepicker').css('z-index', 99999999999999);
+                    }, 0);
+                }
+            }).on('changeDate', function(e){
+                $(this).datepicker('hide');
+            });
+
+            // date picker 설정
+            $.datepicker.setDefaults({
+                dateFormat: "yy-mm-dd",
+                yearSuffix: "년",
+                monthNames: ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"],
+                monthNamesShort: ["1월", "2월", "3월", "4월", "5월", "6월","7월", "8월", "9월", "10월", "11월", "12월"],
+                dayNames: ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"],
+                dayNamesShort: ["일", "월", "화", "수", "목", "금", "토"],
+                dayNamesMin: ["일", "월", "화", "수", "목", "금", "토"],
+                showMonthAfterYear: true
+            });
+        }
+    }
+
+    // 뒤로가기 이벤트 시 실행
+    $(window).on('popstate', function(event) {
+        window.location = document.location.href;
+    });
+</script>

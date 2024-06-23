@@ -1,0 +1,278 @@
+<th:block layout:decorate="~{common/layout}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="col-lg-12 mt-3">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header" >
+                <h5 th:text="#{lang.episode.title.view}" class="font-weight-bold text-primary float-left" onclick="$('#viewerImage img').css('width','').css('max-width','').parent().clone().replaceAll( '.card-body' )"></h5>
+            </div>
+
+            <div class="card-body row">
+                <form id="frm" onsubmit="episode.register(); return false;" accept-charset="utf-8">
+
+                    <!-- 작품 정보 -->
+                    <div id="lay_cp_member">
+                        <table class="table">
+                            <colgroup>
+                                <col style="width: 20%;">
+                            </colgroup>
+                            <thead>
+                                <tr style="border:solid currentColor; border-width:2px 0px;">
+                                    <th class="table-primary border-bottom-0" colspan="2" th:text="#{lang.episode.title.sub.contents.information}"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 작품명 -->
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.episode.contents.title}"></th>
+                                    <td class="">
+                                        <div class="d-inline-block" name="category" id="category"></div>
+                                        <div class="d-inline-block" name="contentsTitle" id="contentsTitle"></div>
+                                    </td>
+                                </tr>
+                                <!-- 정산타입 -->
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.episode.contents.contract}"></th>
+                                    <td class="">
+                                        <div class="form-check form-check-inline" name="contentsContract"></div>
+                                    </td>
+                                </tr>
+                                <!-- 선택 비율 설정 -->
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.episode.contents.calculate}"></th>
+                                    <td class="">
+                                        <div name="calculate" id="calculate">[정산비율]</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- //작품 정보 -->
+
+                    <!-- 회차 정보 -->
+                    <div id="lay_information">
+                        <table class="table">
+                            <colgroup>
+                                <col style="width: 20%;">
+                            </colgroup>
+                            <thead>
+                                <tr style="border:solid currentColor; border-width:2px 0px;">
+                                    <th class="table-primary border-bottom-0" colspan="2" th:text="#{lang.episode.title.sub.information}"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.episode.idx}"></th>
+                                    <td class="">
+                                        <div id="idx"></div>
+                                        <input type="hidden" class="form-control form-control-sm" name="idx">
+                                    </td>
+                                </tr>
+                                <!-- 회차 정보 -->
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.episode.info}"></th>
+                                    <td class="">
+                                        <div class="form-check form-check-inline col-8">
+                                            <div class="col-3 text-center" style="line-height:31px; font-weight:bold; background-color:#efefef;" th:text="#{lang.episode.info.view}"></div>
+                                            <div class="col-3 text-center" style="line-height:31px;">
+                                                <div class="form-control-sm" name="view" id="view"></div>
+                                            </div>
+                                            <div class="col-3 text-center" style="line-height:31px; font-weight:bold; background-color:#efefef;" th:text="#{lang.episode.info.rating}"></div>
+                                            <div class="col-3 text-center" style="line-height:31px;">
+                                                <div class="form-control-sm" name="rating" id="rating"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- 회차 제목 -->
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.episode.title}"></th>
+                                    <td class="">
+                                        <div class="row">
+                                            <div class="col-4">
+                                                <input type="text" class="form-control form-control-sm" name="title" id="title">
+                                            </div>
+                                            <div class="col-2 text-center" style="line-height:31px; font-weight:bold; background-color:#efefef;" th:text="#{lang.episode.number}"></div>
+                                            <div class="col-2 text-center" style="line-height:31px;">
+                                                <div class="form-control-sm" name="episodeNumber" id="episodeNumber"></div>
+                                            </div>
+                                            <div class="col-2 text-center" style="line-height:31px; font-weight:bold; background-color:#efefef;" th:text="#{lang.episode.sort}"></div>
+                                            <div class="col-2 text-center" style="line-height:31px;">
+                                                <div class="form-control-sm" name="sort" id="sort"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- 상태 -->
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.episode.episode_type_idx}"></th>
+                                    <td class="">
+                                        <select class="form-select form-select-sm col-3 d-inline-block" name="episodeTypeIdx" id="episodeTypeIdx">
+                                            <option value="1">일반</option>
+                                            <option value="2">프롤로그</option>
+                                            <option value="3">에필로그</option>
+                                            <option value="4">휴재</option>
+                                            <option value="5">공지</option>
+                                            <option value="6">후기</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <!-- 오픈날짜-->
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.episode.pubdate}"></th>
+                                    <td class="">
+                                        <div class="form-check form-check-inline col-4">
+                                            <input type="text" class="form-check-input form-control form-control-sm ui-datepicker" name="pubdate" id="pubdate" autocomplete="off">
+                                            <select class="form-check-inline form-select form-select-sm col-3 text-center" name="pubTime" id="pubTime">
+                                                <option th:each="i : ${#numbers.sequence(0, 23)}" th:value="${i}" th:text="${i}"></option>
+                                            </select>
+                                            <span>시간</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- 판매가격 -->
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.episode.coin}"></th>
+                                    <td class="">
+                                        <div class="form-check form-check-inline">
+                                            <div class="col-3 text-center" style="line-height:31px; font-weight:bold; background-color:#efefef;" th:text="#{lang.episode.coin.rent}"></div>
+                                            <div class="col-3 text-center" style="line-height:31px;">
+                                                <input type="text" class="form-control form-control-sm" name="coinRent" id="coinRent" autocomplete="off">
+                                            </div>
+
+                                            <div class="col-3 text-center" style="line-height:31px; font-weight:bold; background-color:#efefef;"  th:text="#{lang.episode.coin.purchase}"></div>
+                                            <div class="col-3 text-center" style="line-height:31px;">
+                                                <input type="text" class="form-control form-control-sm" name="coin" id="coin" autocomplete="off">
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- 상태 -->
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.episode.state}"></th>
+                                    <td class="">
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="state" id="normal" value="1">
+                                            <label class="form-check-label" for="normal" th:text="#{lang.episode.state.normal}"></label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="state" id="unsold" value="0">
+                                            <label class="form-check-label" for="unsold" th:text="#{lang.episode.state.unsold}"></label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="state" id="wait" value="2">
+                                            <label class="form-check-label" for="wait" th:text="#{lang.episode.state.wait}"></label>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- 이벤트 -->
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.episode.event}"></th>
+                                    <td class="">
+                                        <div>
+                                            <div class="form-check form-check-inline col-4">
+                                                <input type="text" class="form-check-input form-control form-control-sm ui-datepicker" name="eventStartDate" id="eventStartDate" autocomplete="off">
+                                                <select class="form-check-inline form-select form-select-sm col-3 text-center" name="eventStartTime" id="eventStartTime">
+                                                    <option th:each="i : ${#numbers.sequence(0, 23)}" th:value="${i}" th:text="${i}"></option>
+                                                </select>
+                                                <span>시간</span>
+                                            </div>
+                                            <div class="form-check form-check-inline col-4">
+                                                <input type="text" class="form-check-input form-control form-control-sm ui-datepicker" name="eventEndDate" id="eventEndDate" autocomplete="off">
+                                                <select class="form-check-inline form-select form-select-sm col-3 text-center" name="eventEndTime" id="eventEndTime">
+                                                    <option th:each="i : ${#numbers.sequence(0, 23)}" th:value="${i}" th:text="${i}"></option>
+                                                </select>
+                                                <span>시간</span>
+                                            </div>
+                                        </div>
+                                        <div class="pt-2">
+                                            <div class="form-check form-check-inline">
+                                                <div class="col-3 text-center" style="line-height:31px; font-weight:bold; background-color:#efefef;">대여가격</div>
+                                                <div class="col-3 text-center" style="line-height:31px;">
+                                                    <input type="text" class="form-control form-control-sm" name="eventCoinRent" id="eventCoinRent" autocomplete="off">
+                                                </div>
+
+                                                <div class="col-3 text-center" style="line-height:31px; font-weight:bold; background-color:#efefef;">소장가격</div>
+                                                <div class="col-3 text-center" style="line-height:31px;">
+                                                    <input type="text" class="form-control form-control-sm" name="eventCoin" id="eventCoin" autocomplete="off">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- 읽는 방향 -->
+                                <tr>
+                                    <th class="text-center">읽는 방향</th>
+                                    <td class="">
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="checkArrow" id="leftArrow" value="0" checked="checked">
+                                            <label class="form-check-label" for="leftArrow">좌 -> 우</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="checkArrow" id="rightArrow" value="1">
+                                            <label class="form-check-label" for="rightArrow">우 -> 좌</label>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- 가로 썸네일 -->
+                                <tr>
+                                    <th class="text-center" th:text="#{lang.episode.image.width}"></th>
+                                    <td>
+                                        <div class="preview" id="widthImage"></div>
+
+                                        <div class="col-md-8 col-sm-9 pt-1">
+                                            <label class="py-1 px-3 rounded-2">
+                                                <input type="file" name="fileDataWidth" multiple="" accept="image/*" onchange="image.add(this, 'width');">파일 선택
+                                            </label>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- //회차 정보 -->
+
+                    <div class="form-group row" id="btnGroup">
+                        <div class="col text-center">
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="episode.list();" th:text="#{lang.contents.button.list}"></button>
+                            <button type="button" class="btn btn-sm btn-warning" onclick="episode.modify()" th:text="#{lang.contents.button.modify}"></button>
+                        </div>
+                    </div>
+
+                    <!-- 뷰어 정보 -->
+                    <div id="lay_images">
+                        <table class="table">
+                            <colgroup>
+                                <col style="width: 20%;">
+                            </colgroup>
+                            <thead>
+                                <tr style="border:solid currentColor; border-width:2px 0px;">
+                                    <th class="table-primary border-bottom-0" colspan="2" th:text="#{lang.episode.title.sub.viewer.image}"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="display:table-row;">
+                                    <td class="p-0 pl-2 py-1">
+                                        <ul class="preview" id="viewerImage"></ul>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- // 뷰어 정보 -->
+
+                    <div class="form-group row col-12" id="btnViewerGroup">
+                        <div class="col-6">
+                            <input type="file" name="zipFile" placeholder="이미지 업로드">
+                            <button type="button" class="btn btn-sm btn-success" onclick="viewer.add();">뷰어 저장</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- 컨텐츠 영역 -->
+    </div>
+</th:block>

@@ -1,0 +1,29 @@
+<script>
+    //파라메터 받기
+    function getParameter(name) {
+        name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+        var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+            results = regex.exec(location.search);
+        return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+    }
+
+
+
+    var res = getParameter("res");
+    var msg = getParameter("msg");
+    var txseq = getParameter("txseq");
+    var id = getParameter("id");
+    var ci = getParameter("ci");
+    var di = getParameter("di");
+
+    alert(res);
+    alert(msg);
+    //부모창에 데이터 입력
+    opener.document.getElementById("txseq").value=txseq; //dom 객체로 제어
+    opener.document.getElementById("id").value=id; //dom 객체로 제어
+    opener.document.getElementById("ci").value=ci; //dom 객체로 제어
+    opener.document.getElementById("di").value=di; //dom 객체로 제어
+
+</script>
+
+<button onclick='self.close();'>닫기</button>

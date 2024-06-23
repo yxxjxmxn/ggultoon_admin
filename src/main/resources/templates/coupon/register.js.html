@@ -1,0 +1,205 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function(){
+        date.dateTimePicker();
+    });
+
+    let text = {
+        searchFail : "[[#{lang.coupon.exception.search.fail}]]" // 검색 결과가 없습니다.
+    }
+
+    let coupon = {
+        // 검색한 쿠폰 업체 상세
+        viewStore: function () {
+
+            // 쿠폰 업체 idx set
+            let storeIdx = $("input[name=storeIdx]").val();
+            if (storeIdx != "") {
+
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/coupons/stores/' + storeIdx,
+                    method: 'GET',
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            if (res.data != undefined && !jQuery.isEmptyObject(res.data)) {
+
+                                // 검색한 쿠폰 업체 상세 정보 세팅
+                                $("td[name=name]").text(res.data.name||"-");
+                                $("td[name=storeType]").html(`<span class="badge ${res.data.typeBg}">${res.data.typeText}</span>`);
+
+                            } else {
+                                // 검색 결과가 없습니다.
+                                toast.alert(text.searchFail);
+                                coupon.reset();
+                            }
+                        } else {
+                            // ajax exception error
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+                return false;
+            }
+        },
+        // 검색어 초기화
+        reset: function () {
+            $("input[name=storeIdx]").val("");
+            $("td[name=name]").text("");
+            $("td[name=storeType]").html("");
+        },
+        // 쿠폰 등록
+        register: function () {
+
+            let form = $("#registerForm")[0];
+            let formData = new FormData(form);
+
+            // 쿠폰 상태 세팅
+            if ($("input:checkbox[name='state']:checked").val() == null) {
+                formData.set("state", 2);
+            }
+
+            // 쿠폰 중복 여부 세팅(기본값 : 중복)
+            if ($("input:radio[name='duplication']:checked").val() == null) {
+                formData.set("type", 1);
+            }
+
+            // 쿠폰 종류 세팅
+            if ($("input:radio[name='type']:checked").val() == null) {
+                formData.set("type", 1);
+            }
+
+            // 쿠폰 사용 기간 세팅
+            formData.set("startDate", $("#searchStartDate").val());
+            formData.set("endDate", $("#searchEndDate").val());
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/coupons',
+                method: 'POST',
+                data: formData,
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        // 등록 성공
+                        toast.alert(res.message);
+                        opener.location.reload();
+                        self.close();
+                    } else {
+                        // 등록 실패
+                        toast.alert(res.message);
+                    }
+                },
+                error: function(request, status, error) {
+                    // filter error
+                    toast.alert("code: "+request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        }
+    }
+
+    /** 날짜 관련 객체 **/
+    let date = {
+        // YYYY-MM-DD 형태로 변환
+        getFormatDate: (input) => {
+            let formatDate = "";
+            if (input != null) {
+                const year = input.slice(0, 4);
+                const month = input.slice(5, 7);
+                const day = input.slice(8, 10);
+                let dateArr = new Array();
+                dateArr.push(year);
+                dateArr.push(month);
+                dateArr.push(day);
+                formatDate = dateArr.join("-");
+            }
+            return formatDate;
+        },
+        dateTimePicker : () => {
+            // 언어 설정 : 한국어
+            jQuery.datetimepicker.setLocale('kr');
+
+            // 시작일 datetimepicker 생성
+            $("#searchStartDate").datetimepicker({
+                // 언어 설정 : 한국어
+                i18n:{
+                    kr:{
+                        months:[
+                            '1월','2월','3월','4월',
+                            '5월','6월','7월','8월',
+                            '9월','10월','11월','12월',
+                        ],
+                        dayOfWeek:[
+                            "일", "월", "화", "수",
+                            "목", "금", "토",
+                        ]
+                    }
+                },
+                format: "Y-m-d H:00:00",
+                autocomplete: "off",
+                minDate: 0, // 오늘 이후 날짜부터 선택 가능
+                onSelect: function() {
+                    let startDate = $("#searchStartDate").val();
+                    $("#searchStartDate").val(startDate);
+                },
+                beforeShow: function() {
+                    setTimeout(function(){
+                        $('.ui-datepicker').css('z-index', 99999999999999);
+                    }, 0);
+                },
+                onShow: function (ct) {
+                    this.setOptions({
+                        // 종료일의 선택할 수 있는 최소 날짜(minDate)를 선택한 시작일로 지정
+                        maxDate: $("#searchEndDate").val() ? $("#searchEndDate").val() : false
+                    })
+                }
+            }).on('changeDate', function(e){
+                $(this).datetimepicker('hide');
+            });
+
+            // 종료일 datetimepicker 생성
+            $("#searchEndDate").datetimepicker({
+                // 언어 설정 : 한국어
+                i18n:{
+                    kr:{
+                        months:[
+                            '1월','2월','3월','4월',
+                            '5월','6월','7월','8월',
+                            '9월','10월','11월','12월',
+                        ],
+                        dayOfWeek:[
+                            "일", "월", "화", "수",
+                            "목", "금", "토",
+                        ]
+                    }
+                },
+                format: "Y-m-d H:00:00",
+                autocomplete: "off",
+                onSelect: function() {
+                    let endDate = $("#searchEndDate").val();
+                    $("#searchEndDate").val(endDate);
+                },
+                beforeShow: function() {
+                    setTimeout(function(){
+                        $('.ui-datepicker').css('z-index', 99999999999999);
+                    }, 0);
+                },
+                onShow: function (ct) {
+                    this.setOptions({
+                        // 시작일의 선택할 수 있는 최대 날짜(maxDate)를 선택한 종료일로 지정
+                        minDate: $("#searchStartDate").val() ? $("#searchStartDate").val() : false
+                    })
+                }
+            }).on('changeDate', function(e){
+                $(this).datetimepicker('hide');
+            });
+        }
+    }
+</script>

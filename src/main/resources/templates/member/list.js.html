@@ -1,0 +1,222 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        let page = "[[${page}]]";
+        member.list(page);
+        date.datePicker();
+    });
+
+    let member = {
+        // 조회
+        list: function (page = 1) {
+
+            // page
+            if (page != undefined) {
+                $("input[name=page]").val(page);
+            }
+
+            // 검색 조건을 선택하지 않고 검색어를 입력한 경우
+            if ($("select[name=searchType]").val() == "" && $("input[name=searchWord]").val() != "") {
+                let searchFailMessage = `[[#{lang.member.exception.search.type.empty}]]`; // 검색 조건을 설정해주세요.
+                toast.alert(searchFailMessage);
+            }
+
+            // 검색 조건을 선택하지 않고 날짜를 선택한 경우
+            if ($("select[name=searchDateType]").val() == "") {
+                if ($("input[name=searchStartDate]").val() != "" || $("input[name=searchEndDate]").val() != "") {
+                    let searchFailMessage = `[[#{lang.member.exception.search.type.empty}]]`; // 검색 조건을 설정해주세요.
+                    toast.alert(searchFailMessage);
+                }
+            }
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/members',
+                cache : true,
+                method: 'GET',
+                data: $("#frm").serialize(),
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+
+                        //페이지 url 갱신 ( 검색 후 새로고침 시 검색값 유지 )
+                        if( window.location.search !== "?"+ $("#frm").serialize() ){
+                            history.pushState(null, null, "?" + $("#frm").serialize());
+                        }
+
+                        // 전체 회원 집계
+                        if (res.data.memberCntList.length > 0) {
+
+                            // list
+                            let listTbody = "";
+                            $.each(res.data.memberCntList, function (index, el) {
+                                listTbody +=`
+                                <tr>
+                                    <td class="text-center">${el.simpleType}</td>
+                                    <td class="text-center">${el.normalMemberCnt}</td>
+                                    <td class="text-center">${el.outMemberCnt}</td>
+                                </tr>
+                            `;
+                            });
+                            $("#memberCnt tbody").html(listTbody);
+                        }
+
+                        // 회원 목록
+                        if (res.data.list.length > 0) {
+                            // total count
+                            $(".totalCount").next().text(res.data.params.pagination.totalRecordCount + "건");
+                            // list
+                            let listTbody = "";
+                            $.each(res.data.list, function (index, el) {
+                                listTbody +=`
+                                <tr>
+                                    <td class="text-center">${el.idx}</td>
+                                    <td class="text-center"><span class="badge ${el.stateBg}">${el.stateText}</span></td>
+                                    <td class="text-center">${el.joinType}</td>
+                                    <td class="text-center">${el.site||'-'}</td>
+                                    <td class="text-center"><a href="javascript:void(0);" onclick="member.view(${el.idx});">${el.id}</a></td>
+                                    <td class="text-center">${el.nick||'-'}</td>
+                                    <td class="text-center">${el.name||'-'}</td>
+                                    <td class="text-center">${el.phone||'-'}</td>
+                                    <td class="text-center">${el.email||'-'}</td>
+                                    <td class="text-center">${el.genderText||'-'}</td>
+                                    <td class="text-center">${el.birth||'-'}</td>
+                                    <td class="text-center">${el.marketing||'-'}</td>
+                                    <td class="text-center">${el.regdate||'-'}</td>
+                                    <td class="text-center">${el.logindate||'-'}</td>
+                                </tr>
+                            `;
+                            });
+                            $("#lists tbody").html(listTbody);
+
+                            // paging - common.js
+                            pagination("member", res.data.params.page, res.data.params.pagination);
+                            $.cookie("backUrl", $("#frm").serialize());
+                        } else {
+                            // total count
+                            $(".totalCount").next().text("0건");
+                            // 결과 없음
+                            let listTbody = `<tr><td colspan="13" class="text-center">${res.message}</td></tr>`;
+                            $("#lists tbody").html(listTbody);
+                            $(".pagination").html("");
+                        }
+
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        },
+        // 상세
+        view: function (idx) {
+            location.href = '[[${SERVER.currentDomain}]]/members/' + idx ;
+        },
+        // 새로고침 버튼
+        reset: function () {
+            location.href = '[[${SERVER.currentDomain}]]/members';
+        },
+        // 엑셀
+        excel: function () {
+
+            // 엑셀로 다운로드할 데이터가 없습니다.
+            let excelDownloadFailMessage = `[[#{lang.member.exception.excel.data.empty}]]`;
+
+            if ($(".totalCount").next().text() == '0건') {
+                toast.alert(excelDownloadFailMessage);
+            } else {
+                location.href = '[[${SERVER.currentDomain}]]/v1/members/excel?'+$("#frm").serialize();
+            }
+        },
+    }
+
+    /** 날짜 관련 객체 **/
+    let date = {
+        // input 날짜 하이픈(-) 자동 입력
+        forMatter : (date) => {
+            $(".datePicker").on("input", () => {
+                let dateValue = date.value.replace(/[^0-9]/g, '')
+                    .replace(/^(\d{0,4})(\d{0,2})(\d{0,2})$/g, "$1-$2-$3")
+                    .replace(/(\-{1,2})$/g, "");
+                date.value = dateValue;
+            })
+        },
+        datePicker : () => {
+            // 시작일 date picker 생성
+            $("#searchStartDate").datepicker({
+                onSelect: function() {
+                    let startDate = $.datepicker.formatDate("yy-mm-dd", $(this).datepicker('getDate'));
+                    $("#searchStartDate").val(startDate);
+                },
+
+                // 시작일 datepicker가 닫힐 때
+                onClose: function(selectedDate) {
+
+                    // 종료일의 선택할 수 있는 최소 날짜(minDate)를 선택한 시작일로 지정
+                    $("#searchEndDate").datepicker("option", "minDate", selectedDate);
+
+                    // 종료일의 선택할 수 있는 최대 날짜(maxDate)를 선택한 시작일로부터 최대 90일까지로 지정
+                    let maxDate = new Date(selectedDate);
+                    maxDate.setDate(maxDate.getDate() + 90);
+                    $("#searchEndDate").datepicker("option", "maxDate", maxDate);
+                },
+                beforeShow: function() {
+                    setTimeout(function(){
+                        $('.ui-datepicker').css('z-index', 99999999999999);
+                    }, 0);
+                }
+            }).on('changeDate', function(e){
+                $(this).datepicker('hide');
+            });
+
+            // 종료일 date picker 생성
+            $("#searchEndDate").datepicker({
+                onSelect: function() {
+                    let endDate = $.datepicker.formatDate("yy-mm-dd", $(this).datepicker('getDate'));
+                    $("#searchEndDate").val(endDate);
+                },
+
+                // 종료일 datepicker가 닫힐 때
+                onClose: function(selectedDate) {
+
+                    // 시작일의 선택할 수 있는 최대 날짜(maxDate)를 선택한 종료일로 지정
+                    $("#searchStartDate").datepicker("option", "maxDate", selectedDate);
+
+                    // 시작일의 선택할 수 있는 최소 날짜(maxDate)를 선택한 종료일로부터 최소 90일까지로 지정
+                    let minDate = new Date(selectedDate);
+                    minDate.setDate(minDate.getDate() - 90);
+                    $("#searchStartDate").datepicker("option", "minDate", minDate);
+                },
+                beforeShow: function() {
+                    setTimeout(function(){
+                        $('.ui-datepicker').css('z-index', 99999999999999);
+                    }, 0);
+                }
+            }).on('changeDate', function(e){
+                $(this).datepicker('hide');
+            });
+
+            // date picker 설정
+            $.datepicker.setDefaults({
+                dateFormat: "yy-mm-dd",
+                yearSuffix: "년",
+                monthNames: ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"],
+                monthNamesShort: ["1월", "2월", "3월", "4월", "5월", "6월","7월", "8월", "9월", "10월", "11월", "12월"],
+                dayNames: ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"],
+                dayNamesShort: ["일", "월", "화", "수", "목", "금", "토"],
+                dayNamesMin: ["일", "월", "화", "수", "목", "금", "토"],
+                showMonthAfterYear: true
+            });
+        }
+    }
+
+    //뒤로가기 이벤트 시 실행
+    $(window).on('popstate', function(event) {
+        window.location = document.location.href;
+    });
+</script>

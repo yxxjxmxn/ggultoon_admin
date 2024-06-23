@@ -1,0 +1,232 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        let page = "[[${page}]]";
+        episodeComment.list(page);
+    });
+
+    let text = {
+        btn : {
+            reply : "[[#{lang.contents.button.content.reply}]]",
+        }
+    }
+
+    let episodeComment = {
+
+        // 회차 댓글 목록 조회
+        list: function (page = 1) {
+            if (page != undefined) {
+                $("input[name=page]").val(page);
+            }
+
+            // 검색 조건을 선택하지 않고 검색어를 입력한 경우
+            if ($("select[name=searchType]").val() == "" && $("input[name=searchWord]").val() != "") {
+                let searchFailMessage = `[[#{lang.comment.exception.search.type.empty}]]`; // 검색 조건을 설정해주세요.
+                toast.alert(searchFailMessage);
+            }
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/comments/contents/[[${contentsIdx}]]/episodes/[[${episodeIdx}]]',
+                cache : true,
+                method: 'GET',
+                data: $("#frm").serialize(),
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+
+                    if (res.result) {
+
+                        // 페이지 url 갱신 (검색 후 새로고침 시 검색값 유지 )
+                        if (window.location.search !== "?" + $("#frm").serialize()) {
+                            history.pushState(null, null, "?" + $("#frm").serialize());
+                        }
+
+                        if (res.data.list.length > 0) {
+
+                            // total count
+                            $(".totalCount").next().text(res.data.params.pagination.totalRecordCount + "건");
+
+                            // list
+                            let listTbody = "";
+                            $.each(res.data.list, function (index, el) {
+
+                                let stateText;
+                                let stateClass;
+                                let viewText;
+                                let viewClass;
+
+                                // 댓글 상태별 버튼 텍스트 변환
+                                if (el.state == 0) { // 삭제
+                                    stateClass = "btn-success"; // 복구 표시
+                                    stateText = "[[#{lang.comment.button.normal}]]"; // 복구 표시
+
+                                } else if(el.state == 1) { // 정상
+                                    stateClass = "btn-danger"; // 삭제 표시
+                                    stateText = "[[#{lang.comment.button.delete}]]"; // 삭제 표시
+                                }
+
+                                // 댓글 노출 상태별 버튼 텍스트 변환
+                                if (el.view == 0) { // 비노출
+                                    viewClass = "btn-primary"; // 노출 표시
+                                    viewText = "[[#{lang.comment.button.show}]]"; // 노출 표시
+
+                                } else if (el.view == 1) { // 노출
+                                    viewClass = "btn-secondary"; // 숨김 표시
+                                    viewText = "[[#{lang.comment.button.hide}]]"; // 숨김 표시
+                                }
+
+                                listTbody += `
+                                    <tr>
+                                        <td class="text-center">${el.idx || "-"}</td>
+                                        <td class="text-center"><a href="[[${SERVER.currentDomain}]]/members/${el.writerIdx}">${el.writerId || "-"}(${el.writerNick || "-"})</a></td>
+                                        <td class="text-center"><span class="badge ${el.typeBg}">${el.typeText || "-"}</span></td>
+                                        <td class="text-center"><span class="badge ${el.stateBg}">${el.stateText || "-"}</span></td>
+                                        <td class="text-center"><span class="badge ${el.viewBg}">${el.viewText || "-"}</span></td>
+                                        <td class="text-center">${cleanXSS(el.content) || "-"}</td>
+                                        <td class="text-center">${el.likeCnt}</td>
+                                        <td class="text-center">${el.regdate || "-"}</td>
+                                        <td class="text-center">${el.modifyDate || "-"}</td>
+                                        <td class="text-center"><input type="button" id="hideBtn" value=${viewText} class="btn btn-sm ${viewClass}" onclick="episodeComment.hide(${el.idx}, ${el.view})"></td>
+                                        <td class="text-center"><input type="button" id="deleteBtn" value=${stateText} class="btn btn-sm ${stateClass}" onclick="episodeComment.delete(${el.idx}, ${el.state})"></td>
+                                    </tr>
+                                `;
+
+                                // XSS 공격 방지 - html 태그 이스케이프 처리
+                                function cleanXSS(content) {
+                                    let convertText = content
+                                        .replace(/</g, "&lt;") // 꺽새 변환
+                                        .replace(/>/g, "&gt;") // 꺽새 변환
+                                        .replace("\\(", "&#40;") // 괄호 변환
+                                        .replace("\\)", "&#41;") // 괄호 변환
+                                        .replace(/\"/g, "&quot;") // 큰따옴표 변환
+                                        .replace(/\'/g, "&#39;") // 작은따옴표 변환
+                                        .replace(/\n/g, "<br />"); // <br> 태그 변환
+
+                                    return convertText;
+                                }
+
+                            });
+                            $("#lists tbody").html(listTbody);
+
+                            // paging - common.js
+                            pagination("episodeComment", res.data.params.page, res.data.params.pagination);
+                            $.cookie("backUrl", $("#frm").serialize());
+
+                        } else {
+                            // total count
+                            $(".totalCount").next().text("0건");
+                            // 결과 없음
+                            let listTbody = `<tr><td colspan="11" class="text-center">${res.message}</td></tr>`;
+                            $("#lists tbody").html(listTbody);
+                            $(".pagination").html("");
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        },
+        // 엑셀
+        excel: function () {
+
+            // 엑셀로 다운로드할 데이터가 없습니다.
+            let excelDownloadFailMessage = `[[#{lang.comment.exception.excel.data.empty}]]`;
+
+            if ($(".totalCount").next().text() == '0건') {
+                toast.alert(excelDownloadFailMessage);
+            } else {
+                location.href = '[[${SERVER.currentDomain}]]/v1/comments/episodes/excel/[[${episodeIdx}]]?'+$("#frm").serialize();
+            }
+        },
+        // 새로고침 버튼
+        reset: function () {
+            location.href = '[[${SERVER.currentDomain}]]/comments/contents/[[${contentsIdx}]]/episodes/[[${episodeIdx}]]';
+        },
+        // 회차 댓글 삭제
+        delete: function (idx, state) {
+
+            let deleteConfirmMessage;
+
+            if (state == 1) { // 정상 상태일 때
+                deleteConfirmMessage = `[[#{lang.comment.content.confirm.delete}]]`;
+
+            } else { // 삭제 상태일 때
+                deleteConfirmMessage = `[[#{lang.comment.content.confirm.normal}]]`;
+            }
+
+            if (confirm(deleteConfirmMessage)) {
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/comments/episodes/delete/' + idx,
+                    method: "PUT",
+                    data: '',
+                    dataType: 'json',
+                    processData: false,
+                    contentType: "application/json",
+                    success: function (res) {
+                        if (res.result) {
+                            toast.alert(res.message);
+                            episodeComment.list();
+                        } else {
+                            // 삭제 실패
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+                return false;
+            }
+        },
+        // 회차 댓글 숨김
+        hide: function (idx, view) {
+
+            let hideConfirmMessage;
+
+            if (view == 1) { // 노출 상태일 때
+                hideConfirmMessage = `[[#{lang.comment.content.confirm.hide}]]`;
+
+            } else { // 비노출 상태일 때
+                hideConfirmMessage = `[[#{lang.comment.content.confirm.show}]]`;
+            }
+
+            if (confirm(hideConfirmMessage)) {
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/comments/episodes/hide/' + idx,
+                    method: "PUT",
+                    data: '',
+                    dataType: 'json',
+                    processData: false,
+                    contentType: "application/json",
+                    success: function (res) {
+
+                        if (res.result) {
+                            toast.alert(res.message);
+                            episodeComment.list();
+
+                        } else {
+                            // 숨김 or 숨김처리 실패
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+                return false;
+            }
+        }
+    }
+    // 뒤로가기 이벤트 시 실행
+    $(window).on('popstate', function(event) {
+        window.location = document.location.href;
+    });
+</script>

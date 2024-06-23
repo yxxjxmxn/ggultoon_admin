@@ -1,0 +1,122 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        curation.view();
+    });
+
+    let curation = {
+        // 큐레이션 노출 영역 상세
+        view: function () {
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/curations/areas/[[${idx}]]',
+                method: 'GET',
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        if (res.data != undefined) {
+
+                            // 큐레이션 노출 영역 사용 상태 세팅
+                            if (res.data.state == 1) {
+                                $("input:checkbox[id='state']").prop("checked", true);
+                            }
+
+                            // 큐레이션 노출 영역 상세 정보 폼
+                            $("td[name=idx]").text(res.data.idx||"-");
+                            $("td[name=code]").html(`<input type="text" name="code" id="code" class="form-control form-control-sm" value="${res.data.code||"-"}">`);
+                            $("td[name=name]").html(`<input type="text" name="name" id="name" class="form-control form-control-sm" value="${res.data.name||"-"}">`);
+                            $("td[name=description]").html(`<textarea name="description" id="description" class="form-control form-control-sm" style="height: 150px; resize: none;">${res.data.description||"-"}`);
+                            $("td[name=regdate]").text(res.data.regdate||"-");
+                        } else {
+                            // 결과 없음
+                            toast.alert(res.message);
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+
+            return false;
+        },
+        // 큐레이션 노출 영역 삭제
+        delete: function () {
+
+            let deleteConfirmMessage = `[[#{lang.curation.confirm.delete}]]`;
+
+            if (confirm(deleteConfirmMessage)) {
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/curations/areas/[[${idx}]]',
+                    method: "DELETE",
+                    data: '',
+                    dataType: 'json',
+                    processData: false,
+                    contentType: "application/json",
+                    success: function (res) {
+                        if (res.result) {
+                            // 삭제 성공
+                            toast.alert(res.message);
+                            opener.location.reload();
+                            self.close();
+                        } else {
+                            // 삭제 실패
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+                return false;
+            }
+        },
+        // 큐레이션 노출 영역 수정
+        modify: function () {
+
+            let modifyConfirmMessage = `[[#{lang.curation.confirm.modify}]]`;
+
+            if (confirm(modifyConfirmMessage)) {
+
+                let form = $("#frm")[0];
+                let formData = new FormData(form);
+
+                // 사용 상태 선택값 세팅
+                let state = $("input:checkbox[name='state']:checked").val();
+                if (state == null || state == undefined) {
+                    formData.set("state", 2);
+                }
+
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/curations/areas/[[${idx}]]',
+                    method: "PUT",
+                    data: formData,
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            // 수정 성공
+                            toast.alert(res.message);
+                            opener.location.reload();
+                            self.close();
+                        } else {
+                            // 수정 실패
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+                return false;
+            }
+        }
+    }
+</script>

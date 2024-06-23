@@ -1,0 +1,101 @@
+<th:block layout:decorate="~{common/layout_popup_nomenu}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="container-fluid">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" th:text="#{lang.payment.method.title.register}"></h5>
+            </div>
+            <div class="card-body row">
+                <form id="registerForm" onsubmit="paymentMethod.register(); return false;"accept-charset="utf-8">
+                    <table class="table">
+                        <thead></thead>
+                        <tbody>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.payment.method.status}"></th>
+                            <td>
+                                <div class="form-check form-switch" style="padding: 0; margin: 0;">
+                                    <input class="form-check-input" id="state" name="state" type="checkbox" value="1" style="margin-left:0;" checked>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.payment.method.autoPay}"></th>
+                            <td>
+                                <div aria-label="Basic radio toggle button group" class="btn-group" role="group">
+                                    <th:block th:each="autoPay : ${dataSet.autoPayType}">
+                                        <input autocomplete="off" class="btn-check" th:id="'autoPay' + ${autoPay.key}" name="autoPay" type="radio" th:value="|${autoPay.key}|" th:checked="${autoPay.key == 0}" >
+                                        <label class="btn btn-sm btn-outline-primary"  th:for="'autoPay' + ${autoPay.key}" th:text="|${autoPay.value}|"></label>
+                                    </th:block>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.payment.method.pgName}"></th>
+                            <td class="text-center"><input type="text" name="pgName" id="pgName" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.payment.method.mchtId}"></th>
+                            <td class="text-center"><input type="text" name="mchtId" id="mchtId" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.payment.method.licenseKey}"></th>
+                            <td class="text-center"><input type="text" name="licenseKey" id="licenseKey" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.payment.method.aes256Key}"></th>
+                            <td class="text-center"><input type="text" name="aes256Key" id="aes256Key" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.payment.method.methodType}"></th>
+                            <td class="text-center"><input type="text" name="aes256Key" id="methodType" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.payment.method.method}"></th>
+                            <td class="text-center"><input type="text" name="method" id="method" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.payment.method.corpPayCode}"></th>
+                            <td class="text-center"><input type="text" name="corpPayCode" id="corpPayCode" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.payment.method.methodNoti}"></th>
+                            <td class="text-center"><input type="text" name="methodNoti" id="methodNoti" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.payment.method.mchtName}"></th>
+                            <td class="text-center"><input type="text" name="mchtName" id="mchtName" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.payment.method.mchtEName}"></th>
+                            <td class="text-center"><input type="text" name="mchtEName" id="mchtEName" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.payment.method.notiUrl}"></th>
+                            <td class="text-center"><textarea name="notiUrl" id="notiUrl" class="form-control form-control-sm"></textarea>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.payment.method.paymentServer}"></th>
+                            <td class="text-center"><input type="text" name="paymentServer" id="paymentServer" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.payment.method.cancelServer}"></th>
+                            <td class="text-center"><input type="text" name="cancelServer" id="cancelServer" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.payment.method.info}"></th>
+                            <td class="text-center"><input type="text" name="info" id="info" class="form-control form-control-sm"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div class="form-group row">
+                        <div class="col text-center">
+                            <button type="button" class="btn btn-sm btn-primary" onclick="paymentMethod.register();" th:text="#{lang.payment.button.register}"></button>
+                            <button type="button" class="btn btn-sm btn-secondary" th:onclick="|self.close()|" th:text="#{lang.payment.button.close}"></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- //컨텐츠 영역 -->
+    </div>
+</th:block>

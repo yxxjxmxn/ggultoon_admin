@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.dao.log.AdminActionLogDao">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- 공통으로 사용할 field -->
+    <sql id="adminActionLogColumns">
+       `adaclo`.idx,
+       `adaclo`.id,
+       `adaclo`.referrer,
+       `adaclo`.class,
+       `adaclo`.method,
+       `adaclo`.params,
+       `adaclo`.ip,
+        CONVERT_TZ(`adaclo`.regdate, 'UTC', '${convertTZ}') AS regdate
+    </sql>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+
+    <!-- ==============================================================
+        INSERT
+    =============================================================== -->
+    <!-- 등록하기 -->
+    <insert id="regist" parameterType="AdminActionLogDto" useGeneratedKeys="true" keyProperty="insertedId">
+
+        INSERT INTO <include refid="database" />`admin_action_log`
+        <set>
+            `admin_id`  =  #{id},
+            `referrer`  =  #{referrer},
+            `class`     =  #{sClass},
+            `method`    =  #{method},
+            `params`    =  #{params},
+            `ip`        =  #{ip},
+            `regdate`   =  #{regdate},
+            `regdate_tz`  = @@global.time_zone
+        </set>
+    </insert>
+
+    <!-- ==============================================================
+        UPDATE
+    =============================================================== -->
+</mapper>

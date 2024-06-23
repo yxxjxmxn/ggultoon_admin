@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.contents.ContentsDaoSub">
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+
+    <!-- 컨텐츠 전체 목록 count -->
+    <select id="getTotalCount" parameterType="SearchDto" resultType="int">
+        SELECT
+            count(co.`idx`)
+        FROM <include refid="database" />contents AS co
+        JOIN <include refid="database" />category AS ca
+            ON co.`category_idx` = ca.`idx`
+        JOIN <include refid="database" />genre AS ge
+            ON co.`genre_idx` = ge.`idx`
+        JOIN <include refid="database" />contents_cp AS cocp
+            ON co.`idx` = cocp.`contents_idx`
+        JOIN <include refid="database" />cp_member AS cpme
+            ON cocp.`cp_member_idx` = cpme.`idx`
+        <where>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'title'">
+                        AND co.`title` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'label'">
+                        AND co.`label` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'cp'">
+                        AND cpme.`name` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'idx'">
+                        AND co.`idx` = #{searchWord}
+                    </when>
+                </choose>
+            </if>
+            <if test="adultPavilion != null">
+                AND co.adult_pavilion = #{adultPavilion}
+            </if>
+            <if test="categoryIdx != null">
+                AND co.`category_idx` = #{categoryIdx}
+            </if>
+            <if test="genreIdx != null">
+                AND co.`genre_idx` = #{genreIdx}
+            </if>
+            <if test="state != null">
+                AND co.`state` = #{state}
+            </if>
+            <if test="progress != null">
+                AND co.`progress` = #{progress}
+            </if>
+            <if test="searchStartDate != null and !searchStartDate.equals('')">
+                <bind name="start_date" value="searchStartDate" />
+                <bind name="end_date" value="searchEndDate" />
+
+                <![CDATA[
+                    AND date(co.`regdate`) >= #{start_date}
+                    AND date(co.`regdate`) > #{end_date}
+                ]]>
+            </if>
+        </where>
+    </select>
+
+    <!-- 컨텐츠 목록 -->
+    <select id="getList" parameterType="SearchDto" resultMap="getList_rm">
+        SELECT
+            co.`idx`,
+            co.`category_idx`,
+            co.`genre_idx`,
+            co.`title`,
+            co.`description`,
+            co.`last_episode_idx`,
+            co.`last_episode_title`,
+            co.`adult`,
+            co.`adult_pavilion`,
+            co.`complete_type_idx`,
+            co.`progress`,
+            co.`exclusive`,
+            co.`publication`,
+            co.`revision`,
+            co.`state`,
+            co.`label`,
+            CONVERT_TZ(co.`pubdate`, 'UTC', '${convertTZ}') AS pubdate,
+            CONVERT_TZ(co.`regdate`, 'UTC', '${convertTZ}') AS regdate,
+            ca.`name` AS category_name,
+            ge.`name` AS genre_name,
+            cpme.`name` AS company_name
+        FROM <include refid="database" />contents AS co
+        JOIN <include refid="database" />category AS ca
+            ON co.`category_idx` = ca.`idx`
+        JOIN <include refid="database" />genre AS ge
+            ON co.`genre_idx` = ge.`idx`
+        JOIN <include refid="database" />contents_cp AS cocp
+            ON co.`idx` = cocp.`contents_idx`
+        JOIN <include refid="database" />cp_member AS cpme
+            ON cocp.`cp_member_idx` = cpme.`idx`
+        <where>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'title'">
+                        AND co.`title` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'label'">
+                        AND co.`label` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'cp'">
+                        AND cpme.`name` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'idx'">
+                        AND co.`idx` = #{searchWord}
+                    </when>
+                </choose>
+            </if>
+            <if test="adultPavilion != null">
+                AND co.adult_pavilion = #{adultPavilion}
+            </if>
+            <if test="categoryIdx != null">
+                AND co.`category_idx` = #{categoryIdx}
+            </if>
+            <if test="genreIdx != null">
+                AND co.`genre_idx` = #{genreIdx}
+            </if>
+            <if test="state != null">
+                AND co.`state` = #{state}
+            </if>
+            <if test="progress != null">
+                AND co.`progress` = #{progress}
+            </if>
+            <if test="searchStartDate != null and !searchStartDate.equals('')">
+                <bind name="start_date" value="searchStartDate" />
+                <bind name="end_date" value="searchEndDate" />
+                <![CDATA[
+                    AND date(co.`regdate`) >= #{start_date}
+                    AND date(co.`regdate`) > #{end_date}
+                ]]>
+            </if>
+        </where>
+        ORDER BY co.`idx` DESC
+        LIMIT #{recordSize}
+        OFFSET #{pagination.limitStart}
+    </select>
+
+    <!-- 컨텐츠 목록 resultMap -->
+    <resultMap id="getList_rm" type="ContentsDto">
+        <id property="idx" column="idx" />
+
+        <result property="categoryIdx" column="category_idx" />
+        <result property="genreIdx" column="genre_idx" />
+        <result property="title" column="title" />
+        <result property="description" column="description" />
+        <result property="lastEpisodeIdx" column="last_episode_idx" />
+        <result property="lastEpisodeTitle" column="last_episode_title" />
+        <result property="adult" column="adult" />
+        <result property="adultPavilion" column="adult_pavilion" />
+        <result property="completeTypeIdx" column="complete_type_idx" />
+        <result property="progress" column="progress" />
+        <result property="exclusive" column="exclusive" />
+        <result property="publication" column="publication" />
+        <result property="revision" column="revision" />
+        <result property="state" column="state" />
+        <result property="label" column="label" />
+        <result property="pubdate" column="pubdate" />
+        <result property="regdate" column="regdate" />
+        <result property="categoryName" column="category_name" />
+        <result property="genreName" column="genre_name" />
+        <result property="companyName" column="company_name" />
+
+        <!-- contents image query 호출 -->
+        <collection property="imageList" column="idx" javaType="java.util.ArrayList" ofType="" select="getContentImage" />
+
+    </resultMap>
+
+
+    <!-- 컨텐츠 상세 -->
+    <select id="getView" parameterType="Integer" resultMap="getView_rm">
+        SELECT
+            co.`idx`,
+            co.`category_idx`,
+            co.`genre_idx`,
+            co.`title`,
+            co.`description`,
+            co.`last_episode_idx`,
+            co.`last_episode_title`,
+            co.`adult`,
+            co.`adult_pavilion`,
+            co.`complete_type_idx`,
+            co.`progress`,
+            co.`exclusive`,
+            co.`publication`,
+            co.`revision`,
+            co.`sell_type`,
+            co.`state`,
+            co.`label`,
+            CONVERT_TZ(co.`pubdate`, 'UTC', '${convertTZ}') AS pubDate,
+            CONVERT_TZ(co.`regdate`, 'UTC', '${convertTZ}') AS regDate,
+            ca.`name` AS category_name,
+            ge.`name` AS genre_name,
+            coin.`view`,
+            coin.`view_dummy`,
+            coin.`favorite`,
+            coin.`rating`,
+            cocp.`tax`,
+            cocp.`tax_type`,
+            cocp.`tax_code`,
+            cocp.`calculate`,
+            cocp.`calculate_app`,
+            cocp.`guarantee`,
+            cocp.`web_fee`,
+            cocp.`app_fee`,
+            cocp.`contract`,
+            coma.`code_idx`,
+            code.`idx` AS code,
+            code.`code` AS codeText,
+            coevfr.`free_episode_cnt`,
+            coevfr.`event_free_episode_cnt`,
+            coevfr.`event_free_used`,
+            CONVERT_TZ(coevfr.`event_start_date`, 'UTC', '${convertTZ}') AS event_start_date,
+            CONVERT_TZ(coevfr.`event_end_date`, 'UTC', '${convertTZ}') AS event_end_date,
+            coevfr.`minimum_purchase`,
+            coevfr.`discount`,
+            coevfr.`minimum_purchase_rent`,
+            coevfr.`discount_rent`,
+            cpme.`idx` AS `cp_member_idx`,
+            cpme.`name` AS  `company_name`
+        FROM <include refid="database" />contents AS co
+        JOIN <include refid="database" />contents_info AS coin
+            ON co.`idx` = coin.`contents_idx`
+        JOIN <include refid="database" />category AS ca
+            ON co.`category_idx` = ca.`idx`
+        JOIN <include refid="database" />genre AS ge
+            ON co.`genre_idx` = ge.`idx`
+        JOIN <include refid="database" />contents_cp AS cocp
+            ON co.`idx` = cocp.`contents_idx`
+        LEFT JOIN <include refid="database" />code_mapping AS coma
+            ON co.`idx` = coma.`contents_idx` and coma.`state` = 1
+        LEFT JOIN <include refid="database" />code AS code
+            ON coma.`code_idx` = code.`idx`
+        LEFT JOIN <include refid="database" />contents_event_free AS coevfr
+            ON co.`idx` = coevfr.`contents_idx`
+        LEFT JOIN <include refid="database" />cp_member AS cpme
+            ON cocp.`cp_member_idx` = cpme.`idx`
+        <where>
+            co.`idx` = #{idx}
+        </where>
+    </select>
+
+    <!-- 컨텐츠 상세 resultMap -->
+    <resultMap id="getView_rm" type="ContentsDto">
+        <id property="idx" column="idx" />
+
+        <result property="categoryIdx" column="category_idx" />
+        <result property="genreIdx" column="genre_idx" />
+        <result property="title" column="title" />
+        <result property="description" column="description" />
+        <result property="lastEpisodeIdx" column="last_episode_idx" />
+        <result property="lastEpisodeTitle" column="last_episode_title" />
+        <result property="completeTypeIdx" column="complete_type_idx" />
+        <result property="progress" column="progress" />
+        <result property="exclusive" column="exclusive" />
+        <result property="publication" column="publication" />
+        <result property="adult" column="adult" />
+        <result property="adultPavilion" column="adult_pavilion" />
+        <result property="revision" column="revision" />
+        <result property="sellType" column="sell_type" />
+        <result property="state" column="state" />
+        <result property="label" column="label" />
+        <result property="code" column="code" />
+        <result property="pubdate" column="pubDate" />
+        <result property="regdate" column="regDate" />
+        <result property="categoryName" column="category_name" />
+        <result property="genreName" column="genre_name" />
+
+        <result property="view" column="view" />
+        <result property="viewDummy" column="view_dummy" />
+        <result property="favorite" column="favorite" />
+        <result property="rating" column="rating" />
+
+        <result property="tax" column="tax" />
+        <result property="taxType" column="tax_type" />
+        <result property="taxCode" column="tax_code" />
+        <result property="calculate" column="calculate" />
+        <result property="calculateApp" column="calculate_app" />
+        <result property="guarantee" column="guarantee" />
+        <result property="webFee" column="web_fee" />
+        <result property="appFee" column="app_fee" />
+        <result property="contract" column="contract" />
+        <result property="freeEpisodeCnt" column="free_episode_cnt" />
+        <result property="eventFreeEpisodeCnt" column="event_free_episode_cnt" />
+        <result property="eventFreeUsed" column="event_free_used" />
+        <result property="eventStartDate" column="event_start_date" />
+        <result property="eventEndDate" column="event_end_date" />
+        <result property="minimumPurchase" column="minimum_purchase" />
+        <result property="discount" column="discount" />
+        <result property="minimumPurchaseRent" column="minimum_purchase_rent" />
+        <result property="discountRent" column="discount_rent" />
+
+        <result property="cpMemberIdx" column="cp_member_idx" />
+        <result property="companyName" column="company_name" />
+
+        <!-- contents image query 호출 -->
+        <collection property="imageList" column="idx" javaType="java.util.ArrayList" ofType="" select="getContentImage" />
+
+        <!-- 글작가 -->
+        <collection property="writer" column="idx" javaType="String" ofType="" select="getWriter" />
+
+        <!-- 그림작가 -->
+        <collection property="illustrator" column="idx" javaType="String" ofType="" select="getIllustrator" />
+
+        <!-- 연재 요일 -->
+        <collection property="weekly" column="idx" javaType="String" ofType="" select="getWeekly" />
+
+        <!-- 태그 -->
+        <collection property="tagList" column="idx" javaType="java.util.ArrayList" ofType="" select="getTags" />
+
+    </resultMap>
+
+    <!-- 컨텐츠 이미지 -->
+    <select id="getContentImage" parameterType="Integer" resultType="ImageDto">
+        SELECT
+            coim.`idx`,
+            coim.`contents_idx`,
+            coim.`parent`,
+            coim.`filename`,
+            coim.`url`,
+            coim.`width`,
+            coim.`height`,
+            coim.`type`,
+            coim.`sort`,
+            coim.`device`,
+            coim.`state`,
+            CONVERT_TZ(coim.`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database" />contents_img AS coim
+        <where>
+                coim.`contents_idx` = #{idx}
+            AND coim.`device` = 'origin'
+            AND coim.`state` = 1
+        </where>
+        ORDER BY coim.`type` ASC, coim.`sort` ASC
+    </select>
+
+    <!-- 글작가 -->
+    <select id="getWriter" parameterType="Integer" resultType="String">
+        SELECT
+            GROUP_CONCAT(au.`name` SEPARATOR ', ') AS writer
+        FROM <include refid="database" />author_mapping AS auma
+        JOIN <include refid="database" />author AS au
+            ON auma.`author_idx` = au.`idx`
+        <where>
+                auma.`contents_idx` = #{idx}
+            AND auma.`type` = 1
+        </where>
+    </select>
+
+    <!-- 그림작가 -->
+    <select id="getIllustrator" parameterType="Integer" resultType="String">
+        SELECT
+            GROUP_CONCAT(au.`name` SEPARATOR ', ') AS illustrator
+        FROM <include refid="database" />author_mapping AS auma
+        JOIN <include refid="database" />author AS au
+            ON auma.`author_idx` = au.`idx`
+        <where>
+                auma.`contents_idx` = #{idx}
+            AND auma.`type` = 2
+        </where>
+    </select>
+
+    <!-- 연재 요일 -->
+    <select id="getWeekly" parameterType="Integer" resultType="String">
+        SELECT
+            GROUP_CONCAT(we.`idx` SEPARATOR ', ') AS weekly
+        FROM <include refid="database" />weekly_mapping AS wema
+        JOIN <include refid="database" />weekly AS we
+            ON wema.`weekly_idx` = we.`idx`
+        <where>
+            wema.`contents_idx` = #{idx}
+        </where>
+    </select>
+
+    <!-- 태그 -->
+    <select id="getTags" parameterType="Integer" resultType="TagDto">
+        SELECT
+            tama.`idx`,
+            tama.`contents_idx`,
+            tama.`tag_idx`,
+            tama.`state`,
+            CONVERT_TZ(tama.`regdate`, 'UTC', '${convertTZ}') AS `regdate`,
+            ta.`tag_group_idx`,
+            ta.`name`
+        FROM <include refid="database" />tag_mapping AS tama
+        JOIN <include refid="database" />tag AS ta
+            ON tama.`tag_idx` = ta.`idx`
+        <where>
+                tama.`contents_idx` = #{idx}
+            AND ta.`state` = 1
+        </where>
+    </select>
+
+    <!-- 신규 회차가 업로드된 작품 및 회차 번호 조회 -->
+    <select id="getContentInfo" parameterType="NotificationDto" resultType="hashmap">
+        SELECT
+            `co`.`idx` AS `idx`,
+            `co`.`category_idx` AS `categoryIdx`,
+            `co`.`title` AS `content`,
+            `ep`.`episode_number` AS `episodeNumber`
+        FROM <include refid="database" /> `episode` AS `ep`
+        JOIN <include refid="database" /> `contents` AS `co`
+            ON `ep`.`contents_idx` = `co`.`idx`
+        <where>
+            `ep`.`idx` = #{typeIdx}
+            AND `co`.`state` = 1
+            AND `ep`.`state` = 1
+        </where>
+    </select>
+
+    <!-- 카테고리별 장르 개수 -->
+    <select id="getTotalGenreCount" parameterType="SearchDto" resultType="int">
+        SELECT
+            COUNT(`cama`.`genre_idx`) AS totalGenreCnt
+        FROM <include refid="database" />`category_mapping` AS `cama`
+        JOIN <include refid="database" />`genre` AS `ge`
+            ON `cama`.`genre_idx` = `ge`.`idx`
+        WHERE
+            `cama`.`state` = 1
+            <if test ="categoryIdx != null and categoryIdx != 0">
+                AND `cama`.`category_idx` = #{categoryIdx}
+            </if>
+    </select>
+
+    <!-- 카테고리별 장르 목록 -->
+    <select id="getGenreList" parameterType="SearchDto" resultType="ContentsDto">
+        SELECT
+            DISTINCT(`cama`.`genre_idx`) AS `genreIdx`,
+            `ge`.`name` AS `genreName`
+        FROM <include refid="database" />`category_mapping` AS `cama`
+        JOIN <include refid="database" />`genre` AS `ge`
+            ON `cama`.`genre_idx` = `ge`.`idx`
+        WHERE
+            `cama`.`state` = 1
+            <if test ="categoryIdx != null and categoryIdx != 0">
+              AND `cama`.`category_idx` = #{categoryIdx}
+            </if>
+    </select>
+</mapper>

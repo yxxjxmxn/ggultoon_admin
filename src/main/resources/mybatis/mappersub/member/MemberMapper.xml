@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.member.MemberDaoSub">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- 공통으로 사용할 field -->
+    <sql id="MemberColumns">
+        `me`.`idx`,
+        `me`.`id`,
+        `me`.`auth`,
+        `me`.`adult`,
+        `me`.`site`,
+        `me`.`state`,
+        `me`.`is_simple`,
+        IFNULL(`me`.`join_ip`, '') AS `joinIp`,
+        IFNULL(`me`.`join_type`, '') AS `joinDevice`,
+        IFNULL(`me`.`login_type`, '') AS `loginDevice`,
+        IFNULL(CONVERT_TZ(`me`.`logindate`, 'UTC', '${convertTZ}'), '') AS `logindate`,
+        IFNULL(CONVERT_TZ(`me`.`regdate`, 'UTC', '${convertTZ}'), '') AS `regdate`,
+        IFNULL(CONVERT_TZ(`me`.`modify_date`, 'UTC', '${convertTZ}'), '') AS `modifyDate`,
+        IFNULL(`me`.`nick`, '') AS `nick`,
+        IFNULL(`mesi`.`simple_type`, '') AS `joinType`,
+        IFNULL(`mein`.`txseq`, '') AS `txseq`,
+        IFNULL(`mein`.`name`, '') AS `name`,
+        IFNULL(`mein`.`birth`, '') AS `birth`,
+        IFNULL(`mein`.`gender`, '') AS `gender`,
+        IFNULL(`mein`.`email`, '') AS `email`,
+        IFNULL(`mein`.`phone`, '') AS `phone`,
+        IFNULL(`mein`.`ci`, '') AS `ci`,
+        IFNULL(`mein`.`di`, '') AS `di`,
+        IFNULL(`mein`.`lang`, '') AS `lang`,
+        IFNULL(`mein`.`currency`, '') AS `currency`
+    </sql>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+
+    <!-- 전체 회원 집계 리스트 -->
+    <select id="getMemberCntList" resultType="MemberDto">
+        SELECT
+            `me`.`state`,
+            `me`.`is_simple`,
+            `mesi`.`simple_type`,
+            SUM((IF(`me`.`state` = 0, 1, 0))) AS `outMemberCnt`,
+            SUM((IF(`me`.`state` = 1, 1, 0))) AS `normalMemberCnt`
+        FROM <include refid="database"/>`member` AS `me`
+        LEFT JOIN <include refid="database"/>`member_info` AS `mein`
+            ON `me`.`idx` = `mein`.member_idx
+        LEFT JOIN <include refid="database"/>`member_simple` AS `mesi`
+            ON `mesi`.`member_idx` = `me`.`idx`
+        GROUP BY `mesi`.`simple_type`
+    </select>
+
+    <!-- 닉네임 중복 검사-->
+    <select id="inspectDuplicateNick" parameterType="String" resultType="_int">
+        SELECT
+            COUNT(`idx`) AS `nickCnt`
+        FROM <include refid="database"/>`member`
+        WHERE
+                `nick`  = #{nick}
+            AND `state` = 1
+    </select>
+
+    <!-- 회원 상세 정보 -->
+    <select id="getMemberBasicInfo" parameterType="_long" resultType="MemberDto">
+        SELECT
+             <include refid="MemberColumns"/>
+        FROM <include refid="database"/>`member` AS `me`
+        LEFT JOIN <include refid="database"/>`member_info` AS `mein`
+            ON `me`.`idx` = `mein`.member_idx
+        LEFT JOIN <include refid="database"/>`member_simple` AS `mesi`
+            ON `mesi`.`member_idx` = `me`.`idx`
+        WHERE
+            `me`.`idx` = #{idx}
+    </select>
+
+    <!-- 회원 전체 개수 -->
+    <select id="getMemberTotalCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(`me`.`idx`) AS memberCnt
+        FROM <include refid="database"/>`member` AS `me`
+        LEFT JOIN <include refid="database"/>`member_info` AS `mein`
+            ON mein.`member_idx` = me.`idx`
+        <where>
+            <if test="searchWord != null and searchWord != '' and searchType != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'name'">
+                        AND `mein`.`name` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'email'">
+                        AND `mein`.`email` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'phone'">
+                        AND `mein`.`phone` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test='state != null'>
+                AND `me`.`state` = #{state}
+            </if>
+            <if test="searchStartDate != null and searchStartDate != '' and searchEndDate != null and searchEndDate != ''">
+                <choose>
+                    <when test="searchDateType  == 'regdate'">
+                        AND `me`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `me`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                    <when test="searchDateType == 'logindate'">
+                        AND `me`.`logindate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `me`.`logindate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 회원 리스트 -->
+    <select id="getMemberList" parameterType="SearchDto" resultType="MemberDto">
+        SELECT
+            <include refid="MemberColumns"/>
+            , `mepo`.`state` AS `marketing`
+        FROM <include refid="database"/>`member` AS `me`
+        LEFT JOIN <include refid="database"/>`member_info` AS `mein`
+            ON mein.`member_idx` = me.`idx`
+        LEFT JOIN <include refid="database"/>`member_simple` AS `mesi`
+            ON `mesi`.`member_idx` = `me`.`idx`
+        LEFT JOIN <include refid="database"/>`member_policy` AS `mepo`
+            ON `mepo`.`member_idx` = `me`.`idx` AND `mepo`.`policy` = 'marketing'
+        <where>
+            <if test="searchWord != null and searchWord != '' and searchType != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'name'">
+                        AND `mein`.`name` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'email'">
+                        AND `mein`.`email` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'phone'">
+                        AND `mein`.`phone` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test='state != null'>
+                AND `me`.`state` = #{state}
+            </if>
+            <if test="searchStartDate != null and searchStartDate != '' and searchEndDate != null and searchEndDate != ''">
+                <choose>
+                    <when test="searchDateType  == 'regdate'">
+                        AND `me`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `me`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                    <when test="searchDateType == 'logindate'">
+                        AND `me`.`logindate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `me`.`logindate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                </choose>
+            </if>
+        </where>
+        ORDER BY  `me`.`idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 회원 정책 정보 -->
+    <select id="getMemberPolicyInfo" parameterType="_long" resultType="MemberDto">
+        SELECT
+            `mepo`.`policy`,
+            `mepo`.`state` AS `policyState`,
+            CONVERT_TZ(`mepo`.`regdate`, 'UTC', '${convertTZ}') AS `modifyDate`
+        FROM <include refid="database"/>`member` AS `me`
+        LEFT JOIN <include refid="database"/>`member_policy` AS `mepo`
+            ON `me`.`idx` = `mepo`.`member_idx`
+        WHERE
+            `me`.`idx` = #{idx}
+    </select>
+
+    <!-- ott 회원 유입 통계 -->
+    <select id="getEventOtt" parameterType="SearchDto" resultType="MemberOttDto">
+        SELECT
+            *
+        FROM <include refid="database"/>`event_ott` AS `evot`
+        <where>
+            <if test="searchWord != null and searchWord != '' and searchType != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'site'">
+                        AND `evot`.`site` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- ott 회원 가입 목록 -->
+    <select id="getMemberOtt" parameterType="SearchDto" resultType="MemberOttListDto">
+        SELECT
+            `me`.`id`
+            ,`meot`.`idx`
+            ,`meot`.`member_idx`
+            ,`meot`.`id` AS `ott_id`
+            ,`meot`.`site`
+            ,`meot`.`banner_code`
+            ,IFNULL(sum(`evlo`.`point`),0) as `point`
+            ,`meot`.`state`
+            ,`meot`.`send_msg`
+            ,`meot`.`return_msg`
+            ,IFNULL(CONVERT_TZ(`meot`.`regdate`, 'UTC', '${convertTZ}'), '') AS `regdate`
+        FROM <include refid="database"/>`member_ott` AS `meot`
+            JOIN <include refid="database"/>`member` AS `me`
+                ON meot.`member_idx` = me.`idx`
+            LEFT JOIN <include refid="database"/>`event_log` AS `evlo`
+                ON meot.`member_idx` = evlo.`member_idx`
+        <where>
+            <bind name="siteVal" value="'%' + site + '%'" />
+            <choose>
+                <when test="site != '' and site != null">
+                    AND `meot`.`site` LIKE #{siteVal}
+                </when>
+
+            </choose>
+            <if test="searchWord != null and searchWord != '' and searchType != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+
+                <choose>
+                    <when test="searchType == 'ottId'">
+                        AND `meot`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'bannerCode'">
+                        AND `meot`.`banner_code` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+        GROUP BY `me`.`idx`
+        ORDER BY  `meot`.`idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+    <!-- ott 회원 가입 count -->
+    <select id="getMemberOttCnt" parameterType="SearchDto" resultType="_int">
+    SELECT
+        COUNT(1) AS memberCnt
+    FROM <include refid="database"/>`member_ott` AS `meot`
+        JOIN <include refid="database"/>`member` AS `me`
+            ON meot.`member_idx` = me.`idx`
+        <where>
+            <bind name="siteVal" value="'%' + site + '%'" />
+            <choose>
+                <when test="site != '' and site != null">
+                    AND `meot`.`site` LIKE #{siteVal}
+                </when>
+
+            </choose>
+            <if test="searchWord != null and searchWord != '' and searchType != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'ottId'">
+                        AND `meot`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'bannerCode'">
+                        AND `meot`.`banner_code` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- ott 회원 통계-->
+    <select id="getOttMemberStat" parameterType="SearchDto" resultType="MemberOttDto">
+        SELECT
+            `evot`.*,
+            TRUNCATE(IFNULL(SUM(`pa`.`pay`),0),0) AS `pay`,
+            COUNT(if(`pa`.`pay` > 0,1,null)) AS `pay_cnt`
+        FROM <include refid="database"/>`event_ott` AS `evot`
+            LEFT JOIN `member_ott` AS `meot`
+                ON `evot`.`site` =  `meot`.`site` AND `evot`.`banner_code` =  `meot`.`banner_code`
+            LEFT JOIN `payment` AS `pa`
+                ON `meot`.`member_idx` =  `pa`.`member_idx`
+                    AND `evot`.`date` =  LEFT(CONVERT_TZ(`pa`.`regdate`, 'UTC', '${convertTZ}'),10)
+                    AND `meot`.`regdate` <![CDATA[ <= ]]>  `pa`.`regdate`
+        <where>
+            <bind name="siteVal" value="'%' + site + '%'" />
+            <choose>
+                <when test="site != '' and site != null">
+                    AND `evot`.`site` LIKE #{siteVal}
+                </when>
+            </choose>
+            <if test="searchWord != null and searchWord != '' and searchType != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'bannerCode'">
+                        AND `evot`.`banner_code` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="searchStartDate != null and searchStartDate != '' and searchEndDate != null and searchEndDate != ''">
+                    AND `evot`.`date` <![CDATA[ >= ]]> #{searchStartDate}
+                    AND `evot`.`date` <![CDATA[ <= ]]> #{searchEndDate}
+            </if>
+        </where>
+        GROUP BY `evot`.`date`,`evot`.`site`, `evot`.`banner_code`
+        ORDER BY  `evot`.`date` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- ott 회원 통계 count -->
+    <select id="getOttMemberStatCnt" parameterType="SearchDto" resultType="_int">
+        SELECT
+            COUNT(1) AS memberCnt
+        FROM <include refid="database"/>`event_ott` AS `evot`
+        <where>
+            <bind name="siteVal" value="'%' + site + '%'" />
+            <choose>
+                <when test="site != '' and site != null">
+                    AND `evot`.`site` LIKE #{siteVal}
+                </when>
+            </choose>
+            <if test="searchWord != null and searchWord != '' and searchType != null">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'bannerCode'">
+                        AND `evot`.`banner_code` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="searchStartDate != null and searchStartDate != '' and searchEndDate != null and searchEndDate != ''">
+                AND `evot`.`date` <![CDATA[ >= ]]> #{searchStartDate}
+                AND `evot`.`date` <![CDATA[ <= ]]> #{searchEndDate}
+            </if>
+        </where>
+    </select>
+
+    <!-- 전체 회원 idx 리스트 조회 -->
+    <select id="getAllMemberIdxList" resultType="Long">
+        SELECT
+            `me`.`idx`
+        FROM <include refid="database"/>`member` AS `me`
+        LEFT JOIN <include refid="database"/>`member_info` AS `mein`
+            ON mein.`member_idx` = me.`idx`
+        LEFT JOIN <include refid="database"/>`member_simple` AS `mesi`
+            ON `mesi`.`member_idx` = `me`.`idx`
+        WHERE
+            `me`.`state` = 1
+    </select>
+
+    <!-- 탈퇴하려는 회원 정보 조회 -->
+    <select id="getOutMemberInfo" parameterType="_long" resultType="MemberDto">
+        SELECT
+            `idx`,
+            `id`,
+            `nick`
+        FROM <include refid="database"/>`member`
+        WHERE
+            `idx` = #{idx}
+    </select>
+
+</mapper>

@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.event.EventDaoSub">
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+
+    <!-- 2024 설연휴 이벤트 참여 내역 개수 조회 -->
+    <select id="getNewYearEventCnt" parameterType="SearchDto" resultType="int">
+        SELECT
+            COUNT(DISTINCT(`evnevi`.`idx`)) AS totalCnt
+        FROM <include refid="database"/>`event_2024_newyear_view` AS `evnevi`
+        JOIN <include refid="database"/>`member` AS `me`
+            ON `evnevi`.`member_idx` = `me`.`idx` AND `me`.`state` = 1
+        JOIN <include refid="database"/>`contents` AS `co`
+            ON `evnevi`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1 AND `co`.`pubdate` <![CDATA[ <= ]]> #{nowDate}
+        JOIN <include refid="database"/>`category` AS `ca`
+            ON `co`.`category_idx` = `ca`.`idx` AND `ca`.`state` = 1
+        JOIN <include refid="database"/>`genre` AS `ge`
+            ON `co`.`genre_idx` = `ge`.`idx` AND `ge`.`state` = 1
+        JOIN <include refid="database"/>`episode` AS `ep`
+            ON `evnevi`.`episode_idx` = `ep`.`idx` AND `ep`.`state` = 1 AND `ep`.`pubdate` <![CDATA[ <= ]]> #{nowDate}
+        <where>
+            `evnevi`.`state` = 1
+            <if test="pavilionIdx != null">
+                AND `co`.`adult_pavilion` = #{pavilionIdx}
+            </if>
+            <if test="adult != null">
+                AND `co`.`adult` = #{adult}
+            </if>
+            <if test="categoryIdx != null">
+                AND `co`.`category_idx` = #{categoryIdx}
+            </if>
+            <if test="genreIdx != null">
+                AND `co`.`genre_idx` = #{genreIdx}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'title'">
+                        AND `co`.`title` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                <choose>
+                    <when test="searchDateType  == 'regdate'">
+                        AND `evnevi`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `evnevi`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                    <when test="searchDateType == 'expiredate'">
+                        AND `evnevi`.`expiredate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `evnevi`.`expiredate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 2024 설연휴 이벤트 참여 내역 조회 -->
+    <select id="getNewYearEventList" parameterType="SearchDto" resultType="NewYearViewDto">
+        SELECT
+            `evnevi`.`idx`,
+            `me`.`idx` AS `memberIdx`,
+            `me`.`id`,
+            `me`.`nick`,
+            `evnevi`.`route`,
+            `evnevi`.`type`,
+            `evnevi`.`user_type`,
+            `co`.`idx` AS `contentsIdx`,
+            `co`.`title`,
+            `co`.`adult_pavilion` AS `pavilion`,
+            `co`.`adult`,
+            `ca`.`name` AS `category`,
+            `ge`.`name` AS `genre`,
+            `ep`.`idx` AS `episodeIdx`,
+            `ep`.`title` AS `episode`,
+            CONVERT_TZ(`evnevi`.`regdate`, 'UTC', '${convertTZ}') AS `regdate`,
+            CONVERT_TZ(`evnevi`.`expiredate`, 'UTC', '${convertTZ}') AS `expiredate`
+        FROM <include refid="database"/>`event_2024_newyear_view` AS `evnevi`
+        JOIN <include refid="database"/>`member` AS `me`
+            ON `evnevi`.`member_idx` = `me`.`idx` AND `me`.`state` = 1
+        JOIN <include refid="database"/>`contents` AS `co`
+            ON `evnevi`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1 AND `co`.`pubdate` <![CDATA[ <= ]]> #{nowDate}
+        JOIN <include refid="database"/>`category` AS `ca`
+            ON `co`.`category_idx` = `ca`.`idx` AND `ca`.`state` = 1
+        JOIN <include refid="database"/>`genre` AS `ge`
+            ON `co`.`genre_idx` = `ge`.`idx` AND `ge`.`state` = 1
+        JOIN <include refid="database"/>`episode` AS `ep`
+            ON `evnevi`.`episode_idx` = `ep`.`idx` AND `ep`.`state` = 1 AND `ep`.`pubdate` <![CDATA[ <= ]]> #{nowDate}
+        <where>
+            `evnevi`.`state` = 1
+            <if test="pavilionIdx != null">
+                AND `co`.`adult_pavilion` = #{pavilionIdx}
+            </if>
+            <if test="adult != null">
+                AND `co`.`adult` = #{adult}
+            </if>
+            <if test="categoryIdx != null">
+                AND `co`.`category_idx` = #{categoryIdx}
+            </if>
+            <if test="genreIdx != null">
+                AND `co`.`genre_idx` = #{genreIdx}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'nick'">
+                        AND `me`.`nick` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'title'">
+                        AND `co`.`title` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                <choose>
+                    <when test="searchDateType  == 'regdate'">
+                        AND `evnevi`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `evnevi`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                    <when test="searchDateType == 'expiredate'">
+                        AND `evnevi`.`expiredate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `evnevi`.`expiredate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                </choose>
+            </if>
+        </where>
+        ORDER BY `evnevi`.`idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 2024 설연휴 이벤트 통계 개수 조회 -->
+    <select id="getNewYearEventStatCnt" parameterType="SearchDto" resultType="int">
+        SELECT
+            COUNT(*) AS `totalCnt`
+        FROM <include refid="database"/>`event_2024_newyear_stat` AS `evnest`
+        JOIN <include refid="database"/>`contents` AS `co`
+            ON `evnest`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1 AND `co`.`pubdate` <![CDATA[ <= ]]> #{nowDate}
+        JOIN <include refid="database"/>`category` AS `ca`
+            ON `co`.`category_idx` = `ca`.`idx` AND `ca`.`state` = 1
+        JOIN <include refid="database"/>`genre` AS `ge`
+            ON `co`.`genre_idx` = `ge`.`idx` AND `ge`.`state` = 1
+        <where>
+            <if test="pavilionIdx != null">
+                AND `co`.`adult_pavilion` = #{pavilionIdx}
+            </if>
+            <if test="adult != null">
+                AND `co`.`adult` = #{adult}
+            </if>
+            <if test="categoryIdx != null">
+                AND `co`.`category_idx` = #{categoryIdx}
+            </if>
+            <if test="genreIdx != null">
+                AND `co`.`genre_idx` = #{genreIdx}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'idx'">
+                        AND `co`.`idx` = #{searchWord}
+                    </when>
+                    <when test="searchType == 'title'">
+                        AND `co`.`title` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                AND `evnest`.`date` <![CDATA[ >= ]]> #{searchStartDate}
+                AND `evnest`.`date` <![CDATA[ <= ]]> #{searchEndDate}
+            </if>
+        </where>
+    </select>
+
+    <!-- 2024 설연휴 이벤트 통계 조회 -->
+    <select id="getNewYearEventStat" parameterType="SearchDto" resultType="NewYearStatDto">
+        SELECT
+            `evnest`.`date`,
+            `evnest`.`contents_idx`,
+            `evnest`.`view_cnt`,
+            `co`.`idx` AS `contentsIdx`,
+            `co`.`title`,
+            `co`.`adult_pavilion` AS `pavilion`,
+            `co`.`adult`,
+            `ca`.`name` AS `category`,
+            `ge`.`name` AS `genre`
+        FROM <include refid="database"/>`event_2024_newyear_stat` AS `evnest`
+        JOIN <include refid="database"/>`contents` AS `co`
+            ON `evnest`.`contents_idx` = `co`.`idx` AND `co`.`state` = 1 AND `co`.`pubdate` <![CDATA[ <= ]]> #{nowDate}
+        JOIN <include refid="database"/>`category` AS `ca`
+            ON `co`.`category_idx` = `ca`.`idx` AND `ca`.`state` = 1
+        JOIN <include refid="database"/>`genre` AS `ge`
+            ON `co`.`genre_idx` = `ge`.`idx` AND `ge`.`state` = 1
+        <where>
+            <if test="pavilionIdx != null">
+                AND `co`.`adult_pavilion` = #{pavilionIdx}
+            </if>
+            <if test="adult != null">
+                AND `co`.`adult` = #{adult}
+            </if>
+            <if test="categoryIdx != null">
+                AND `co`.`category_idx` = #{categoryIdx}
+            </if>
+            <if test="genreIdx != null">
+                AND `co`.`genre_idx` = #{genreIdx}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'idx'">
+                        AND `co`.`idx` = #{searchWord}
+                    </when>
+                    <when test="searchType == 'title'">
+                        AND `co`.`title` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                AND `evnest`.`date` <![CDATA[ >= ]]> #{searchStartDate}
+                AND `evnest`.`date` <![CDATA[ <= ]]> #{searchEndDate}
+            </if>
+        </where>
+        ORDER BY `evnest`.`date` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 프로모션 이벤트 조회 -->
+    <select id="getPromotion" resultType="PromotionDto">
+        SELECT
+            `evpr`.`idx`,
+            `evpr`.`contents_idx`,
+            `evpr`.`episode_cnt`,
+            `evpr`.`coin`,
+            `evpr`.`coin_rent`,
+            `evpr`.`state`,
+            `evpr`.`used`,
+            `evpr`.`promotion_start_date`,
+            `evpr`.`promotion_end_date`,
+            `evpr`.`regdate`,
+            `ep`.`idx` AS `episodeIdx`
+        FROM <include refid="database"/>`event_promotion` AS `evpr`
+        JOIN <include refid="database"/>`episode` AS `ep`
+        <![CDATA[
+            ON `evpr`.`contents_idx` = `ep`.`contents_idx` AND `ep`.`episode_number` <= `evpr`.`episode_cnt`
+        ]]>
+        WHERE
+                `evpr`.`state` = 1
+            AND `evpr`.`used` = 0
+    </select>
+</mapper>

@@ -1,0 +1,55 @@
+<th:block layout:decorate="~{common/layout_popup_nomenu}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="container-fluid">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" name="title" th:text="#{lang.curation.title.area.view}"></h5>
+            </div>
+            <div class="card-body row">
+                <form id="frm" accept-charset="utf-8">
+                    <table class="table">
+                        <thead></thead>
+                        <tbody>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.curation.idx}"></th>
+                            <td class="text-left" name="idx" id="idx"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.curation.state}"></th>
+                            <td colspan="3">
+                                <div class="form-check form-switch" style="padding: 0; margin: 0;">
+                                    <input class="form-check-input" id="state" name="state" type="checkbox" value="1" style="margin-left:0;">
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.curation.code}"></th>
+                            <td class="text-center" name="code" id="code"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.curation.name}"></th>
+                            <td class="text-center" name="name" id="name"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.curation.description}"></th>
+                            <td class="text-center" name="description" id="description"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.curation.regdate}"></th>
+                            <td class="text-left" name="regdate" id="regdate"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div class="form-group row">
+                        <div class="col text-center">
+                            <button type="button" name="delete" class="btn btn-sm btn-danger" onclick="curation.delete();" th:text="#{lang.curation.button.delete}"></button>
+                            <button type="button" name="modify" class="btn btn-sm btn-warning" onclick="curation.modify();" th:text="#{lang.curation.button.modify}"></button>
+                            <button type="button" name="close" class="btn btn-sm btn-secondary" th:onclick="|self.close()|" th:text="#{lang.curation.button.close}"></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- //컨텐츠 영역 -->
+    </div>
+</th:block>

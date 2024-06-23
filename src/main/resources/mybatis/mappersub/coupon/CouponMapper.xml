@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.coupon.CouponDaoSub">
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+
+    <!-- 쿠폰 업체 개수 카운트 -->
+    <select id="getCouponStoreTotalCnt" parameterType="SearchDto" resultType="int">
+        SELECT
+            COUNT(DISTINCT(`idx`)) AS `totalCnt`
+        FROM <include refid="database"/>`coupon_store`
+        <where>
+            <choose>
+                <when test="state != null">
+                    AND `state` = #{state}
+                </when>
+                <otherwise>
+                    AND `state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test="type != null">
+                AND `type` = #{type}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'idx'">
+                        AND `idx` = #{searchWord}
+                    </when>
+                    <when test="searchType == 'name'">
+                        AND `name` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 쿠폰 업체 리스트 조회 -->
+    <select id="getCouponStoreList" parameterType="SearchDto" resultType="CouponStoreDto">
+        SELECT
+            `idx`,
+            `name`,
+            `manager`,
+            `manager_phone` AS `phone`,
+            `type`,
+            `state`,
+            CONVERT_TZ(`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database"/>`coupon_store`
+        <where>
+            <choose>
+                <when test="state != null">
+                    AND `state` = #{state}
+                </when>
+                <otherwise>
+                    AND `state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test="type != null">
+                AND `type` = #{type}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'idx'">
+                        AND `idx` = #{searchWord}
+                    </when>
+                    <when test="searchType == 'name'">
+                        AND `name` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+        ORDER BY `idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 쿠폰 업체 상세 조회 -->
+    <select id="getViewCouponStore" parameterType="SearchDto" resultType="CouponStoreDto">
+        SELECT
+            `idx`,
+            `name`,
+            `manager`,
+            `manager_phone` AS `phone`,
+            `type`,
+            `state`,
+            CONVERT_TZ(`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database"/>`coupon_store`
+        WHERE
+            `idx` = #{idx}
+            AND `state` IN (1,2)
+        LIMIT 1
+    </select>
+
+    <!-- 쿠폰 개수 카운트 -->
+    <select id="getCouponTotalCnt" parameterType="SearchDto" resultType="int">
+        SELECT
+            COUNT(DISTINCT(`co`.`idx`)) AS `totalCnt`
+        FROM <include refid="database"/>`coupon` AS `co`
+        JOIN <include refid="database"/>`coupon_store` AS `cost`
+            ON `co`.`coupon_store_idx` = `cost`.`idx` AND `cost`.`state` = 1
+        LEFT JOIN <include refid="database"/>`member_coupon_save` AS `mecosa`
+            ON `co`.`idx` = `mecosa`.`coupon_idx` AND `mecosa`.`state` = 1
+        <where>
+            <choose>
+                <when test="state != null">
+                    AND `co`.`state` = #{state}
+                </when>
+                <otherwise>
+                    AND `co`.`state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test="type != null">
+                AND `co`.`duplication` = #{type}
+            </if>
+            <if test="form != null">
+                AND `co`.`type` = #{form}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'idx'">
+                        AND `co`.`idx` = #{searchWord}
+                    </when>
+                    <when test="searchType == 'title'">
+                        AND `co`.`title` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'name'">
+                        AND `cost`.`name` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                AND `co`.`start_date` <![CDATA[ >= ]]> #{searchStartDate}
+                AND `co`.`end_date` <![CDATA[ <= ]]> #{searchEndDate}
+            </if>
+        </where>
+    </select>
+
+    <!-- 쿠폰 리스트 조회 -->
+    <select id="getCouponList" parameterType="SearchDto" resultType="CouponDto">
+        SELECT
+            `co`.`idx`,
+            `co`.`coupon_store_idx` AS `storeIdx`,
+            `co`.`code`,
+            `co`.`title`,
+            `co`.`duplication`,
+            `co`.`type`,
+            `co`.`mileage`,
+            `co`.`mileage_period` AS `period`,
+            `co`.`coupon_cnt`,
+            IFNULL(SUM(`mecosa`.`coupon_cnt`), 0) AS `totalCoupon`,
+            IFNULL(SUM(`mecosa`.`mileage`), 0) AS `totalMileage`,
+            `co`.`state`,
+            CONVERT_TZ(`co`.`start_date`, 'UTC', '${convertTZ}') AS startDate,
+            CONVERT_TZ(`co`.`end_date`, 'UTC', '${convertTZ}') AS endDate,
+            CONVERT_TZ(`co`.`regdate`, 'UTC', '${convertTZ}') AS regdate,
+            `cost`.`name`,
+            `cost`.`type` AS `storeType`
+        FROM <include refid="database"/>`coupon` AS `co`
+        JOIN <include refid="database"/>`coupon_store` AS `cost`
+            ON `co`.`coupon_store_idx` = `cost`.`idx` AND `cost`.`state` = 1
+        LEFT JOIN <include refid="database"/>`member_coupon_save` AS `mecosa`
+            ON `co`.`idx` = `mecosa`.`coupon_idx` AND `mecosa`.`state` = 1
+        <where>
+            <choose>
+                <when test="state != null">
+                    AND `co`.`state` = #{state}
+                </when>
+                <otherwise>
+                    AND `co`.`state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test="type != null">
+                AND `co`.`duplication` = #{type}
+            </if>
+            <if test="form != null">
+                AND `co`.`type` = #{form}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'idx'">
+                        AND `co`.`idx` = #{searchWord}
+                    </when>
+                    <when test="searchType == 'title'">
+                        AND `co`.`title` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'name'">
+                        AND `cost`.`name` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                AND `co`.`start_date` <![CDATA[ >= ]]> #{searchStartDate}
+                AND `co`.`end_date` <![CDATA[ <= ]]> #{searchEndDate}
+            </if>
+        </where>
+        GROUP BY `co`.`idx`
+        ORDER BY `co`.`idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 쿠폰 상세 조회 -->
+    <select id="getViewCoupon" parameterType="SearchDto" resultType="CouponDto">
+        SELECT
+            `co`.`idx`,
+            `co`.`coupon_store_idx` AS `storeIdx`,
+            `co`.`code`,
+            `co`.`title`,
+            `co`.`duplication`,
+            `co`.`type`,
+            `co`.`mileage`,
+            `co`.`mileage_period` AS `period`,
+            `co`.`coupon_cnt`,
+            IFNULL(SUM(`mecosa`.`coupon_cnt`), 0) AS `totalCoupon`,
+            IFNULL(SUM(`mecosa`.`mileage`), 0) AS `totalMileage`,
+            `co`.`state`,
+            CONVERT_TZ(`co`.`start_date`, 'UTC', '${convertTZ}') AS startDate,
+            CONVERT_TZ(`co`.`end_date`, 'UTC', '${convertTZ}') AS endDate,
+            CONVERT_TZ(`co`.`regdate`, 'UTC', '${convertTZ}') AS regdate,
+            `cost`.`name`,
+            `cost`.`type` AS `storeType`
+            FROM <include refid="database"/>`coupon` AS `co`
+        JOIN <include refid="database"/>`coupon_store` AS `cost`
+            ON `co`.`coupon_store_idx` = `cost`.`idx` AND `cost`.`state` = 1
+        LEFT JOIN <include refid="database"/>`member_coupon_save` AS `mecosa`
+            ON `co`.`idx` = `mecosa`.`coupon_idx` AND `mecosa`.`state` = 1
+        WHERE
+            `co`.`idx` = #{idx}
+            AND `co`.`state` IN (1,2)
+        GROUP BY `co`.`idx`
+        LIMIT 1
+    </select>
+
+    <!-- 쿠폰 사용 내역 개수 카운트 -->
+    <select id="getCouponUsedTotalCnt" parameterType="SearchDto" resultType="int">
+        SELECT
+            COUNT(DISTINCT(`mecous`.`idx`)) AS `totalCnt`
+        FROM <include refid="database"/>`member_coupon_used` AS `mecous`
+        JOIN <include refid="database"/>`member_coupon_save` AS `mecosa`
+            ON `mecous`.`member_coupon_save_idx` = `mecosa`.`idx`
+        JOIN <include refid="database"/>`member` AS `me`
+            ON `mecous`.`member_idx` = `me`.idx
+        JOIN <include refid="database"/>`coupon` AS `co`
+            ON `mecosa`.`coupon_idx` = `co`.idx
+        JOIN <include refid="database"/>`coupon_store` AS `cost`
+            ON `co`.`coupon_store_idx` = `cost`.`idx`
+        <where>
+            <if test="type != null">
+                AND `mecosa`.`type` = #{type}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'idx'">
+                        AND `me`.`idx` = #{searchWord}
+                    </when>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'name'">
+                        AND `cost`.`name` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                <choose>
+                    <when test="searchDateType  == 'regdate'">
+                        AND `mecous`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `mecous`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                    <when test="searchDateType == 'expiredate'">
+                        AND `mecous`.`expiredate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `mecous`.`expiredate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 쿠폰 사용 내역 조회 -->
+    <select id="getCouponUsedList" parameterType="SearchDto" resultType="CouponUsedDto">
+        SELECT
+            `mecous`.`idx`,
+            `mecous`.`mileage`,
+            (`mecous`.`mileage` - `mecous`.`rest_mileage`) AS `usedMileage`,
+            `mecous`.`rest_mileage`,
+            `mecous`.`state`,
+            CONVERT_TZ(`mecous`.`regdate`, 'UTC', '${convertTZ}') AS regdate,
+            CONVERT_TZ(`mecous`.`expiredate`, 'UTC', '${convertTZ}') AS expiredate,
+            `mecosa`.`type`,
+            `me`.`idx` AS `memberIdx`,
+            `me`.`id` AS `memberId`,
+            `me`.`login_type` AS `routeText`,
+            `co`.`idx` AS `couponIdx`,
+            `cost`.`type` AS `storeType`,
+            `cost`.`name` AS `storeName`
+        FROM <include refid="database"/>`member_coupon_used` AS `mecous`
+        JOIN <include refid="database"/>`member_coupon_save` AS `mecosa`
+            ON `mecous`.`member_coupon_save_idx` = `mecosa`.`idx`
+        JOIN <include refid="database"/>`member` AS `me`
+            ON `mecous`.`member_idx` = `me`.idx
+        JOIN <include refid="database"/>`coupon` AS `co`
+            ON `mecosa`.`coupon_idx` = `co`.idx
+        JOIN <include refid="database"/>`coupon_store` AS `cost`
+            ON `co`.`coupon_store_idx` = `cost`.`idx`
+        <where>
+            <if test="type != null">
+                AND `mecosa`.`type` = #{type}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'idx'">
+                        AND `me`.`idx` = #{searchWord}
+                    </when>
+                    <when test="searchType == 'id'">
+                        AND `me`.`id` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'name'">
+                        AND `cost`.`name` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                <choose>
+                    <when test="searchDateType  == 'regdate'">
+                        AND `mecous`.`regdate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `mecous`.`regdate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                    <when test="searchDateType == 'expiredate'">
+                        AND `mecous`.`expiredate` <![CDATA[ >= ]]> #{searchStartDate}
+                        AND `mecous`.`expiredate` <![CDATA[ <= ]]> #{searchEndDate}
+                    </when>
+                </choose>
+            </if>
+        </where>
+        ORDER BY `mecous`.`idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 쿠폰 통계 개수 조회 -->
+    <select id="getCouponStatTotalCnt" parameterType="SearchDto" resultType="int">
+        SELECT
+            COUNT(DISTINCT(`date`)) AS `totalCnt`
+        FROM <include refid="database"/>`coupon_stat`
+        <where>
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                AND `date` <![CDATA[ >= ]]> #{searchStartDate}
+                AND `date` <![CDATA[ <= ]]> #{searchEndDate}
+            </if>
+        </where>
+    </select>
+
+    <!-- 쿠폰 통계 조회 -->
+    <select id="getCouponStat" parameterType="SearchDto" resultType="CouponStatDto">
+        SELECT
+            `date`,
+            SUM(`register_cnt`) AS `registerCnt`,
+            SUM(`new_cnt`) AS `newCnt`,
+            SUM(`old_cnt`) AS `oldCnt`,
+            SUM(`re_register_cnt`) AS `reRegisterCnt`,
+            SUM(`out_cnt`) AS `outCnt`,
+            SUM(`new_payment_cnt`) AS `newPaymentCnt`,
+            SUM(`new_payment_price`) AS `newPaymentPrice`,
+            SUM(`old_payment_cnt`) AS `oldPaymentCnt`,
+            SUM(`old_payment_price`) AS `oldPaymentPrice`
+        FROM <include refid="database"/>`coupon_stat`
+        <where>
+            <if test="searchStartDate != '' and searchEndDate != ''">
+                AND `date` <![CDATA[ >= ]]> #{searchStartDate}
+                AND `date` <![CDATA[ <= ]]> #{searchEndDate}
+            </if>
+        </where>
+        GROUP BY `date`
+        ORDER BY `date` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+</mapper>

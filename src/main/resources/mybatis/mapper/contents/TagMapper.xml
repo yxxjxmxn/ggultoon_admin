@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.dao.contents.TagDao">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        INSERT
+    =============================================================== -->
+
+    <!-- 작품 태그 등록 -->
+    <insert id="registerTag" parameterType="TagDto">
+        INSERT INTO <include refid="database" /> tag
+        <set>
+            `tag_group_idx` = #{tagGroupIdx},
+            `name`          = #{name},
+            `state`         = #{state},
+            `regdate`       = #{regdate},
+            `regdate_tz`    = '${convertTZ}'
+        </set>
+    </insert>
+
+    <!-- ==============================================================
+        UPDATE
+    =============================================================== -->
+
+    <!-- 작품 태그 수정 -->
+    <update id="modifyTag" parameterType="TagDto">
+        UPDATE <include refid="database" /> tag
+        <set>
+            `tag_group_idx` = #{tagGroupIdx},
+            `name`          = #{name},
+            `state`         = #{state},
+            `regdate`       = #{regdate},
+            `regdate_tz`    = '${convertTZ}'
+        </set>
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+    <!-- 작품 태그 삭제 -->
+    <update id="deleteTag" parameterType="Integer">
+        UPDATE <include refid="database" /> tag
+        SET
+            `state` = 0
+        WHERE
+            `idx` = #{idx}
+    </update>
+
+</mapper>

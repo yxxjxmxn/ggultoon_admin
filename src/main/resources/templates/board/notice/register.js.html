@@ -1,0 +1,86 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        // ckeditor5 설정
+        ClassicEditor
+            .create(document.querySelector('#content'), {
+                // toolbar 설정(Editor.defaultConfig)
+                toolbar: [
+                    'undo',
+                    'redo',
+                    '|',
+                    'insertTable',
+                    'blockQuote',
+                    '|',
+                    'imageUpload',
+                    '|',
+                    'fontFamily',
+                    'fontSize',
+                    'bold',
+                    'italic',
+                    'fontColor',
+                    '|',
+                    'fontBackgroundColor'
+                ],
+                language: "ko",
+                simpleUpload: {
+                    uploadUrl: "[[${SERVER.currentDomain}]]/v1/boards/notices/tempImage",
+                    withCredentials: true
+                }
+            })
+            .then(newEditor => {
+                editor = newEditor;
+
+            })
+            .catch( error => {
+                console.error( error );
+            });
+    });
+
+    let notice = {
+        // 공지사항 등록
+        register: function () {
+
+            // form data set
+            let form = $("#registerForm")[0];
+            let formData = new FormData(form);
+
+            // 공지사항 사용 상태값 set
+            if ($("input:checkbox[name='state']:checked").val() == null) {
+                formData.append("state", 2);
+            }
+
+            // 공지사항 필독 여부 set
+            if ($("input:checkbox[name='mustRead']:checked").val() == null) {
+                formData.append("mustRead", 0);
+            }
+
+            // 공지사항 내용 set
+            formData.set('content' , editor.getData());
+
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/boards/notices',
+                method: 'POST',
+                enctype: 'multipart/form-data',
+                data: formData,
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        toast.alert(res.message);
+                        opener.location.reload();
+                        self.close();
+                    } else {
+                        // 등록 실패
+                        toast.alert(res.message);
+                    }
+                },
+                error: function(request, status, error) {
+                    // filter error
+                    toast.alert("code: "+request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+            return false;
+        }
+    }
+</script>

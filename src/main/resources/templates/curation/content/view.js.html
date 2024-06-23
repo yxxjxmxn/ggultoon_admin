@@ -1,0 +1,229 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        curation.view();
+    });
+
+    let text = {
+        idx : "[[#{lang.curation.idx}]]", // 번호
+        title : "[[#{lang.curation.title}]]", // 제목
+        pavilion : "[[#{lang.curation.pavilion}]]", // 이용관
+        adult : "[[#{lang.curation.adult}]]", // 시청연령
+        category : "[[#{lang.curation.category}]]", // 카테고리
+        genre : "[[#{lang.curation.genre}]]", // 장르
+        description : "[[#{lang.curation.description}]]", // 설명
+        writer : "[[#{lang.curation.writer}]]", // 글작가
+        painter : "[[#{lang.curation.painter}]]", // 그림작가
+        tag : "[[#{lang.curation.tag}]]", // 태그
+        episodeCnt : "[[#{lang.curation.episode.count}]]", // 회차 수
+        notice : "[[#{lang.curation.episode.notice}]]", // 작품 변경 후 수정 버튼을 눌러 변경 사항을 저장하세요!
+        btn : {
+            change : "[[#{lang.curation.button.content.modify}]]" // 작품 변경
+        }
+    }
+
+    // 큐레이션 매핑 작품 상세
+    let curation = {
+        view: function () {
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/curations/[[${idx}]]/contents/[[${contentsIdx}]]',
+                method: 'GET',
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        if (res.data != undefined) {
+
+                            // 큐레이션 매핑 작품 사용 상태 세팅
+                            if (res.data.mappingState == 1) {
+                                $("input:checkbox[id='state']").prop("checked", true);
+                            }
+
+                            // 썸네일 url 세팅
+                            let imgUrl = "";
+                            if (res.data.imageList != null && res.data.imageList != undefined) {
+                                imgUrl = `<img id="img" src="${res.data.imageList[0].url}" style="height:100%; width:100%; margin-bottom: 20%;">
+                                          <div class="text-center"><button type="button" class="btn btn-sm btn-info" onclick="curation.modifyPopUp();">${text.btn.change}</button></div>
+                                          <div class="text-center"><p style="color: gray;">${text.notice}</p></div>
+                                          `;
+                            }
+
+                            // 작품 소개글 말줄임표 세팅
+                            let description = res.data.description.substring(0, 100) + '...';
+
+                            // 작품 정보 세팅
+                            let contentInfo = `<table class="table table-hover table-bordered">
+                                                    <colgroup>
+                                                        <col style="width: 30%;">
+                                                    </colgroup>
+                                                   <tbody>
+                                                         <tr>
+                                                            <th>${text.title}</th>
+                                                            <td name="title">${res.data.title || "-"} <span class="badge ${res.data.stateBg}">${res.data.stateText || "-"}</span></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>${text.idx}</th>
+                                                            <td name="contentsIdx">${res.data.idx || "-"}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>${text.pavilion}</th>
+                                                            <td name="pavilion"><span class="badge ${res.data.pavilionBg}">${res.data.pavilionText || "-"}</span></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>${text.adult}</th>
+                                                            <td name="adult"><span class="badge ${res.data.adultBg}">${res.data.adultText || "-"}</span></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>${text.category}</th>
+                                                            <td name="category">${res.data.category || "-"}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>${text.genre}</th>
+                                                            <td name="genre">${res.data.genre || "-"}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>${text.writer}</th>
+                                                            <td name="writer">${res.data.writer || "-"}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>${text.painter}</th>
+                                                            <td name="painter">${res.data.painter || "-"}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>${text.tag}</th>
+                                                            <td name="tag">${res.data.tag || "-"}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>${text.description}</th>
+                                                            <td name="description">${description || "-"}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>${text.episodeCnt}</th>
+                                                            <td name="episodeCnt">${res.data.episodeCnt || "-"}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>`;
+
+                            // 큐레이션 매핑 작품 상세 정보 폼
+                            $("td[name=mappingIdx]").text(res.data.mappingIdx||"-");
+                            $("td[name=mappingSort]").text(res.data.mappingSort||"-");
+                            $("td[name=contentImg]").html(imgUrl);
+                            $("td[name=contentInfo]").html(contentInfo);
+                            $("td[name=regdate]").text(res.data.regdate||"-");
+
+                        } else {
+                            // 결과 없음
+                            toast.alert(res.message);
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+
+            return false;
+        },
+        // 큐레이션 매핑 작품 변경 팝업
+        modifyPopUp: function () {
+            js_popup('[[${SERVER.currentDomain}]]/curations/[[${idx}]]/contents/[[${contentsIdx}]]/modify', 'curation_content_modify', '800', '1000');
+        },
+        // 큐레이션 매핑 정보 삭제
+        delete: function () {
+
+            let deleteConfirmMessage = `[[#{lang.curation.confirm.delete}]]`;
+
+            if (confirm(deleteConfirmMessage)) {
+
+                // 배열 set
+                let idxArr = new Array();
+                let idx = $("td[name=mappingIdx]").text();
+                idxArr.push(idx);
+
+                // 삭제할 매핑 idx 전송 : Object to String 변환
+                let formData = new FormData();
+                const data = JSON.stringify(idxArr);
+                formData.set("list", data);
+
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/curations/[[${idx}]]/contents',
+                    method: "DELETE",
+                    data: formData,
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            // 삭제 성공
+                            toast.alert(res.message);
+                            opener.location.reload();
+                            self.close();
+                        } else {
+                            // 삭제 실패
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+                return false;
+            }
+        },
+        // 큐레이션 매핑 작품 수정
+        modify: function () {
+
+            let modifyConfirmMessage = `[[#{lang.curation.confirm.modify}]]`;
+
+            if (confirm(modifyConfirmMessage)) {
+
+                let form = $("#frm")[0];
+                let formData = new FormData(form);
+
+                // 사용 상태 선택값 세팅
+                let state = $("input:checkbox[name='state']:checked").val();
+                if (state == null || state == undefined) {
+                    formData.set("state", 2);
+                }
+
+                // 변경한 작품 idx 세팅
+                let idx = $("td[name='contentsIdx']").text();
+                formData.set("idx", idx);
+
+                // 변경한 매핑 테이블 idx 세팅
+                let mappingIdx = $("td[name='mappingIdx']").text();
+                formData.set("mappingIdx", mappingIdx);
+
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/curations/[[${idx}]]/contents',
+                    method: "PUT",
+                    data: formData,
+                    dataType: 'json',
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.result) {
+                            // 수정 성공
+                            toast.alert(res.message);
+                            opener.location.reload();
+                            self.close();
+                        } else {
+                            // 수정 실패
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+                return false;
+            }
+        }
+    }
+</script>

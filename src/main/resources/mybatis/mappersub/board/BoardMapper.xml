@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.daosub.board.BoardDaoSub">
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        SELECT
+    =============================================================== -->
+
+    <!-- 공지사항 전체 개수 카운트 -->
+    <select id="getNoticeTotalCnt" parameterType="SearchDto" resultType="int">
+        SELECT
+            COUNT(DISTINCT(`idx`)) AS `noticeTotalCnt`
+        FROM <include refid="database" /> notice
+        <where>
+            <choose>
+                <when test="state != null">
+                    AND `state` = #{state}
+                </when>
+                <otherwise>
+                    AND `state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test='type != null'>
+                AND `must_read` = #{type}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'title'">
+                        AND `title` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'content'">
+                        AND `content` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <!-- 공지사항 리스트 조회 -->
+    <select id="getNoticeList" parameterType="SearchDto" resultType="NoticeDto">
+        SELECT
+            `idx`,
+            `title`,
+            `content`,
+            `must_read`,
+            `type`,
+            `state`,
+            CONVERT_TZ(`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database" /> notice
+        <where>
+            <choose>
+                <when test="state != null">
+                    AND `state` = #{state}
+                </when>
+                <otherwise>
+                    AND `state` IN (1,2)
+                </otherwise>
+            </choose>
+            <if test='type != null'>
+                AND `must_read` = #{type}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <bind name="val" value="'%' + searchWord + '%'" />
+                <choose>
+                    <when test="searchType == 'title'">
+                        AND `title` LIKE #{val}
+                    </when>
+                    <when test="searchType == 'content'">
+                        AND `content` LIKE #{val}
+                    </when>
+                </choose>
+            </if>
+        </where>
+        ORDER BY `idx` DESC
+        <if test="pagination != null">
+            LIMIT #{recordSize}
+            OFFSET #{pagination.limitStart}
+        </if>
+    </select>
+
+    <!-- 공지사항 상세 -->
+    <select id="getViewNotice" parameterType="Long" resultType="NoticeDto">
+        SELECT
+            `idx`,
+            `title`,
+            `type`,
+            `content`,
+            `must_read`,
+            `state`,
+            CONVERT_TZ(`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database" /> notice
+        WHERE
+            `idx` = #{idx}
+        LIMIT 1
+    </select>
+
+    <!-- 알림 전송할 공지사항 등록일 리스트 조회 -->
+    <select id="getNoticeRegdateList" parameterType="List" resultType="NoticeDto">
+        SELECT
+            `idx`,
+            CONVERT_TZ(`regdate`, 'UTC', '${convertTZ}') AS regdate
+        FROM <include refid="database" /> notice
+        WHERE
+            `state` = 1
+            AND `idx` IN
+            <foreach collection="list" item="idx" open="(" close=")" separator=",">
+                #{idx}
+            </foreach>
+    </select>
+</mapper>

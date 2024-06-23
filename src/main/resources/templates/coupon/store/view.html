@@ -1,0 +1,78 @@
+<th:block layout:decorate="~{common/layout_popup_nomenu}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="container-fluid">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" name="title" th:text="#{lang.coupon.store.title.view}"></h5>
+            </div>
+            <div class="card-body row">
+                <form id="frm" accept-charset="utf-8">
+                    <table class="table">
+                        <thead></thead>
+                        <colgroup>
+                            <col style="width: 25%;">
+                        </colgroup>
+                        <tbody>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.store.idx}"></th>
+                            <td colspan="5" class="text-left" name="idx" id="idx"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.store.state}"></th>
+                            <td colspan="5">
+                                <div class="form-check form-switch" style="padding: 0; margin: 0;">
+                                    <input class="form-check-input" id="state" name="state" type="checkbox" value="1" style="margin-left:0;">
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.store.name}"></th>
+                            <td colspan="5" class="text-center" name="name" id="name"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.store.manager}"></th>
+                            <td colspan="5" class="text-center" name="manager" id="manager"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.store.manager.phone}"></th>
+                            <td class="text-center" name="phone1">
+                            </td>
+                            <td class="text-center">-</td>
+                            <td class="text-center" name="phone2">
+                            </td>
+                            <td class="text-center">-</td>
+                            <td class="text-center" name="phone3">
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.store.type}"></th>
+                            <td colspan="5">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="type" id="online" value="1">
+                                    <label class="form-check-label" for="online" th:text="#{lang.coupon.store.type.online}"></label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="type" id="offline" value="2">
+                                    <label class="form-check-label" for="offline" th:text="#{lang.coupon.store.type.offline}"></label>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.store.regdate}"></th>
+                            <td colspan="5" class="text-left" name="regdate" id="regdate"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div class="form-group row">
+                        <div class="col text-center">
+                            <button type="button" name="delete" class="btn btn-sm btn-danger" onclick="coupon.delete();" th:text="#{lang.coupon.button.delete}"></button>
+                            <button type="button" name="modify" class="btn btn-sm btn-warning" onclick="coupon.modify();" th:text="#{lang.coupon.button.modify}"></button>
+                            <button type="button" name="close" class="btn btn-sm btn-secondary" th:onclick="|self.close()|" th:text="#{lang.coupon.button.close}"></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- //컨텐츠 영역 -->
+    </div>
+</th:block>

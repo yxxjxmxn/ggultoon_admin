@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.architecture.admin.models.dao.admin.CpDao">
+    <!-- ==============================================================
+        SETTING
+    =============================================================== -->
+    <!-- database name -->
+    <sql id="database">${databaseRefId}</sql>
+
+    <!-- ==============================================================
+        INSERT
+    =============================================================== -->
+    <!-- 등록하기 -->
+    <insert id="insert" parameterType="CpDto" useGeneratedKeys="true" keyProperty="insertedId">
+        INSERT INTO <include refid="database" />`cp_member`
+        <set>
+            `id`                     =  #{id},
+            `password`               =  #{password},
+            `name`                   =  #{name},
+            `state`                  =  #{state},
+            `level`                  =  #{level},
+            `regdate`                =  #{regdate},
+            `regdate_tz`             =  '${convertTZ}'
+        </set>
+    </insert>
+    <!-- 제휴사 정보 등록하기 -->
+    <insert id="insertInfo" parameterType="CpDto">
+        INSERT INTO <include refid="database" />`cp_member_info`
+        <set>
+            `cp_member_idx`     =  #{insertedId},
+            `ceo`               =  #{ceo},
+            `manager`           =  #{manager},
+            `phone`             =  #{phone},
+            `manager_phone`     =  #{managerPhone},
+            `company_name`      =  #{companyName},
+            `business_number`   =  #{businessNumber},
+            `business_type`     =  #{businessType},
+            `company_email`     =  #{companyEmail},
+            `bank_name`         =  #{bankName},
+            `bank_number`       =  #{bankNumber},
+            `holder`            =  #{holder},
+            `billing_email`     =  #{billingEmail},
+            `cpmg`              =  #{cpmg},
+            `regdate`           =  #{regdate},
+            `regdate_tz`        =  '${convertTZ}'
+        </set>
+    </insert>
+
+    <!-- ==============================================================
+        UPDATE
+    =============================================================== -->
+    <!-- 관리자 수정 -->
+    <update id="modify" parameterType="cpDto">
+        UPDATE <include refid="database" />`cp_member`
+        <set>
+            `state` = #{state},
+            `level` = #{level},
+            `name`  =  #{name},
+            <if test="password != null and password != ''">
+                `password`  =  #{password},
+            </if>
+        </set>
+        WHERE
+        idx = #{idx}
+    </update>
+
+    <!-- 관리자 정보 수정 -->
+    <update id="modifyInfo" parameterType="cpDto">
+        INSERT INTO <include refid="database" />`cp_member_info`
+        <set>
+            `cp_member_idx`     = #{idx},
+            `ceo`               = #{ceo},
+            `manager`           = #{manager},
+            `phone`             = #{phone},
+            `manager_phone`     = #{managerPhone},
+            `company_name`      = #{companyName},
+            `business_number`   = #{businessNumber},
+            `business_type`     = #{businessType},
+            `company_email`     = #{companyEmail},
+            `bank_name`         = #{bankName},
+            `bank_number`       = #{bankNumber},
+            `holder`            = #{holder},
+            `billing_email`     = #{billingEmail},
+            `cpmg`              = #{cpmg}
+        </set>
+        ON DUPLICATE KEY UPDATE
+            `ceo`               = #{ceo},
+            `manager`           = #{manager},
+            `phone`             = #{phone},
+            `manager_phone`     = #{managerPhone},
+            `company_name`      = #{companyName},
+            `business_number`   = #{businessNumber},
+            `business_type`     = #{businessType},
+            `company_email`     = #{companyEmail},
+            `bank_name`         = #{bankName},
+            `bank_number`       = #{bankNumber},
+            `holder`            = #{holder},
+            `billing_email`     = #{billingEmail},
+            `cpmg`              = #{cpmg}
+    </update>
+
+    <!-- 이미지 파일 등록하기 -->
+    <insert id="fileUpload" parameterType="hashmap">
+        INSERT INTO <include refid="database" />`cp_member_img`
+        <set>
+            `cp_member_idx`     =  #{idx},
+            `type`              =  #{type},
+            `path`              =  #{dirName},
+            `filename`          =  #{orgFileName},
+            `url`               =  #{fileUrl},
+            `state`             =  1,
+            `regdate`           =  #{regdate},
+            `regdate_tz`        =  '${convertTZ}'
+        </set>
+        ON DUPLICATE KEY UPDATE
+            `path`              = #{dirName},
+            `filename`          = #{orgFileName},
+            `url`               = #{fileUrl}
+    </insert>
+
+</mapper>

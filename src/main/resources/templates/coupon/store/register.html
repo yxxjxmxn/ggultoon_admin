@@ -1,0 +1,72 @@
+<th:block layout:decorate="~{common/layout_popup_nomenu}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="container-fluid">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" th:text="#{lang.coupon.store.title.register}"></h5>
+            </div>
+            <div class="card-body row">
+                <form id="registerForm" onsubmit="coupon.register(); return false;"accept-charset="utf-8">
+                    <table class="table">
+                        <thead></thead>
+                        <colgroup>
+                            <col style="width: 25%;">
+                        </colgroup>
+                        <tbody>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.store.state}"></th>
+                            <td colspan="5">
+                                <div class="form-check form-switch" style="padding: 0; margin: 0;">
+                                    <input class="form-check-input" id="state" name="state" type="checkbox" value="1" style="margin-left:0;" checked>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.store.name}"></th>
+                            <td colspan="5" class="text-center"><input type="text" name="name" id="name" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.store.manager}"></th>
+                            <td colspan="5" class="text-center"><input type="text" name="manager" id="manager" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.coupon.store.manager.phone}"></th>
+                            <td class="text-center">
+                                <input type="tel" name="phone" id="phone1" class="form-control form-control-sm" maxlength="3" oninput="numberMaxLength(this);"/>
+                            </td>
+                            <td class="text-center">-</td>
+                            <td class="text-center">
+                                <input type="tel" name="phone" id="phone2" class="form-control form-control-sm" maxlength="4" oninput="numberMaxLength(this);"/>
+                            </td>
+                            <td class="text-center">-</td>
+                            <td class="text-center">
+                                <input type="tel" name="phone" id="phone3" class="form-control form-control-sm" maxlength="4" oninput="numberMaxLength(this);"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th rowspan="3" class="text-center" th:text="#{lang.coupon.store.type}"></th>
+                            <td colspan="5">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="type" id="online" value="1" checked>
+                                    <label class="form-check-label" for="online" th:text="#{lang.coupon.store.type.online}"></label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="type" id="offline" value="2">
+                                    <label class="form-check-label" for="offline" th:text="#{lang.coupon.store.type.offline}"></label>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div class="form-group row">
+                        <div class="col text-center">
+                            <button type="button" class="btn btn-sm btn-primary" onclick="coupon.register();" th:text="#{lang.coupon.button.register}"></button>
+                            <button type="button" class="btn btn-sm btn-secondary" th:onclick="|self.close()|" th:text="#{lang.coupon.button.close}"></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- //컨텐츠 영역 -->
+    </div>
+</th:block>

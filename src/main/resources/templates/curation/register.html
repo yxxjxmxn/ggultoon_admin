@@ -1,0 +1,68 @@
+<th:block layout:decorate="~{common/layout_popup_nomenu}" xmlns:layout="http://www.w3.org/1999/xhtml">
+    <div layout:fragment="content" class="container-fluid">
+        <!-- 컨텐츠 영역 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="font-weight-bold text-primary float-left" th:text="#{lang.curation.title.register}"></h5>
+            </div>
+            <div class="card-body row">
+                <form id="registerForm" onsubmit="curation.register(); return false;"accept-charset="utf-8">
+                    <table class="table">
+                        <thead></thead>
+                        <colgroup>
+                            <col style="width: 30%;">
+                        </colgroup>
+                        <tbody>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.curation.state}"></th>
+                            <td colspan="3">
+                                <div class="form-check form-switch" style="padding: 0; margin: 0;">
+                                    <input class="form-check-input" id="state" name="state" type="checkbox" value="1" style="margin-left:0;" checked>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.curation.title}"></th>
+                            <td colspan="3" class="text-center"><input type="text" name="title" id="title" class="form-control form-control-sm"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.curation.name}"></th>
+                            <td class="text-left" id="leftArea"></td>
+                            <td colspan="2" class="text-left" id="rightArea"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.curation.reservation}"></th>
+                            <td colspan="3">
+                                <div class="form-check form-switch" style="padding: 0; margin: 0;">
+                                    <input class="form-check-input" id="reservation" name="reservation" type="checkbox" value="1" style="margin-left:0;" checked>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-center" th:text="#{lang.curation.reservation.date}"></th>
+                            <td class="text-center">
+                                <span th:text="#{lang.curation.startDate}"></span>
+                                <input type="text" th:placeholder="YYYY-MM-DD" id="searchStartDate" name="searchStartDate" maxlength="10" class="datePicker form-control form-control-sm text-center" oninput="date.forMatter(this)" autocomplete="off"/>
+                            </td>
+                            <td class="text-center">
+                                <span class="h5 fw-bold" style="color: gray">~</span>
+                            </td>
+                            <td class="text-center">
+                                <span th:text="#{lang.curation.endDate}"></span>
+                                <input type="text" th:placeholder="YYYY-MM-DD" id="searchEndDate" name="searchEndDate" maxlength="10" class="datePicker form-control form-control-sm text-center" oninput="date.forMatter(this)" autocomplete="off"/>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div class="form-group row">
+                        <div class="col text-center">
+                            <button type="button" class="btn btn-sm btn-primary" onclick="curation.register();" th:text="#{lang.curation.button.register}"></button>
+                            <button type="button" class="btn btn-sm btn-secondary" th:onclick="|self.close()|" th:text="#{lang.curation.button.close}"></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- //컨텐츠 영역 -->
+    </div>
+</th:block>

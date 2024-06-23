@@ -1,0 +1,45 @@
+<html>
+
+인증키<input id='txseq'>
+아이디<input id='id'>
+CI값<input id='ci'>
+DI값<input id='di'>
+비밀번호<input id='password'>
+
+<button onclick='popup()'>팝업테스트</button>
+
+<button onclick='check()'>본인인증</button>
+
+<button onclick='findId()'>아이디 찾기</button>
+
+<button onclick='findPwd()'>비밀번호 찾기</button>
+
+</html>
+
+<script>
+
+    //팝업테스트
+    function popup() {
+        var options = 'top=10, left=10, width=500, height=600, status=no, menubar=no, toolbar=no, resizable=no';
+        window.open('pop?res=success&msg=본인인증완료&txseq=txseq1234&id=xxx123@xxx.com&ci=1234&di=4567', 'pop', options);
+    }
+    //본인인증
+    function check() {
+        var options = 'top=10, left=10, width=500, height=600, status=no, menubar=no, toolbar=no, resizable=no';
+        var url = encodeURI("https://webtoon-admin.devlabs.co.kr:18081/admin/sample/pop");
+        window.open('https://webtoon-api.devlabs.co.kr:18083/v1/check/popup?url='+url+"&id=xxx123@xxx.com" , 'pop', options);
+    }
+    //아이디 찾기
+    function findId() {
+        var options = 'top=10, left=10, width=500, height=600, status=no, menubar=no, toolbar=no, resizable=no';
+        var url = encodeURI("https://webtoon-admin.devlabs.co.kr:18081/admin/sample/pop");
+        window.open('https://webtoon-api.devlabs.co.kr:18083/v1/check/popup/id?url='+url+"&id=xxx123@xxx.com&ci=1234&di=4567", 'pop', options);
+    }
+    //비밀번호 찾기
+    function findPwd() {
+        var options = 'top=10, left=10, width=500, height=600, status=no, menubar=no, toolbar=no, resizable=no';
+        var url = encodeURI("https://webtoon-admin.devlabs.co.kr:18081/admin/sample/pop");
+        window.open('https://webtoon-api.devlabs.co.kr:18083/v1/check/popup/password?url='+url+"&id=xxx123@xxx.com&ci=1234&di=4567", 'pop', options);
+    }
+
+</script>

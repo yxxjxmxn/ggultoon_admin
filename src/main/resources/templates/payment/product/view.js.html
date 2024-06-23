@@ -1,0 +1,90 @@
+<script th:fragment="importJsFragment">
+    $(document).ready(function () {
+        paymentProduct.view();
+    });
+
+    let paymentProduct = {
+        // 결제 상품 상세
+        view: function () {
+            $.ajax({
+                url: '[[${SERVER.currentDomain}]]/v1/payments/products/[[${idx}]]',
+                method: 'GET',
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.result) {
+                        if (res.data != undefined) {
+
+                            // 결제 상품 상세 정보 폼
+                            $("td[name=idx]").text(res.data.idx);
+                            $("td[name=state]").html(`<span class="badge ${res.data.stateBg}">${res.data.stateText||"-"}</span>`);
+                            $("td[name=title]").text(res.data.title||"-");
+                            $("td[name=type]").text(res.data.typeText||"-");
+                            $("td[name=coin]").text(paymentProduct.comma(Math.floor(res.data.coin)));
+                            $("td[name=mileage]").text(paymentProduct.comma(Math.floor(res.data.mileage)));
+                            $("td[name=coinFree]").text(paymentProduct.comma(Math.floor(res.data.coinFree)));
+                            $("td[name=coinFree2]").text(paymentProduct.comma(Math.floor(res.data.coinFree2)));
+                            $("td[name=coinTotalCnt]").text(paymentProduct.comma(Math.floor(res.data.coinTotalCnt)));
+                            $("td[name=price]").text(paymentProduct.comma(Math.floor(res.data.price)));
+                            $("td[name=sort]").text(paymentProduct.comma(Math.floor(res.data.sort)));
+                            $("td[name=regdate]").text(res.data.regdate||"-");
+
+                        } else {
+                            // 결과 없음
+                            toast.alert(res.message);
+                        }
+                    } else {
+                        // ajax exception error
+                        toast.alert(res.message);
+                    }
+                },
+                error: function (request, status, error) {
+                    // filter error
+                    toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                }
+            });
+
+            return false;
+        },
+        // 숫자 콤마 표시
+        comma: function (num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        },
+        // 결제 수단 삭제
+        delete: function () {
+
+            let deleteConfirmMessage = `[[#{lang.payment.product.confirm.delete}]]`;
+
+            if (confirm(deleteConfirmMessage)) {
+                $.ajax({
+                    url: '[[${SERVER.currentDomain}]]/v1/payments/products/[[${idx}]]',
+                    method: "DELETE",
+                    data: '',
+                    dataType: 'json',
+                    processData: false,
+                    contentType: "application/json",
+                    success: function (res) {
+                        if (res.result) {
+                            toast.alert(res.message);
+                            opener.location.reload();
+                            self.close();
+                        } else {
+                            // 삭제 실패
+                            toast.alert(res.message);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // filter error
+                        toast.alert("code: " + request.status + "<br>" + "message: " + request.responseText + "<br>" + "error :" + error);
+                    }
+                });
+                return false;
+            }
+        },
+        // 결제 상품 수정 팝업
+        modifyPopUp: function () {
+            window.location.href = '[[${SERVER.currentDomain}]]/payments/products/modify/[[${idx}]]';
+        }
+    }
+</script>
