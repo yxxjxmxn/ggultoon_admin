@@ -1,2 +1,2 @@
-# webtoon_admin_springboot
-웹툰 관리자.
+# ggultoon_admin_springboot
+꿀툰 관리자
